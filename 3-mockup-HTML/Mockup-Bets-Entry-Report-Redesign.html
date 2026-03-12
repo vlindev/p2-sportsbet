@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bets Entry + Report Redesign v4 — Mockup</title>
+<title>Bets Entry + Report Redesign v5 — Mockup</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -45,7 +45,7 @@
 <!-- ============================================================ -->
 <!-- VIEW 1: ENTRY VIEW (scheduled, mid-betting, Monday match)     -->
 <!-- ============================================================ -->
-<div class="view-label">📝 投注管理 — Entry View v4</div>
+<div class="view-label">📝 投注管理 — Entry View v5</div>
 
 <div class="max-w-3xl mx-auto p-6 pt-8">
 
@@ -57,7 +57,8 @@
 
   <!-- Match tab bar — optgroup headers inside dropdown -->
   <div class="mb-4">
-    <select class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-slate-700">
+    <div class="relative">
+    <select class="w-full px-5 py-2.5 pr-12 text-sm border border-gray-200 rounded-lg bg-white text-slate-700 appearance-none cursor-pointer">
       <optgroup label="今日賽事">
         <option>第12組 — 張大明 · 李志強 vs 王建國 · 陳文華</option>
         <option>第13組 — 周志豪 · 鄭家祥 vs 趙英傑 · 何振國</option>
@@ -66,6 +67,8 @@
         <option>第14組 — 林敬堯 · 徐志成 vs 簡國安 · 葉明輝</option>
       </optgroup>
     </select>
+    <svg class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
   </div>
 
   <!-- MatchHeader -->
@@ -92,27 +95,42 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- E7: 分潤比例 CARD — metric card style (hero percentages)    -->
+  <!-- E7: 選手佔成 CARD — metric card style (hero percentages)    -->
   <!-- Same visual language as 總計 cards                           -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
     <div class="flex items-center justify-between mb-4">
-      <span class="text-sm font-semibold text-slate-500">分潤比例</span>
-      <button class="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-orange-500 cursor-pointer transition-colors">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        編輯
+      <span class="text-sm font-semibold text-slate-500">選手佔成</span>
+      <button class="p-1.5 rounded text-slate-400 hover:text-orange-500 hover:bg-slate-100 cursor-pointer transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
       </button>
     </div>
     <div class="grid grid-cols-2 gap-3">
       <div class="bg-slate-50 rounded-xl p-4 text-center">
-        <p class="text-sm font-medium text-slate-500 mb-1">A 隊</p>
-        <p class="text-2xl font-bold text-slate-800 tabular-nums">50%</p>
-        <p class="text-xs text-slate-400 mt-1">張大明 · 李志強</p>
+        <p class="text-sm font-medium text-slate-500 mb-2">A 隊</p>
+        <div class="flex justify-center gap-6">
+          <div>
+            <p class="text-2xl font-bold text-slate-800 tabular-nums">40%</p>
+            <p class="text-sm text-slate-400 mt-1">張大明</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-slate-800 tabular-nums">60%</p>
+            <p class="text-sm text-slate-400 mt-1">李志強</p>
+          </div>
+        </div>
       </div>
       <div class="bg-slate-50 rounded-xl p-4 text-center">
-        <p class="text-sm font-medium text-slate-500 mb-1">B 隊</p>
-        <p class="text-2xl font-bold text-slate-800 tabular-nums">50%</p>
-        <p class="text-xs text-slate-400 mt-1">王建國 · 陳文華</p>
+        <p class="text-sm font-medium text-slate-500 mb-2">B 隊</p>
+        <div class="flex justify-center gap-6">
+          <div>
+            <p class="text-2xl font-bold text-slate-800 tabular-nums">30%</p>
+            <p class="text-sm text-slate-400 mt-1">王建國</p>
+          </div>
+          <div>
+            <p class="text-2xl font-bold text-slate-800 tabular-nums">70%</p>
+            <p class="text-sm text-slate-400 mt-1">陳文華</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -140,14 +158,14 @@
         <div class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-slate-400 bg-white">搜尋會員...</div>
       </div>
       <div class="flex gap-1.5">
-        <button class="px-4 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-orange-500 text-white border-orange-500">A 隊</button>
-        <button class="px-4 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">B 隊</button>
+        <button class="px-4 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-orange-500 text-white border-orange-500">A 隊</button>
+        <button class="px-4 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">B 隊</button>
       </div>
       <div class="flex gap-1.5">
-        <button class="px-3 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">1兩</button>
-        <button class="px-3 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-orange-500 text-white border-orange-500">2兩</button>
+        <button class="px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">1兩</button>
+        <button class="px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-orange-500 text-white border-orange-500">2兩</button>
       </div>
-      <button class="px-5 py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-lg cursor-pointer">
+      <button class="px-5 py-2.5 bg-orange-500 text-white text-base font-semibold rounded-lg cursor-pointer">
         新增
       </button>
     </div>
@@ -173,8 +191,8 @@
       <div class="flex items-center justify-between flex-wrap gap-2">
         <span class="text-sm text-amber-700">會員無法自行下注</span>
         <div class="flex items-center gap-3">
-          <button class="text-sm font-medium text-blue-500 hover:text-blue-700 cursor-pointer">自動派注</button>
-          <button class="text-sm font-medium text-orange-500 hover:text-orange-700 cursor-pointer">全額降注</button>
+          <button class="text-base font-medium text-blue-500 hover:text-blue-700 cursor-pointer">自動派注</button>
+          <button class="text-base font-medium text-orange-500 hover:text-orange-700 cursor-pointer">全額降注</button>
         </div>
       </div>
     </div>
@@ -183,14 +201,14 @@
         <div class="px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-slate-400 bg-white">搜尋會員...</div>
       </div>
       <div class="flex gap-1.5">
-        <button class="px-4 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">A 隊</button>
-        <button class="px-4 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">B 隊</button>
+        <button class="px-4 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">A 隊</button>
+        <button class="px-4 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">B 隊</button>
       </div>
       <div class="flex gap-1.5">
-        <button class="px-3 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">1兩</button>
-        <button class="px-3 py-2.5 text-sm font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">2兩</button>
+        <button class="px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">1兩</button>
+        <button class="px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer bg-white text-slate-600 border-gray-200">2兩</button>
       </div>
-      <button class="px-5 py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-lg cursor-pointer">
+      <button class="px-5 py-2.5 bg-orange-500 text-white text-base font-semibold rounded-lg cursor-pointer">
         新增
       </button>
     </div>
@@ -302,12 +320,12 @@
         <!-- auto-placed -->
         <div class="flex items-center gap-2 text-sm py-2 px-2 bg-white rounded">
           <span class="flex-1 min-w-0 truncate text-slate-400">許世昌</span>
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
           <span class="font-medium tabular-nums text-slate-400">1兩</span>
         </div>
         <div class="flex items-center gap-2 text-sm py-2 px-2 bg-slate-50 rounded">
           <span class="flex-1 min-w-0 truncate text-slate-400">楊正勇</span>
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
           <span class="font-medium tabular-nums text-slate-400">1兩</span>
         </div>
       </div>
@@ -398,12 +416,12 @@
         <!-- auto-placed -->
         <div class="flex items-center gap-2 text-sm py-2 px-2 bg-slate-50 rounded">
           <span class="flex-1 min-w-0 truncate text-slate-400">謝志明</span>
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
           <span class="font-medium tabular-nums text-slate-400">1兩</span>
         </div>
         <div class="flex items-center gap-2 text-sm py-2 px-2 bg-white rounded">
           <span class="flex-1 min-w-0 truncate text-slate-400">曹德安</span>
-          <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
           <span class="font-medium tabular-nums text-slate-400">1兩</span>
         </div>
       </div>
@@ -420,7 +438,7 @@
 <!-- ============================================================ -->
 <!-- VIEW 2: REPORT VIEW (completed, A隊勝)                        -->
 <!-- ============================================================ -->
-<div class="view-label">📊 結算報告 — Report View v4</div>
+<div class="view-label">📊 結算報告 — Report View v5</div>
 
 <div class="max-w-3xl mx-auto p-6 pt-8">
 
@@ -437,11 +455,14 @@
 
   <!-- Match tab bar — optgroup headers inside dropdown -->
   <div class="mb-4">
-    <select class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-slate-700">
+    <div class="relative">
+    <select class="w-full px-5 py-2.5 pr-12 text-sm border border-gray-200 rounded-lg bg-white text-slate-700 appearance-none cursor-pointer">
       <optgroup label="今日賽事">
         <option>第12組 — 張大明 · 李志強 vs 王建國 · 陳文華</option>
       </optgroup>
     </select>
+    <svg class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
   </div>
 
   <!-- MatchHeader with result banner -->
@@ -471,23 +492,23 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- R9: 分潤比例 card (locked, metric card style, muted)        -->
+  <!-- R9: 選手佔成 card (locked, metric card style, muted)        -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5 opacity-85">
     <div class="flex items-center justify-between mb-4">
-      <span class="text-sm font-semibold text-slate-400">分潤比例</span>
-      <span class="text-xs text-slate-400">已鎖定</span>
+      <span class="text-sm font-semibold text-slate-400">選手佔成</span>
+      <span class="text-sm text-slate-400">已鎖定</span>
     </div>
     <div class="grid grid-cols-2 gap-3">
       <div class="bg-slate-50 rounded-xl p-4 text-center">
         <p class="text-sm font-medium text-slate-400 mb-1">A 隊</p>
         <p class="text-2xl font-bold text-slate-600 tabular-nums">50%</p>
-        <p class="text-xs text-slate-400 mt-1">張大明 · 李志強</p>
+        <p class="text-sm text-slate-400 mt-1">張大明 · 李志強</p>
       </div>
       <div class="bg-slate-50 rounded-xl p-4 text-center">
         <p class="text-sm font-medium text-slate-400 mb-1">B 隊</p>
         <p class="text-2xl font-bold text-slate-600 tabular-nums">50%</p>
-        <p class="text-xs text-slate-400 mt-1">王建國 · 陳文華</p>
+        <p class="text-sm text-slate-400 mt-1">王建國 · 陳文華</p>
       </div>
     </div>
   </div>
@@ -505,7 +526,7 @@
     <!-- A 隊 (Winner) -->
     <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4">
       <div class="flex items-center gap-2 mb-3 pb-2 border-b border-emerald-100">
-        <span class="text-[15px] font-bold text-emerald-700">A 隊</span>
+        <span class="text-base font-bold text-emerald-700">A 隊</span>
         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">勝</span>
       </div>
       <!-- Players (expandable — chevron) -->
@@ -516,7 +537,7 @@
             張大明<span class="text-xs text-slate-400 font-normal ml-0.5">（選手）</span>
           </span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+8.5兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($8,500)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($8,500)</span>
         </div>
       </div>
       <div class="py-2 px-1 rounded-md cursor-pointer hover:bg-emerald-100/50 transition-colors">
@@ -526,7 +547,7 @@
             李志強<span class="text-xs text-slate-400 font-normal ml-0.5">（選手）</span>
           </span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+8.5兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($8,500)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($8,500)</span>
         </div>
       </div>
       <!-- External winners (expandable) -->
@@ -535,7 +556,7 @@
           <svg class="text-slate-400 shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="flex-1 min-w-0 truncate font-medium text-slate-700">黃國華</span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+1.9兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
         </div>
       </div>
       <div class="py-2 px-1 rounded-md cursor-pointer hover:bg-emerald-100/50 transition-colors">
@@ -543,7 +564,7 @@
           <svg class="text-slate-400 shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="flex-1 min-w-0 truncate font-medium text-slate-700">劉德志</span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+1.9兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
         </div>
       </div>
       <div class="py-2 px-1 rounded-md cursor-pointer hover:bg-emerald-100/50 transition-colors">
@@ -551,7 +572,7 @@
           <svg class="text-slate-400 shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="flex-1 min-w-0 truncate font-medium text-slate-700">陳建宏</span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+1.9兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,900)</span>
         </div>
       </div>
       <!-- Expanded example -->
@@ -560,9 +581,9 @@
           <svg class="text-slate-500 shrink-0 rotate-90" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="flex-1 min-w-0 truncate font-medium text-slate-700">吳宗翰</span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+0.95兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($950)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($950)</span>
         </div>
-        <div class="bg-white/80 rounded-lg px-3 py-2.5 mt-1.5 ml-5 text-[13px] text-slate-500 leading-7">
+        <div class="bg-white/80 rounded-lg px-3 py-2.5 mt-1.5 ml-5 text-sm text-slate-500 leading-7">
           <div class="flex justify-between">
             <span>投注 A隊 1兩 (贏)</span>
             <span class="tabular-nums font-medium text-emerald-600">+1兩</span>
@@ -584,7 +605,7 @@
           <svg class="text-slate-400 shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
           <span class="flex-1 min-w-0 truncate font-medium text-slate-700">林明達</span>
           <span class="font-semibold tabular-nums text-emerald-600 whitespace-nowrap">+0.95兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($950)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($950)</span>
         </div>
       </div>
     </div>
@@ -592,7 +613,7 @@
     <!-- B 隊 (Loser) -->
     <div class="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
       <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-        <span class="text-[15px] font-bold text-slate-400">B 隊</span>
+        <span class="text-base font-bold text-slate-400">B 隊</span>
         <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-slate-400">敗</span>
       </div>
       <!-- Players (expandable) -->
@@ -603,7 +624,7 @@
             王建國<span class="text-xs text-slate-400 font-normal ml-0.5">（選手）</span>
           </span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-18.5兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($18,500)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($18,500)</span>
         </div>
       </div>
       <div class="py-2 px-1 rounded-md cursor-pointer hover:bg-slate-100/50 transition-colors">
@@ -613,7 +634,7 @@
             陳文華<span class="text-xs text-slate-400 font-normal ml-0.5">（選手）</span>
           </span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-18.5兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($18,500)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($18,500)</span>
         </div>
       </div>
       <!-- External losers (not expandable) -->
@@ -622,7 +643,7 @@
           <span class="w-3 shrink-0"></span>
           <span class="flex-1 min-w-0 truncate text-slate-400">趙英傑</span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-2兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($2,000)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($2,000)</span>
         </div>
       </div>
       <div class="py-2 px-1">
@@ -630,7 +651,7 @@
           <span class="w-3 shrink-0"></span>
           <span class="flex-1 min-w-0 truncate text-slate-400">何振國</span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-2兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($2,000)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($2,000)</span>
         </div>
       </div>
       <div class="py-2 px-1">
@@ -638,7 +659,7 @@
           <span class="w-3 shrink-0"></span>
           <span class="flex-1 min-w-0 truncate text-slate-400">洪偉明</span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-1兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
         </div>
       </div>
       <div class="py-2 px-1">
@@ -646,7 +667,7 @@
           <span class="w-3 shrink-0"></span>
           <span class="flex-1 min-w-0 truncate text-slate-400">孫瑞峰</span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-1兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
         </div>
       </div>
       <div class="py-2 px-1">
@@ -654,7 +675,7 @@
           <span class="w-3 shrink-0"></span>
           <span class="flex-1 min-w-0 truncate text-slate-400">馬光輝</span>
           <span class="font-semibold tabular-nums text-red-600 whitespace-nowrap">-1兩</span>
-          <span class="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
+          <span class="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">($1,000)</span>
         </div>
       </div>
     </div>
@@ -670,17 +691,17 @@
       <div class="bg-slate-50 rounded-xl p-4 text-center">
         <p class="text-sm font-medium text-slate-500 mb-1">總投注</p>
         <p class="text-2xl font-bold text-slate-800 tabular-nums">65兩</p>
-        <p class="text-xs text-slate-400 mt-0.5">$65,000</p>
+        <p class="text-sm text-slate-400 mt-0.5">$65,000</p>
       </div>
       <div class="bg-slate-50 rounded-xl p-4 text-center">
         <p class="text-sm font-medium text-slate-500 mb-1">A 隊</p>
         <p class="text-2xl font-bold text-slate-800 tabular-nums">34兩</p>
-        <p class="text-xs text-slate-400 mt-0.5">22筆</p>
+        <p class="text-sm text-slate-400 mt-0.5">22筆</p>
       </div>
       <div class="bg-slate-50 rounded-xl p-4 text-center">
         <p class="text-sm font-medium text-slate-500 mb-1">B 隊</p>
         <p class="text-2xl font-bold text-slate-800 tabular-nums">31兩</p>
-        <p class="text-xs text-slate-400 mt-0.5">19筆</p>
+        <p class="text-sm text-slate-400 mt-0.5">19筆</p>
       </div>
     </div>
 
@@ -691,10 +712,10 @@
 
     <!-- Export buttons (disabled) -->
     <div class="flex gap-3 mt-4 pt-3 border-t border-gray-100">
-      <button class="flex-1 py-2.5 text-[13px] font-semibold rounded-lg border border-gray-200 bg-white text-slate-300 cursor-not-allowed opacity-50">
+      <button class="flex-1 py-2.5 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-slate-300 cursor-not-allowed opacity-50">
         匯出 Excel (即將推出)
       </button>
-      <button class="flex-1 py-2.5 text-[13px] font-semibold rounded-lg border border-gray-200 bg-white text-slate-300 cursor-not-allowed opacity-50">
+      <button class="flex-1 py-2.5 text-sm font-semibold rounded-lg border border-gray-200 bg-white text-slate-300 cursor-not-allowed opacity-50">
         快速截圖 (即將推出)
       </button>
     </div>

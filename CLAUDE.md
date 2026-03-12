@@ -182,12 +182,32 @@ When the user provides screenshots of the rendered page and the approved mockup:
 
 Only trigger if `SIP` is the entire message — nothing before or after it.
 
-Display the Standard Implementation Procedure and current position. Do all automatically:
-1. Print the 12-step sequence (numbered, one line each)
+Display the Standard Implementation Procedure with integrated codewords and current position. Do all automatically:
+
+1. Print the following sequence:
+
+```
+ #  Step                        Codewords
+─── ─────────────────────────── ──────────────────────────
+ 1  Discussion                  —
+ 2  Execution plan              —
+ 3  Reference files             —
+ 4  Mockup                      mgp → uieval → typoaudit
+ 5  Context loading             —
+ 6  Implementation              —
+ 7  Visual + code check         implaudit (full: Steps 0+1+2)
+ 8  Functional testing          testplan
+ 9  Fix pass (functional)       —
+10  UI polish                   implaudit + screenshots, typoaudit
+11  Fix pass (UI)               —
+12  Complete                    audit → deepcheck
+```
+
 2. Read `0-memory.md` TODO section to determine the current task
 3. Assess which step of the procedure that task is on
 4. Print: "**Current task:** [task name]" and "**Current step:** [step number + name]"
-5. If the current step is unclear, ask the user to confirm before proceeding
+5. If the current step has codewords, remind which ones are available
+6. If the current step is unclear, ask the user to confirm before proceeding
 
 ---
 
@@ -201,14 +221,23 @@ Force-load all canonical rules immediately (Tier 3):
 
 ---
 
-## `cleanup` Codeword
+## `implaudit` — Project-Specific Step 2
 
-Only trigger if `cleanup` is the entire message — nothing before or after it.
+When running `implaudit` in this project, replace the generic Step 2 entirely with this checklist:
 
-Project file hygiene pass. Do all automatically:
-1. Scan project root and `memory/` folder for non-source files (exclude `node_modules`, `.next`, `dist`, `.git`, `src/`, `3-mockup-HTML/`, `archive/`, and standard config files like `package.json`, `tsconfig.json`, `.gitignore`, `.env*`)
-2. For each file, read the first 20 lines and assess: **ACTIVE** (referenced by memory/plan files or needed for upcoming work), **STALE** (fully implemented, superseded, or one-time scripts already run), or **UNSURE** (can't determine)
-3. Present the full list with filename, path, assessment, and one-line reason
-4. Wait for user approval before touching anything
-5. After approval: delete executed SQL files and one-time scripts. Move completed plans, audits, and reports to `archive/` in project root. Leave UNSURE files in place.
-6. Confirm what was deleted, what was archived, and what was left.
+### STEP 2 — Backend Logic Integrity (vs Canonical Rules)
+
+Review all functions touched in this session against canonical rules (R1–R29).
+Flag any contradiction, shortcut, or missing guard.
+
+- [ ] Bet writes: bet_requests and bets are separate INSERTs, never combined
+- [ ] Status transitions: follow the canonical state machine (no skipped states)
+- [ ] 封盤: sets matches.status = betting_closed and triggers share adjustment
+- [ ] Auto-placement: balances by count first, amount as tiebreaker (R10.4)
+- [ ] Settlement: rake applies to positive netGain only, rounded to nearest 100
+- [ ] Result fan-out: base bets and pool bets handled separately
+- [ ] RPCs use FOR UPDATE locks where concurrent writes are possible
+- [ ] No client-side logic that belongs in an RPC or DB function
+
+---
+

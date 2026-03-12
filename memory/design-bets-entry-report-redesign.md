@@ -2,7 +2,7 @@
 
 > Created Session 63, updated Session 64. Mockup: `3-mockup-HTML/Mockup-Bets-Entry-Report-Redesign.html` (v4)
 
-## Status: Mockup v4. Typography audit completed — fixes approved, not yet applied. Next: apply typo fixes → continue review.
+## Status: Mockup v5. Typography applied + 4 design refinements. Continuing review.
 
 ## Final Page Order (confirmed)
 
@@ -96,15 +96,20 @@ Settlement columns (chevrons, stronger winner bg emerald-50/60)
 ### "投注明細" section header on entry view
 - Added for consistency with report view's "結算明細". User wanted to try it.
 
-### Typography accessibility (v4 audit — approved, not yet applied)
+### Typography accessibility (applied in v5)
 - **Context:** System users are 50+ year old adults. Minimum 14px for all functional text, 16px for action buttons.
 - **Audit found 12 elements below 14px.** Categorized into: (A) readable text to raise — player names under hero %, metric sub-text, expanded detail, NTD amounts, 編輯/已鎖定 labels, export buttons. (B) Badges to keep at 12px — 週一例行賽, 勝/敗, （選手）, 補. (D) Action buttons to raise to 16px — A隊/B隊, 1兩/2兩, 新增, 自動派注/全額降注.
 - **New hierarchy:** T0=24px (heroes), T1=18px (match name), T2=16px (team names + all action buttons), T3=14px (everything else), T4=12px (badges only).
 - **User confirmed approach.** Not yet applied to mockup.
 
+### V5 refinements (S65)
+- **"編輯" text removed** — pencil icon only (16px), with hover bg. Cleaner.
+- **"分潤比例" → "選手佔成"** — renamed across both views.
+- **Per-player shares** — when not 50/50, each player gets their own hero % with name below. Two sub-columns per team card (`flex justify-center gap-6`). Entry view shows 40/60 + 30/70 as example.
+- **Dropdown styling** — `appearance-none` + custom SVG chevron. `px-5 py-2.5 pr-12`, arrow at `right-4`. Balanced spacing between text and arrow.
+
 ## Open / Still Under Review
-- **Typography fixes** — approved by user, need to be applied to mockup v4.
-- **Ongoing mockup review** — user may have more feedback after typo fixes are applied.
+- **Ongoing mockup review** — user may have more feedback.
 - **No implementation yet** — still in SIP Step 4 (Mockup review).
 
 ## Questions Resolved
