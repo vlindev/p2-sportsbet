@@ -30,6 +30,7 @@ All project memory files and when to load them. When a topic comes up mid-sessio
 | System overview for organizer/bookkeeper (bilingual) | `1-system-brief.md` | project root |
 | **Page responsibilities, information architecture, navigation flows — reference for ALL page design** | `design-page-responsibilities.md` | project/memory |
 | Bets page report UX issues, badge/color/readability decisions | `design-bets-report-issues.md` | project/memory |
+| **Bets entry/report redesign — all decisions, alternatives, mockup status** | `design-bets-entry-report-redesign.md` | project/memory |
 | Member-facing interface, dual-channel architecture, auth options, adoption strategy | `design-member-interface.md` | project/memory |
 | Phase 3 scaling, multi-club onboarding, pricing | `phase3-club-onboarding.md` | project/memory |
 | Presentation framing, rhetoric, deliverable planning | `presentation-strategy.md` | project/memory |

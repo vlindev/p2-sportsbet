@@ -127,6 +127,7 @@ export default function MatchesPage() {
   const [poolResultMatch, setPoolResultMatch] = useState<Match | null>(null);
   const [poolResultWinner, setPoolResultWinner] = useState<"team_a" | "team_b" | null>(null);
   const [submittingPoolResult, setSubmittingPoolResult] = useState(false);
+  const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(["nextWeek", "future"]);
@@ -717,21 +718,26 @@ export default function MatchesPage() {
     // Visual state: justCompleted overrides actual status for rendering
     const showAsCompleted = isCompleted || isJustCompleted;
     const mPools = matchPools(match.id).filter(p => p.result !== "cancelled");
+    const hasCollapsedPools = !isCancelled && mPools.length > 0 && !expandedPools.has(match.id);
     return (
     <div>
+      <div className={hasCollapsedPools ? "group relative" : ""}>
+        {hasCollapsedPools && (
+          <>
+            <div className="absolute inset-0 translate-x-1 translate-y-1 bg-white rounded-2xl border border-fuchsia-300 shadow-sm pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-2.5 group-hover:translate-y-2.5" />
+            {mPools.length > 1 && (
+              <div className="absolute inset-0 translate-x-0.5 translate-y-0.5 bg-white rounded-2xl border border-fuchsia-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] pointer-events-none transition-transform duration-200 ease-out group-hover:translate-x-1 group-hover:translate-y-1" />
+            )}
+          </>
+        )}
       <div
-        onClick={isJustCompleted ? undefined
-          : isOverdue ? () => openResultModal(match, matchIndex)
-          : isCompleted ? () => router.push(`/bets?match=${match.id}&from=completed`)
-          : !isCancelled ? (e) => { e.stopPropagation(); openEditMatch(match); }
-          : undefined}
-        className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-4 hover:shadow-2xl transition-shadow ${
+        className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-4 hover:shadow-2xl transition-shadow ${hasCollapsedPools ? "relative z-10 " : ""}${
           isCancelled ? "border-red-100 opacity-60"
           : isJustCompleted ? "border-gray-100"
-          : isOverdue ? "border-l-[5px] border-l-red-400 border-red-200 shadow-md cursor-pointer pl-4"
-          : isCompleted ? "border-gray-100 cursor-pointer"
-          : match.status === "active" ? "border-2 border-teal-400 cursor-pointer"
-          : "border-gray-100 cursor-pointer"
+          : isOverdue ? "border-l-[5px] border-l-red-400 border-red-200 shadow-md pl-4"
+          : isCompleted ? "border-gray-100"
+          : match.status === "active" ? "border-2 border-teal-400"
+          : "border-gray-100"
         }`}
       >
         <div className="flex items-center justify-between">
@@ -739,15 +745,18 @@ export default function MatchesPage() {
             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${MATCH_TYPE_STYLE[match.match_type]}`}>
               {MATCH_TYPE_LABEL[match.match_type]}
             </span>
-            {isCancelled || showAsCompleted || match.status === "betting_closed" ? (
+            {isCancelled || showAsCompleted ? (
               <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${isJustCompleted ? STATUS_STYLE.completed : STATUS_STYLE[match.status]}`}>
                 {isJustCompleted ? STATUS_LABEL.completed : STATUS_LABEL[match.status]}
               </span>
             ) : null}
-            {matchPools(match.id).length > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border-[1.5px] border-fuchsia-400 text-fuchsia-600 bg-fuchsia-50">
-                加強盤 ×{matchPools(match.id).length}
-              </span>
+            {mPools.length > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setExpandedPools(prev => { const next = new Set(prev); if (next.has(match.id)) next.delete(match.id); else next.add(match.id); return next; }); }}
+                className="text-xs font-semibold px-2 py-0.5 rounded-full border-[1.5px] border-fuchsia-400 text-fuchsia-600 bg-fuchsia-50 cursor-pointer hover:bg-fuchsia-100 transition-colors inline-flex items-center gap-1"
+              >
+                加強盤 ×{mPools.length} <span className="text-sm leading-none ml-0.5">{expandedPools.has(match.id) ? "▲" : "▼"}</span>
+              </button>
             )}
             <span className="text-sm text-slate-500 whitespace-nowrap">{match.date}{match.start_time ? ` · ${match.start_time}` : ""}</span>
           </div>
@@ -755,16 +764,16 @@ export default function MatchesPage() {
             {showAsCompleted ? (
               <button
                 onClick={(e) => { e.stopPropagation(); openCorrectionModal(match, matchIndex); }}
-                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-2 -m-1"
               >
-                <Pencil size={13} />
+                <Pencil size={14} />
               </button>
             ) : !isCancelled && (
               <button
                 onClick={(e) => { e.stopPropagation(); openEditMatch(match); }}
-                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-2 -m-1"
               >
-                <Pencil size={13} />
+                <Pencil size={14} />
               </button>
             )}
           </div>
@@ -820,7 +829,7 @@ export default function MatchesPage() {
               {isCompleted && !isJustCompleted && (
                 <button
                   onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&from=completed`); }}
-                  className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                  className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer py-1 px-2 -mx-2 rounded-lg hover:bg-teal-50"
                 >
                   查看投注 →
                 </button>
@@ -830,26 +839,21 @@ export default function MatchesPage() {
             <div className="flex items-center justify-between w-full">
               <button
                 onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&from=current`); }}
-                className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer"
+                className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer py-1 px-2 -ml-2 rounded-lg hover:bg-teal-50"
               >
                 管理投注
               </button>
-              {(match.status === "scheduled" || match.status === "betting_closed") && (
+              {(match.status === "scheduled" || match.status === "betting_closed") ? (
                 <button
                   onClick={(e) => { e.stopPropagation(); setPoolCreateTarget(match); }}
-                  className="text-sm font-medium text-fuchsia-500 hover:text-fuchsia-700 transition-colors cursor-pointer"
+                  className="text-sm font-medium text-fuchsia-500 hover:text-fuchsia-700 transition-colors cursor-pointer py-1 px-2 -mr-2 rounded-lg hover:bg-fuchsia-50"
                 >
-                  + 加強盤
+                  新增加強盤
                 </button>
-              )}
-              {isFutureUpcoming ? (
-                <span className="text-sm font-medium text-slate-300 cursor-not-allowed">
-                  輸入結果
-                </span>
               ) : (
                 <button
                   onClick={(e) => { e.stopPropagation(); openResultModal(match, matchIndex); }}
-                  className={`text-sm font-medium transition-colors cursor-pointer ${isOverdue ? "text-red-500 hover:text-red-700" : "text-orange-500 hover:text-orange-700"}`}
+                  className={`text-sm font-medium transition-colors cursor-pointer py-1 px-2 -mr-2 rounded-lg ${isOverdue ? "text-red-500 hover:text-red-700 hover:bg-red-50" : "text-orange-500 hover:text-orange-700 hover:bg-orange-50"}`}
                 >
                   輸入結果 &gt;
                 </button>
@@ -859,29 +863,31 @@ export default function MatchesPage() {
         </div>
 
       </div>
+      </div>
 
-      {/* Pool child cards (fuchsia border, nested below parent) */}
-      {!isCancelled && mPools.length > 0 && (
+      {/* Pool child cards — collapsible, toggled by 加強盤 tag */}
+      {!isCancelled && mPools.length > 0 && expandedPools.has(match.id) && (
         <div className="border-l-[3px] border-fuchsia-400 ml-5 pl-4 mt-2 space-y-3">
           {mPools.map((pool, i) => {
             const poolResolved = pool.result === "team_a" || pool.result === "team_b";
+            const poolIsActive = match.status === "active";
+            const poolCanEnterResult = poolIsActive && !poolResolved;
             return (
               <div key={pool.id}
-                onClick={() => router.push(`/bets?match=${match.id}&pool=${pool.id}&from=${poolResolved ? "completed" : "current"}`)}
-                className="bg-fuchsia-50 rounded-xl border border-fuchsia-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow cursor-pointer"
+                className="bg-white rounded-xl border border-fuchsia-300 shadow-sm p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow"
               >
                 {/* Top row: badges + pencil */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${MATCH_TYPE_STYLE[match.match_type]}`}>{MATCH_TYPE_LABEL[match.match_type]}</span>
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-fuchsia-100 text-fuchsia-700">加強</span>
-                    <span className="text-xs text-slate-400">{pool.opened_by_team}隊開盤</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-fuchsia-500 text-white">{pool.opened_by_team}隊開盤</span>
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditMatch(match); }}
-                    className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+                    className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-2 -m-1"
                   >
-                    <Pencil size={13} />
+                    <Pencil size={14} />
                   </button>
                 </div>
 
@@ -926,15 +932,15 @@ export default function MatchesPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&pool=${pool.id}&from=completed`); }}
-                          className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                          className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer py-1 px-2 -mx-1 rounded-lg hover:bg-teal-50"
                         >
                           查看投注 →
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
-                          className="text-slate-400 hover:text-orange-500 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-orange-500 transition-colors cursor-pointer p-2 -m-1"
                         >
-                          <Pencil size={12} />
+                          <Pencil size={14} />
                         </button>
                       </div>
                     </div>
@@ -942,18 +948,14 @@ export default function MatchesPage() {
                     <div className="flex items-center justify-between w-full">
                       <button
                         onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&pool=${pool.id}&from=current`); }}
-                        className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer"
+                        className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer py-1 px-2 -ml-2 rounded-lg hover:bg-teal-50"
                       >
                         管理投注
                       </button>
-                      {isFutureUpcoming ? (
-                        <span className="text-sm font-medium text-slate-300 cursor-not-allowed">
-                          輸入結果
-                        </span>
-                      ) : (
+                      {poolCanEnterResult && (
                         <button
                           onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
-                          className="text-sm font-medium text-orange-500 hover:text-orange-700 transition-colors cursor-pointer"
+                          className={`text-sm font-medium transition-colors cursor-pointer py-1 px-2 -mr-2 rounded-lg ${isOverdue ? "text-red-500 hover:text-red-700 hover:bg-red-50" : "text-orange-500 hover:text-orange-700 hover:bg-orange-50"}`}
                         >
                           輸入結果 &gt;
                         </button>
@@ -1061,7 +1063,7 @@ export default function MatchesPage() {
                 <div className="flex-1 h-px bg-red-100" />
                 <span className="text-sm text-red-500 font-medium">{overdueMatches.length} 場</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                 {overdueMatches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
               </div>
             </div>
@@ -1083,7 +1085,7 @@ export default function MatchesPage() {
             </div>
             {!collapsedSections.has("today") && (
               todayMatches.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                   {todayMatches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
                 </div>
               ) : (
@@ -1103,7 +1105,7 @@ export default function MatchesPage() {
               </div>
               {!collapsedSections.has(group.key) && (
                 group.matches.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                     {group.matches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
                   </div>
                 ) : (
@@ -1189,7 +1191,7 @@ export default function MatchesPage() {
                       <span className="text-sm text-slate-500 font-medium">{week.matches.length} 場</span>
                     </div>
                     {!isCollapsed && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                         {week.matches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
                       </div>
                     )}
@@ -1217,7 +1219,7 @@ export default function MatchesPage() {
                     <div className="flex-1 h-px bg-gray-200" />
                     <span className="text-sm text-slate-500 font-medium">{group.length} 場</span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
                     {group.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
                   </div>
                 </div>
