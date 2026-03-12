@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>p2.sportsbet — Dual-Channel Information Flow</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8fafc; color: #1e293b; padding: 40px 20px; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { font-size: 15px; color: #64748b; margin-bottom: 48px; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 24px; color: #0f172a; }
+  h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+
+  /* ── Flow Diagram ── */
+  .flow-section { margin-bottom: 64px; }
+  .flow-diagram { display: flex; flex-direction: column; gap: 0; align-items: center; }
+  .flow-row { display: flex; align-items: stretch; justify-content: center; width: 100%; gap: 0; position: relative; }
+  .flow-col { flex: 1; max-width: 340px; display: flex; flex-direction: column; align-items: center; }
+  .flow-col-center { flex: 0 0 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  .flow-box { padding: 16px 20px; border-radius: 12px; text-align: center; font-size: 14px; width: 100%; }
+  .flow-box.member { background: #eff6ff; border: 2px solid #3b82f6; }
+  .flow-box.line { background: #f0fdf4; border: 2px solid #22c55e; }
+  .flow-box.bookkeeper { background: #fff7ed; border: 2px solid #f97316; }
+  .flow-box.system { background: #faf5ff; border: 2px solid #a855f7; }
+  .flow-box.result { background: #f0fdfa; border: 2px solid #14b8a6; }
+  .flow-box .label { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .flow-box.member .label { color: #2563eb; }
+  .flow-box.line .label { color: #16a34a; }
+  .flow-box.bookkeeper .label { color: #ea580c; }
+  .flow-box.system .label { color: #9333ea; }
+  .flow-box.result .label { color: #0d9488; }
+  .flow-box p { font-size: 13px; color: #475569; margin-top: 4px; }
+
+  .arrow-down { width: 2px; height: 32px; background: #cbd5e1; position: relative; margin: 0 auto; }
+  .arrow-down::after { content: '▼'; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); color: #94a3b8; font-size: 10px; }
+
+  .arrow-merge { display: flex; align-items: center; justify-content: center; height: 48px; position: relative; width: 100%; max-width: 800px; }
+  .arrow-merge svg { width: 100%; height: 48px; }
+
+  .merge-label { font-size: 12px; font-weight: 600; color: #9333ea; background: #faf5ff; padding: 4px 12px; border-radius: 20px; border: 1px solid #d8b4fe; }
+
+  .or-badge { font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 10px; border-radius: 20px; }
+
+  /* ── Scenario Cards ── */
+  .scenarios { display: grid; grid-template-columns: 1fr; gap: 32px; margin-bottom: 64px; }
+  .scenario { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
+  .scenario-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .scenario-number { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
+  .scenario-number.blue { background: #3b82f6; }
+  .scenario-number.green { background: #22c55e; }
+  .scenario-number.orange { background: #f97316; }
+  .scenario-number.purple { background: #a855f7; }
+
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .time-block { display: flex; gap: 16px; }
+  .time-label { flex: 0 0 100px; text-align: right; font-size: 12px; font-weight: 600; color: #94a3b8; padding-top: 12px; }
+  .time-content { flex: 1; padding: 12px 16px; border-left: 2px solid #e2e8f0; position: relative; }
+  .time-content::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; position: absolute; left: -5px; top: 16px; }
+  .time-content.active::before { background: #3b82f6; }
+  .time-content.bk::before { background: #f97316; }
+  .time-content.system::before { background: #a855f7; }
+  .time-content.result::before { background: #14b8a6; }
+  .time-content .who { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .time-content .who.member-tag { color: #2563eb; }
+  .time-content .who.bk-tag { color: #ea580c; }
+  .time-content .who.system-tag { color: #9333ea; }
+  .time-content .what { font-size: 13px; color: #475569; }
+
+  /* ── Role Comparison ── */
+  .role-section { margin-bottom: 64px; }
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .role-card { background: #fff; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .role-card h3 { margin-bottom: 16px; }
+  .role-card.before { border-top: 4px solid #ef4444; }
+  .role-card.after { border-top: 4px solid #22c55e; }
+  .role-card ul { list-style: none; padding: 0; }
+  .role-card li { padding: 8px 0; font-size: 13px; color: #475569; border-bottom: 1px solid #f1f5f9; display: flex; align-items: flex-start; gap: 8px; }
+  .role-card li:last-child { border-bottom: none; }
+  .role-card li .icon { flex-shrink: 0; width: 20px; text-align: center; }
+  .role-card.before li .icon { color: #ef4444; }
+  .role-card.after li .icon { color: #22c55e; }
+
+  /* ── Key Insight Box ── */
+  .insight-box { background: #1e293b; color: #f8fafc; border-radius: 16px; padding: 32px; margin-bottom: 64px; }
+  .insight-box h3 { color: #f97316; margin-bottom: 16px; font-size: 16px; }
+  .insight-box p { font-size: 14px; color: #cbd5e1; margin-bottom: 12px; }
+  .insight-box strong { color: #fff; }
+
+  /* ── Collision Section ── */
+  .collision-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .collision-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .collision-card .risk { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .collision-card .risk.low { color: #22c55e; }
+  .collision-card .risk.med { color: #f59e0b; }
+  .collision-card .risk.high { color: #ef4444; }
+  .collision-card .desc { font-size: 13px; color: #475569; margin-bottom: 8px; }
+  .collision-card .resolution { font-size: 12px; color: #64748b; background: #f8fafc; padding: 8px; border-radius: 8px; }
+
+  @media (max-width: 768px) {
+    .role-grid, .collision-grid { grid-template-columns: 1fr; }
+    .flow-row { flex-direction: column; align-items: center; gap: 8px; }
+    .flow-col, .flow-col-center { max-width: 100%; }
+    .time-label { flex: 0 0 72px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Dual-Channel Betting System — Information Flow</h1>
+  <p class="subtitle">Brainstorm visualization. Two input channels, one system of record, one bookkeeper overseeing everything.</p>
+
+  <!-- ═══════════════════════════════════ FLOW DIAGRAM ═══════════════════════════════════ -->
+  <div class="flow-section">
+    <h2>How Two Paths Arrive at the Same Place</h2>
+
+    <!-- Row 1: Two entry points -->
+    <div class="flow-diagram">
+      <div class="flow-row" style="gap: 80px; margin-bottom: 0;">
+        <div class="flow-col">
+          <div class="flow-box member">
+            <div class="label">Lane A — Self-Service</div>
+            <p>Member opens the system directly.<br>Views matches, places bet, confirms.</p>
+          </div>
+        </div>
+        <div class="flow-col">
+          <div class="flow-box line">
+            <div class="label">Lane B — Line Group Chat</div>
+            <p>Member sends bet via Line message.<br>Same as today. Nothing changes for them.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrows down -->
+      <div class="flow-row" style="gap: 80px; height: 48px;">
+        <div class="flow-col"><div class="arrow-down"></div></div>
+        <div class="flow-col"><div class="arrow-down"></div></div>
+      </div>
+
+      <!-- Row 2: What happens next -->
+      <div class="flow-row" style="gap: 80px; margin-bottom: 0;">
+        <div class="flow-col">
+          <div class="flow-box system">
+            <div class="label">Direct Write</div>
+            <p>Bet saved to database immediately.<br>Tagged: <strong>source = member</strong></p>
+          </div>
+        </div>
+        <div class="flow-col">
+          <div class="flow-box bookkeeper">
+            <div class="label">Bookkeeper Enters</div>
+            <p>Reads Line message, enters bet into system on behalf of member.<br>Tagged: <strong>source = bookkeeper</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Merge arrows -->
+      <div style="display: flex; flex-direction: column; align-items: center; margin: 24px 0;">
+        <svg width="760" height="48" viewBox="0 0 760 48" style="max-width: 100%;">
+          <path d="M 190 0 L 190 24 L 380 44" stroke="#a855f7" stroke-width="2" fill="none" stroke-dasharray="6,4"/>
+          <path d="M 570 0 L 570 24 L 380 44" stroke="#a855f7" stroke-width="2" fill="none" stroke-dasharray="6,4"/>
+          <circle cx="380" cy="44" r="3" fill="#a855f7"/>
+        </svg>
+        <div class="merge-label" style="margin-top: -4px;">Same database, same table, same row format</div>
+      </div>
+
+      <!-- Row 3: Single system -->
+      <div class="flow-row" style="max-width: 480px;">
+        <div class="flow-col">
+          <div class="flow-box system" style="border-width: 3px;">
+            <div class="label">One System of Record</div>
+            <p>All bets — regardless of how they entered — live in the same place.<br>Settlement engine treats them identically.<br><strong>The source tag is metadata, not logic.</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; height: 40px;"><div class="arrow-down"></div></div>
+
+      <!-- Row 4: Bookkeeper oversight -->
+      <div class="flow-row" style="max-width: 480px;">
+        <div class="flow-col">
+          <div class="flow-box bookkeeper" style="border-width: 3px;">
+            <div class="label">Bookkeeper Dashboard</div>
+            <p>Sees ALL bets from both channels in one view.<br>Can verify, edit, delete, flag duplicates.<br><strong>Role: auditor + safety net, not data entry.</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: center; height: 40px;"><div class="arrow-down"></div></div>
+
+      <!-- Row 5: Settlement -->
+      <div class="flow-row" style="max-width: 480px;">
+        <div class="flow-col">
+          <div class="flow-box result">
+            <div class="label">Settlement Engine</div>
+            <p>Reads all valid bets. Calculates pool payouts.<br>Applies rake. Produces monthly settlement.<br><strong>Doesn't know or care about the source.</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ KEY INSIGHT ═══════════════════════════════════ -->
+  <div class="insight-box">
+    <h3>The Core Architectural Insight</h3>
+    <p>The system doesn't have "two modes." It has <strong>one mode with two doors.</strong></p>
+    <p>A bet placed by a member at 10pm on Sunday and a bet entered by the bookkeeper from a Line message at 10:05pm are <strong>the same row in the same table</strong>. The only difference is a <code>source</code> field that says who created it.</p>
+    <p>Settlement, reports, payouts — none of them read the <code>source</code> field. It exists purely so the <strong>bookkeeper can see what came from where</strong> when reviewing.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════ SCENARIOS ═══════════════════════════════════ -->
+  <div class="scenarios">
+    <h2>Four Monday Scenarios — Same System, Different Paths</h2>
+
+    <!-- Scenario 1 -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-number blue">1</div>
+        <h3>陳先生 — The Early Adopter (Lane A)</h3>
+      </div>
+      <div class="timeline">
+        <div class="time-block">
+          <div class="time-label">Sun 9:30pm</div>
+          <div class="time-content active">
+            <div class="who member-tag">陳先生 (on phone)</div>
+            <div class="what">Opens system. Sees 7 Monday matches listed. Checks teams, handicaps, current bet distribution. Match 3 has 12 bets on Team A, only 4 on Team B — higher potential payout on B. Places 2兩 on Team B. Confirms. Done in 90 seconds.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 9:30pm</div>
+          <div class="time-content system">
+            <div class="who system-tag">System</div>
+            <div class="what">Bet saved. source = member. Bet distribution updates in real time — now 12 vs 5 on Match 3. Other members see updated numbers.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 10:00pm</div>
+          <div class="time-content bk">
+            <div class="who bk-tag">Bookkeeper</div>
+            <div class="what">Glances at dashboard. Sees 陳先生's bet flagged as self-placed. Amount and team look right. No action needed. Moves on.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario 2 -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-number green">2</div>
+        <h3>林大哥 — The Holdout (Lane B)</h3>
+      </div>
+      <div class="timeline">
+        <div class="time-block">
+          <div class="time-label">Sun 8:15pm</div>
+          <div class="time-content active">
+            <div class="who member-tag">林大哥 (in Line)</div>
+            <div class="what">Types in group chat: "第三場 B隊 2兩" (Match 3, Team B, 2 liang). Sends a sticker. Goes back to watching TV.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 9:45pm</div>
+          <div class="time-content bk">
+            <div class="who bk-tag">Bookkeeper</div>
+            <div class="what">Scrolling through Line chat. Finds 林大哥's message between 14 stickers and a dinner photo. Enters bet into system: Match 3, Team B, 2兩, member = 林大哥. source = bookkeeper.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 9:45pm</div>
+          <div class="time-content system">
+            <div class="who system-tag">System</div>
+            <div class="what">Bet saved. Identical to 陳先生's bet in every way except the source tag. Settlement engine will treat them exactly the same.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario 3 -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-number orange">3</div>
+        <h3>王太太 — The Mistake Maker (Lane A → Bookkeeper Fixes)</h3>
+      </div>
+      <div class="timeline">
+        <div class="time-block">
+          <div class="time-label">Sun 7:00pm</div>
+          <div class="time-content active">
+            <div class="who member-tag">王太太 (on phone)</div>
+            <div class="what">Opens system. Wants to bet on Match 5, Team A. Accidentally taps Team B and confirms. Realizes the mistake immediately. Panics. Calls the bookkeeper.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 7:05pm</div>
+          <div class="time-content bk">
+            <div class="who bk-tag">Bookkeeper</div>
+            <div class="what">Gets the call. Opens dashboard. Finds 王太太's bet on Match 5. Sees it was self-placed 5 minutes ago. Edits team from B → A. Done. Tells 王太太 it's fixed. Total time: 30 seconds.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label"></div>
+          <div class="time-content system">
+            <div class="who system-tag">Key point</div>
+            <div class="what">This is the SAME interaction that happens today when someone sends a wrong bet in Line. The fix path is identical — call the bookkeeper. The system just makes the fix instant and traceable instead of "delete that message and resend."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scenario 4 -->
+    <div class="scenario">
+      <div class="scenario-header">
+        <div class="scenario-number purple">4</div>
+        <h3>週一 7pm — The Deadline (System Handles Stragglers)</h3>
+      </div>
+      <div class="timeline">
+        <div class="time-block">
+          <div class="time-label">Sun 6:55pm</div>
+          <div class="time-content bk">
+            <div class="who bk-tag">Bookkeeper</div>
+            <div class="what">Dashboard shows: 71/85 members have bets on all matches. 14 members missing. Bookkeeper has been entering Line bets all evening. Posts reminder in Line group.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 7:00pm</div>
+          <div class="time-content system">
+            <div class="who system-tag">System — Deadline</div>
+            <div class="what">Cutoff hits. 8 members still haven't bet on some matches. System auto-places mandatory 1兩 bets for each missing match. source = auto_placed. All 85 members now have coverage on all 7 matches.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 7:01pm</div>
+          <div class="time-content system">
+            <div class="who system-tag">System — LIFO Check</div>
+            <div class="what">After auto-placement, system checks if any matches need LIFO balancing. If yes, drops latest bets from over-subscribed side, marks is_valid = false. Pool model handles the rest — uneven sides are fine.</div>
+          </div>
+        </div>
+        <div class="time-block">
+          <div class="time-label">Sun 7:02pm</div>
+          <div class="time-content bk">
+            <div class="who bk-tag">Bookkeeper</div>
+            <div class="what">Dashboard now shows 85/85 complete. Green across the board. Can review auto-placed bets and LIFO adjustments if needed. Ready for Monday.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ ROLE COMPARISON ═══════════════════════════════════ -->
+  <div class="role-section">
+    <h2>The Bookkeeper's Role — Before vs After</h2>
+    <div class="role-grid">
+      <div class="role-card before">
+        <h3 style="color: #ef4444;">Before (Current Design)</h3>
+        <ul>
+          <li><span class="icon">x</span> Read every Line message to find bets</li>
+          <li><span class="icon">x</span> Manually enter every single bet into system</li>
+          <li><span class="icon">x</span> Cross-reference chat history when disputes arise</li>
+          <li><span class="icon">x</span> Calculate or verify all settlement numbers</li>
+          <li><span class="icon">x</span> Answer "did you get my bet?" messages</li>
+          <li><span class="icon">x</span> Be the only person who knows the current state</li>
+          <li><span class="icon">x</span> Enter match results + all bet consequences</li>
+        </ul>
+      </div>
+      <div class="role-card after">
+        <h3 style="color: #22c55e;">After (Dual-Channel)</h3>
+        <ul>
+          <li><span class="icon">+</span> Enter bets ONLY for Lane B members (Line holdouts)</li>
+          <li><span class="icon">+</span> Review self-placed bets — spot-check, not re-enter</li>
+          <li><span class="icon">+</span> Fix mistakes when members call (same as today)</li>
+          <li><span class="icon">+</span> Enter match results (unchanged)</li>
+          <li><span class="icon">+</span> Monitor dashboard: 85/85 coverage before deadline</li>
+          <li><span class="icon">+</span> Settlement is fully automated — verify, don't calculate</li>
+          <li><span class="icon">+</span> Disputes answered by system record, not memory</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ COLLISION RISKS ═══════════════════════════════════ -->
+  <div class="flow-section">
+    <h2>Data Collision Risks — What Could Go Wrong</h2>
+    <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">Three scenarios where dual-channel input could cause problems, and how each is resolved.</p>
+    <div class="collision-grid">
+      <div class="collision-card">
+        <div class="risk med">Medium Risk</div>
+        <h3 style="font-size: 14px; margin-bottom: 8px;">Duplicate Bet</h3>
+        <div class="desc">Member places bet in system AND sends Line message. Bookkeeper enters the Line bet without realizing member already self-placed.</div>
+        <div class="resolution"><strong>Resolution:</strong> Bookkeeper dashboard shows existing bets per member per match. Before entering a Line bet, bookkeeper sees "陳先生 already has a bet on this match (self-placed)." Duplicate prevented at the UI level.</div>
+      </div>
+      <div class="collision-card">
+        <div class="risk low">Low Risk</div>
+        <h3 style="font-size: 14px; margin-bottom: 8px;">Contradictory Bet</h3>
+        <div class="desc">Member bets Team A in system, then messages "actually Team B" in Line chat.</div>
+        <div class="resolution"><strong>Resolution:</strong> Bookkeeper sees both: the system bet (Team A) and the Line message (Team B). Edits the existing bet. One bet per member per match is enforced — no collision possible, just an edit.</div>
+      </div>
+      <div class="collision-card">
+        <div class="risk low">Low Risk</div>
+        <h3 style="font-size: 14px; margin-bottom: 8px;">Timing Edge Case</h3>
+        <div class="desc">Member places bet at 6:59pm. Bookkeeper is simultaneously entering a Line bet for the same member at 6:58pm. Both write at nearly the same time.</div>
+        <div class="resolution"><strong>Resolution:</strong> Database constraint: one bet per member per match. Second write either fails (shows error) or bookkeeper sees the duplicate immediately. No silent corruption.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════ MIGRATION GRAVITY ═══════════════════════════════════ -->
+  <div class="insight-box" style="background: #fff; color: #1e293b; border: 2px solid #e2e8f0;">
+    <h3 style="color: #1e293b;">The Gravity Model — Why You Don't Force Migration</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 16px;">
+      <div style="text-align: center;">
+        <div style="font-size: 32px; font-weight: 800; color: #3b82f6;">Month 1</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px;">
+          <strong>10%</strong> self-place bets<br>
+          <strong>90%</strong> via Line → bookkeeper<br><br>
+          Bookkeeper workload: ~same as today
+        </div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 32px; font-weight: 800; color: #a855f7;">Month 3</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px;">
+          <strong>40%</strong> self-place bets<br>
+          <strong>60%</strong> via Line → bookkeeper<br><br>
+          Bookkeeper workload: noticeably lighter. Members talk about checking the system between holes.
+        </div>
+      </div>
+      <div style="text-align: center;">
+        <div style="font-size: 32px; font-weight: 800; color: #14b8a6;">Month 6</div>
+        <div style="font-size: 13px; color: #64748b; margin-top: 8px;">
+          <strong>70%</strong> self-place bets<br>
+          <strong>30%</strong> via Line → bookkeeper<br><br>
+          Bookkeeper role is mostly oversight. The holdouts are permanent — and that's fine.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 48px;">Brainstorm document — not a spec. No decisions locked. No code implications.</p>
+
+</div>
+</body>
+</html>

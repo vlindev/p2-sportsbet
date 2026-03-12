@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Card — Layout Comparison</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; padding: 40px 24px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #94a3b8; margin-bottom: 32px; }
+  .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 48px; }
+  .col-label { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  .col-label span { font-size: 11px; font-weight: 500; color: #94a3b8; margin-left: 8px; }
+
+  .match-card { background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 14px; transition: box-shadow 0.2s; }
+  .match-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+  .match-card.overdue { border: 2px solid #fca5a5; }
+
+  .card-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-lime { background: #ecfccb; color: #4d7c0f; }
+  .badge-fuchsia { background: #fae8ff; color: #a21caf; }
+  .card-date { font-size: 13px; color: #94a3b8; }
+  .card-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+
+  .pencil-icon { color: #94a3b8; cursor: pointer; transition: color 0.15s; margin-left: auto; display: flex; align-items: center; }
+  .pencil-icon:hover { color: #f97316; }
+  .pencil-icon svg { width: 15px; height: 15px; }
+
+  /* LAYOUT A: Inline (original mockup) */
+  .teams-inline { font-size: 13px; color: #64748b; margin-bottom: 12px; }
+  .teams-inline b { color: #334155; }
+
+  /* LAYOUT B: Stacked (current codebase) */
+  .teams-stacked { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .team-col { flex: 1; min-width: 0; }
+  .team-col-label { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .team-col-player { font-size: 13px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .team-col.right { text-align: right; }
+  .handicap-center { flex-shrink: 0; text-align: center; padding: 0 8px; }
+  .handicap-vs { font-size: 20px; font-weight: 900; }
+  .handicap-arrow { font-size: 15px; font-weight: 900; margin-bottom: 2px; }
+  .handicap-text { font-size: 14px; font-weight: 700; color: #f97316; white-space: nowrap; }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #f8fafc; }
+  .action-link { font-size: 13px; font-weight: 600; cursor: pointer; transition: color 0.15s; text-decoration: none; }
+  .action-teal { color: #14b8a6; }
+  .action-muted { color: #cbd5e1; cursor: not-allowed; }
+  .action-orange { color: #f97316; }
+  .action-red { color: #ef4444; }
+
+  .section-divider { border: none; border-top: 1px dashed #e2e8f0; margin: 32px 0; }
+  .section-title { font-size: 16px; font-weight: 700; color: #334155; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Match Card — Layout Comparison</h1>
+  <p class="subtitle">Layout A (inline, compact) vs Layout B (stacked, current codebase). Compare readability across handicap types.</p>
+
+  <!-- FLAT / NO HANDICAP -->
+  <div class="section-title">平盤 (no handicap)</div>
+  <div class="comparison">
+    <div>
+      <div class="col-label">Layout A — Inline <span>original mockup style</span></div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date">2026-03-09 · 07:00 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第12組</div>
+        <div class="teams-inline"><b>A隊</b> 張大明 · 李志強 <span style="color:#cbd5e1; margin: 0 6px;">vs</span> <b>B隊</b> 王建宏 · 林俊傑</div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Layout B — Stacked <span>current codebase style</span></div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date">2026-03-09 · 07:00 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第12組</div>
+        <div class="teams-stacked">
+          <div class="team-col">
+            <p class="team-col-label">A 隊</p>
+            <p class="team-col-player">張大明</p>
+            <p class="team-col-player">李志強</p>
+          </div>
+          <div class="handicap-center">
+            <span class="handicap-vs">vs.</span>
+          </div>
+          <div class="team-col right">
+            <p class="team-col-label">B 隊</p>
+            <p class="team-col-player">王建宏</p>
+            <p class="team-col-player">林俊傑</p>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- 讓點 -->
+  <div class="section-title">讓點 (point handicap) — B隊讓2點</div>
+  <div class="comparison">
+    <div>
+      <div class="col-label">Layout A — Inline</div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-lime">熱身賽</span>
+          <span class="card-date">2026-03-13 · 08:30 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第5組</div>
+        <div class="teams-inline">
+          <b>A隊</b> 陳文雄 · 黃國華
+          <span style="color:#cbd5e1; margin: 0 6px;">vs</span>
+          <b>B隊</b> 吳明哲 · 劉家豪
+        </div>
+        <div style="font-size: 13px; font-weight: 700; color: #f97316; margin-bottom: 12px;">◀ B隊讓 2 點</div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Layout B — Stacked</div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-lime">熱身賽</span>
+          <span class="card-date">2026-03-13 · 08:30 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第5組</div>
+        <div class="teams-stacked">
+          <div class="team-col">
+            <p class="team-col-label">A 隊</p>
+            <p class="team-col-player">陳文雄</p>
+            <p class="team-col-player">黃國華</p>
+          </div>
+          <div class="handicap-center">
+            <span class="handicap-arrow">&#9664;</span>
+            <span class="handicap-text">讓 2 點</span>
+          </div>
+          <div class="team-col right">
+            <p class="team-col-label">B 隊</p>
+            <p class="team-col-player">吳明哲</p>
+            <p class="team-col-player">劉家豪</p>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- 讓洞 -->
+  <div class="section-title">讓洞 (hole handicap) — A隊讓1洞</div>
+  <div class="comparison">
+    <div>
+      <div class="col-label">Layout A — Inline</div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-fuchsia">加強版</span>
+          <span class="card-date">2026-03-15 · 07:30 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">特別賽</div>
+        <div class="teams-inline">
+          <b>A隊</b> 林正義 · 許志明
+          <span style="color:#cbd5e1; margin: 0 6px;">vs</span>
+          <b>B隊</b> 蔡國強 · 周俊宏
+        </div>
+        <div style="font-size: 13px; font-weight: 700; color: #f97316; margin-bottom: 12px;">▶ A隊讓 1 洞</div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Layout B — Stacked</div>
+      <div class="match-card">
+        <div class="card-header">
+          <span class="badge badge-fuchsia">加強版</span>
+          <span class="card-date">2026-03-15 · 07:30 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">特別賽</div>
+        <div class="teams-stacked">
+          <div class="team-col">
+            <p class="team-col-label">A 隊</p>
+            <p class="team-col-player">林正義</p>
+            <p class="team-col-player">許志明</p>
+          </div>
+          <div class="handicap-center">
+            <span class="handicap-arrow">&#9654;</span>
+            <span class="handicap-text">讓 1 洞</span>
+          </div>
+          <div class="team-col right">
+            <p class="team-col-label">B 隊</p>
+            <p class="team-col-player">蔡國強</p>
+            <p class="team-col-player">周俊宏</p>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <span class="action-link action-muted">輸入結果</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+
+  <!-- OVERDUE comparison -->
+  <div class="section-title">Overdue (須補結果) — both layouts</div>
+  <div class="comparison">
+    <div>
+      <div class="col-label">Layout A — Inline</div>
+      <div class="match-card overdue">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date" style="color: #94a3b8;">2026-03-02 · 07:00 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name" style="color: #94a3b8;">第8組</div>
+        <div class="teams-inline" style="color: #b0b8c4;"><b style="color: #94a3b8;">A隊</b> 張大明 · 李志強 <span style="color:#cbd5e1; margin: 0 6px;">vs</span> <b style="color: #94a3b8;">B隊</b> 王建宏 · 林俊傑</div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <a class="action-link action-red" style="font-weight: 700;">輸入結果 ›</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="col-label">Layout B — Stacked</div>
+      <div class="match-card overdue">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date" style="color: #94a3b8;">2026-03-02 · 07:00 開始</span>
+          <span class="pencil-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name" style="color: #94a3b8;">第8組</div>
+        <div class="teams-stacked">
+          <div class="team-col">
+            <p class="team-col-label" style="color: #94a3b8;">A 隊</p>
+            <p class="team-col-player" style="color: #b0b8c4;">張大明</p>
+            <p class="team-col-player" style="color: #b0b8c4;">李志強</p>
+          </div>
+          <div class="handicap-center">
+            <span class="handicap-vs" style="color: #94a3b8;">vs.</span>
+          </div>
+          <div class="team-col right">
+            <p class="team-col-label" style="color: #94a3b8;">B 隊</p>
+            <p class="team-col-player" style="color: #b0b8c4;">王建宏</p>
+            <p class="team-col-player" style="color: #b0b8c4;">林俊傑</p>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <a class="action-link action-red" style="font-weight: 700;">輸入結果 ›</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider">
+  <p style="font-size: 12px; color: #94a3b8; text-align: center;">Layout A = compact, one-line teams, handicap below. Layout B = structured, two-column, handicap centered. Compare and pick for next session.</p>
+</div>
+
+</body>
+</html>

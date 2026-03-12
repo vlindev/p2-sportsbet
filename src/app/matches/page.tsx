@@ -1,0 +1,1776 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { Plus, Pencil, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import MemberSelect from "@/components/MemberSelect";
+import { Match, SporadicPool, MATCH_TYPE_LABEL, MATCH_TYPE_STYLE } from "@/types";
+import PoolCreationModal from "@/components/Matches/PoolCreationModal";
+
+type Member = { id: string; name: string; active: boolean };
+
+type MatchForm = {
+  name: string;
+  date: string;
+  start_time: string;
+  match_type: "monday" | "optional";
+  team_a_p1: string;
+  team_a_p2: string;
+  team_b_p1: string;
+  team_b_p2: string;
+  handicap_type: "讓點" | "讓洞" | "不讓分";
+  handicap_value: string;
+  handicap_team: "A" | "B";
+  capacity_zhi: string;
+};
+
+const MATCH_TYPE_SELECTED: Record<string, string> = {
+  monday: "bg-blue-600 text-white border-blue-600",
+  optional: "bg-lime-600 text-white border-lime-600",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  scheduled: "即將開始",
+  betting_closed: "封盤",
+  active: "進行中",
+  completed: "已完成",
+  cancelled: "已取消",
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  scheduled: "bg-slate-100 text-slate-500",
+  betting_closed: "bg-amber-100 text-amber-700",
+  active: "bg-teal-100 text-teal-700",
+  completed: "bg-gray-100 text-gray-400",
+  cancelled: "bg-red-50 text-red-400",
+};
+
+const MATCH_TYPE_INFO = [
+  {
+    key: "monday",
+    label: "週一例行賽",
+    style: "bg-blue-50 border-blue-100",
+    badgeStyle: "bg-blue-100 text-blue-700",
+    points: ["每週一固定舉行", "全體會員皆須下注或上場", "週日 7 點截止，逾時自動補注"],
+  },
+  {
+    key: "optional",
+    label: "熱身賽",
+    style: "bg-lime-50 border-lime-100",
+    badgeStyle: "bg-lime-100 text-lime-700",
+    points: ["週四或週五，依場地排定", "自願參與，非強制出席", "有下注上限，額滿為止"],
+  },
+];
+
+function defaultForm(): MatchForm {
+  return {
+    name: "",
+    date: new Date().toISOString().split("T")[0],
+    start_time: "",
+    match_type: "monday",
+    team_a_p1: "",
+    team_a_p2: "",
+    team_b_p1: "",
+    team_b_p2: "",
+    handicap_type: "讓點",
+    handicap_value: "1",
+    handicap_team: "A",
+    capacity_zhi: "",
+  };
+}
+
+export default function MatchesPage() {
+  const router = useRouter();
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"current" | "completed" | "cancelled">(() => {
+    const tab = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    if (tab === "completed") return "completed";
+    if (tab === "cancelled") return "cancelled";
+    return "current";
+  });
+
+  const [showModal, setShowModal] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [form, setForm] = useState<MatchForm>(defaultForm());
+  const [saving, setSaving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const [resultTarget, setResultTarget] = useState<Match | null>(null);
+  const [resultTargetIndex, setResultTargetIndex] = useState(0);
+  const [resultWinner, setResultWinner] = useState<"team_a" | "team_b" | null>(null);
+  const [resultStep, setResultStep] = useState<"select" | "confirm">("select");
+  const [isCorrection, setIsCorrection] = useState(false);
+  const [submittingResult, setSubmittingResult] = useState(false);
+  const [resultError, setResultError] = useState<string | null>(null);
+  const [justCompleted, setJustCompleted] = useState<Map<string, "team_a" | "team_b">>(new Map());
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Set<string>>(new Set());
+  const [shaking, setShaking] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  const [nameConflict, setNameConflict] = useState<{
+    renameExisting: { id: string; name: string | null; renameTo: string } | null;
+    newName: string;
+  } | null>(null);
+
+  const [cancelTarget, setCancelTarget] = useState<Match | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [undoToast, setUndoToast] = useState<{ matchId: string; name: string } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pools, setPools] = useState<SporadicPool[]>([]);
+  const [poolCreateTarget, setPoolCreateTarget] = useState<Match | null>(null);
+  const [poolResultTarget, setPoolResultTarget] = useState<SporadicPool | null>(null);
+  const [poolResultMatch, setPoolResultMatch] = useState<Match | null>(null);
+  const [poolResultWinner, setPoolResultWinner] = useState<"team_a" | "team_b" | null>(null);
+  const [submittingPoolResult, setSubmittingPoolResult] = useState(false);
+
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set(["nextWeek", "future"]);
+    try {
+      const stored = localStorage.getItem("p2-collapsed-sections");
+      return stored ? new Set(JSON.parse(stored)) : new Set(["nextWeek", "future"]);
+    } catch { return new Set(["nextWeek", "future"]); }
+  });
+  const [completedMonth, setCompletedMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [completedCollapsed, setCompletedCollapsed] = useState<Set<string>>(new Set());
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+
+  function toggleSection(key: string) {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      try { localStorage.setItem("p2-collapsed-sections", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }
+
+  function toggleCompletedWeek(key: string) {
+    setCompletedCollapsed(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function prevMonth() {
+    setCompletedMonth(prev =>
+      prev.month === 0 ? { year: prev.year - 1, month: 11 } : { year: prev.year, month: prev.month - 1 }
+    );
+    setCompletedCollapsed(new Set());
+  }
+
+  function nextMonth() {
+    setCompletedMonth(prev =>
+      prev.month === 11 ? { year: prev.year + 1, month: 0 } : { year: prev.year, month: prev.month + 1 }
+    );
+    setCompletedCollapsed(new Set());
+  }
+
+  function selectMonth(month: number) {
+    setCompletedMonth({ year: pickerYear, month });
+    setShowMonthPicker(false);
+    setCompletedCollapsed(new Set());
+  }
+
+  // Close month picker on outside click
+  useEffect(() => {
+    if (!showMonthPicker) return;
+    function handleClick(e: MouseEvent) {
+      if (monthPickerRef.current && !monthPickerRef.current.contains(e.target as Node)) {
+        setShowMonthPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showMonthPicker]);
+
+  // Helper: get Monday of the week for a given date string "YYYY-MM-DD"
+  function getWeekMonday(dateStr: string): string {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day; // Monday = 1, Sunday shift back 6
+    date.setDate(date.getDate() + diff);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function getWeekSunday(mondayStr: string): string {
+    const [y, m, d] = mondayStr.split("-").map(Number);
+    const date = new Date(y, m - 1, d + 6);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function formatShortDate(dateStr: string): string {
+    const [, m, d] = dateStr.split("-").map(Number);
+    return `${m}/${d}`;
+  }
+
+  useEffect(() => { fetchAll(true); }, []);
+
+  async function fetchAll(showLoading = false) {
+    if (showLoading) setLoading(true);
+    setFetchError(null);
+    const [matchRes, memberRes, poolRes] = await Promise.all([
+      supabase.from("matches").select("*").order("date", { ascending: false }),
+      supabase.from("members").select("id, name, active").order("name"),
+      supabase.from("sporadic_pools").select("*").order("created_at"),
+    ]);
+    if (matchRes.error) {
+      console.error("Fetch matches failed:", matchRes.error);
+      setFetchError("無法載入賽事資料，請稍後再試");
+      setLoading(false);
+      return;
+    }
+    if (memberRes.error) console.error("Fetch members failed:", memberRes.error);
+    if (poolRes.error) console.error("Fetch pools failed:", poolRes.error);
+    setMatches(matchRes.data || []);
+    setMembers(memberRes.data || []);
+    setPools((poolRes.data || []) as SporadicPool[]);
+    setLoading(false);
+  }
+
+  // Auto-transition: upcoming → active when match time is reached
+  // Paused while Inbox Zero batch is in progress (justCompleted non-empty)
+  useEffect(() => {
+    function checkAutoTransitions() {
+      if (justCompleted.size > 0) return;
+      const now = new Date();
+      for (const match of matches) {
+        if (!match.start_time || (match.status !== "scheduled" && match.status !== "betting_closed")) continue;
+        const matchDateTime = new Date(`${match.date}T${match.start_time}:00`);
+        if (now >= matchDateTime) {
+          supabase
+            .from("matches")
+            .update({ status: "active" })
+            .eq("id", match.id)
+            .then(({ error }) => { if (error) console.error("Auto-transition failed:", error); else fetchAll(); });
+          return; // One transition per tick
+        }
+      }
+    }
+    checkAutoTransitions();
+    const interval = setInterval(checkAutoTransitions, 60_000);
+    return () => clearInterval(interval);
+  }, [matches, justCompleted]);
+
+  function openNewMatch() {
+    setEditingMatch(null);
+    setForm(defaultForm());
+    setFormErrors(new Set());
+    setSaveError(null);
+    setShowConfirm(false);
+    setShowModal(true);
+  }
+
+  function openEditMatch(match: Match) {
+    setEditingMatch(match);
+    setForm({
+      name: match.name || "",
+      date: match.date,
+      start_time: match.start_time || "",
+      match_type: match.match_type,
+      team_a_p1: match.team_a_player1_id,
+      team_a_p2: match.team_a_player2_id,
+      team_b_p1: match.team_b_player1_id,
+      team_b_p2: match.team_b_player2_id,
+      handicap_type: match.handicap_type,
+      handicap_value: String(match.handicap_value),
+      handicap_team: match.handicap_team,
+      capacity_zhi: match.capacity_zhi != null ? String(match.capacity_zhi) : "",
+    });
+    setFormErrors(new Set());
+    setSaveError(null);
+    setShowConfirm(false);
+    setShowModal(true);
+  }
+
+  function clearError(field: string) {
+    setFormErrors(prev => { const n = new Set(prev); n.delete(field); return n; });
+  }
+
+  function getFormErrors(): Set<string> {
+    const errors = new Set<string>();
+    if (!form.date) errors.add("date");
+    if (!form.team_a_p1) errors.add("team_a_p1");
+    if (!form.team_a_p2) errors.add("team_a_p2");
+    if (!form.team_b_p1) errors.add("team_b_p1");
+    if (!form.team_b_p2) errors.add("team_b_p2");
+    if (form.handicap_value === "" || Number(form.handicap_value) < 0) errors.add("handicap_value");
+    if (!form.name.trim()) errors.add("name");
+    if (!form.start_time) errors.add("start_time");
+    return errors;
+  }
+
+  async function handleSave() {
+    const errors = getFormErrors();
+    if (errors.size > 0) {
+      setFormErrors(errors);
+      setShaking(true);
+      setTimeout(() => setShaking(false), 400);
+      return;
+    }
+    setFormErrors(new Set());
+
+    // Check for same-day name conflict using root matching (strip trailing digits)
+    const trimmedName = form.name.trim();
+    const root = trimmedName.replace(/\d+$/, "");
+
+    const { data: sameDayMatches } = await supabase
+      .from("matches")
+      .select("id, name")
+      .eq("date", form.date)
+      .neq("status", "cancelled");
+
+    const sameRootMatches = (sameDayMatches || []).filter(
+      (m) =>
+        m.name?.replace(/\d+$/, "") === root &&
+        (!editingMatch || m.id !== editingMatch.id)
+    );
+
+    if (sameRootMatches.length === 0) {
+      setShowConfirm(true);
+      return;
+    }
+
+    // Find highest existing suffix number (unsuffixed = 0)
+    let max = 0;
+    for (const m of sameRootMatches) {
+      const suffix = m.name!.replace(root, "");
+      const num = suffix ? parseInt(suffix, 10) : 0;
+      if (!isNaN(num) && num > max) max = num;
+    }
+
+    // Check if the unsuffixed original exists (needs renaming)
+    const unsuffixed = sameRootMatches.find((m) => m.name?.trim() === root);
+
+    if (unsuffixed) {
+      // First conflict: rename existing to root+(max+1), new gets root+(max+2)
+      setNameConflict({
+        renameExisting: { id: unsuffixed.id, name: unsuffixed.name, renameTo: `${root}${max + 1}` },
+        newName: `${root}${max + 2}`,
+      });
+    } else {
+      // Subsequent conflicts: only the new match needs a suffix
+      setNameConflict({
+        renameExisting: null,
+        newName: `${root}${max + 1}`,
+      });
+    }
+  }
+
+  async function confirmSave() {
+    setSaving(true);
+    setSaveError(null);
+    const payload = {
+      name: form.name.trim() || null,
+      date: form.date,
+      start_time: form.start_time,
+      match_type: form.match_type,
+      team_a_player1_id: form.team_a_p1,
+      team_a_player2_id: form.team_a_p2,
+      team_b_player1_id: form.team_b_p1,
+      team_b_player2_id: form.team_b_p2,
+      handicap_type: form.handicap_type,
+      handicap_value: Number(form.handicap_value),
+      handicap_team: form.handicap_team,
+      capacity_zhi: form.match_type !== "monday" && form.capacity_zhi ? Number(form.capacity_zhi) : null,
+    };
+    if (editingMatch) {
+      // Detect player changes — call replace_match_player RPC for each (R25.3, R7.7)
+      const playerSlots: { side: "A" | "B"; slot: "player1" | "player2"; oldId: string; newId: string }[] = [
+        { side: "A", slot: "player1", oldId: editingMatch.team_a_player1_id, newId: form.team_a_p1 },
+        { side: "A", slot: "player2", oldId: editingMatch.team_a_player2_id, newId: form.team_a_p2 },
+        { side: "B", slot: "player1", oldId: editingMatch.team_b_player1_id, newId: form.team_b_p1 },
+        { side: "B", slot: "player2", oldId: editingMatch.team_b_player2_id, newId: form.team_b_p2 },
+      ];
+      const changedPlayers = playerSlots.filter((s) => s.oldId !== s.newId);
+
+      for (const change of changedPlayers) {
+        const { data, error: rpcErr } = await supabase.rpc("replace_match_player", {
+          p_match_id: editingMatch.id,
+          p_old_player_id: change.oldId,
+          p_new_player_id: change.newId,
+          p_team_side: change.side,
+          p_player_slot: change.slot,
+          p_performed_by: "bookkeeper",
+        });
+        if (rpcErr) {
+          console.error("replace_match_player failed:", rpcErr);
+          // R25.4: incoming player has active voluntary bet
+          const isConflict = rpcErr.message?.includes("CONFLICT:");
+          const memberName = members.find((m) => m.id === change.newId)?.name || "此會員";
+          setSaveError(isConflict
+            ? `${memberName} 已有此賽事的投注，請先處理該投注再更換球員。`
+            : "更換球員失敗，請稍後再試。若持續發生請聯繫管理員。");
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Update remaining match fields (non-player fields, or all fields — RPC already updated players)
+      const { error } = await supabase.from("matches").update(payload).eq("id", editingMatch.id);
+      if (error) { console.error("Update match failed:", error); setSaveError("儲存失敗，請稍後再試。若持續發生請聯繫管理員。"); setSaving(false); return; }
+    } else {
+      // INSERT — create match + default 50/50 player shares (R17.4)
+      const { data: newMatch, error } = await supabase
+        .from("matches")
+        .insert({ ...payload, result: "pending", status: "scheduled" })
+        .select("id")
+        .single();
+      if (error || !newMatch) { console.error("Insert match failed:", error); setSaveError("儲存失敗，請稍後再試。若持續發生請聯繫管理員。"); setSaving(false); return; }
+
+      // Auto-populate default shares: 5000 BPS each (50/50) per R17.4
+      // Only runs at creation. Bookkeeper can edit shares later without interference.
+      const { error: sharesError } = await supabase
+        .from("match_team_player_shares")
+        .insert([
+          { match_id: newMatch.id, match_side: "A", player_id: payload.team_a_player1_id, share_bps: 5000, context: "base" },
+          { match_id: newMatch.id, match_side: "A", player_id: payload.team_a_player2_id, share_bps: 5000, context: "base" },
+          { match_id: newMatch.id, match_side: "B", player_id: payload.team_b_player1_id, share_bps: 5000, context: "base" },
+          { match_id: newMatch.id, match_side: "B", player_id: payload.team_b_player2_id, share_bps: 5000, context: "base" },
+        ]);
+      if (sharesError) { console.error("Insert player shares failed:", sharesError); }
+
+      // Auto-generate mandatory self-bets for all 4 players (R7.1–R7.6)
+      // Amount: 5兩 standard (R8.5). 小盤 (3兩) requires bet_config column — deferred to 4G.
+      const { error: selfBetsError } = await supabase
+        .from("bets")
+        .insert([
+          { member_id: payload.team_a_player1_id, match_id: newMatch.id, team_bet_on: "A", amount_liang: 5, bet_type: "mandatory_self", result: "pending", status: "active", created_by_role: "system", created_via: "rule_engine" },
+          { member_id: payload.team_a_player2_id, match_id: newMatch.id, team_bet_on: "A", amount_liang: 5, bet_type: "mandatory_self", result: "pending", status: "active", created_by_role: "system", created_via: "rule_engine" },
+          { member_id: payload.team_b_player1_id, match_id: newMatch.id, team_bet_on: "B", amount_liang: 5, bet_type: "mandatory_self", result: "pending", status: "active", created_by_role: "system", created_via: "rule_engine" },
+          { member_id: payload.team_b_player2_id, match_id: newMatch.id, team_bet_on: "B", amount_liang: 5, bet_type: "mandatory_self", result: "pending", status: "active", created_by_role: "system", created_via: "rule_engine" },
+        ]);
+      if (selfBetsError) { console.error("Insert mandatory self-bets failed:", selfBetsError); }
+    }
+    await fetchAll();
+    setSaving(false);
+    setShowConfirm(false);
+    setShowModal(false);
+  }
+
+  async function confirmNameConflict() {
+    if (!nameConflict) return;
+    // Rename existing unsuffixed match if needed
+    if (nameConflict.renameExisting) {
+      const { error } = await supabase
+        .from("matches")
+        .update({ name: nameConflict.renameExisting.renameTo })
+        .eq("id", nameConflict.renameExisting.id);
+      if (error) { console.error("Rename existing match failed:", error); setSaveError("重新命名失敗，請稍後再試。若持續發生請聯繫管理員。"); return; }
+    }
+    // Update current form name and proceed to confirmation
+    setForm((prev) => ({ ...prev, name: nameConflict.newName }));
+    setNameConflict(null);
+    setShowConfirm(true);
+  }
+
+  function openResultModal(match: Match, matchIndex: number) {
+    setResultTarget(match);
+    setResultTargetIndex(matchIndex);
+    setResultWinner(null);
+    setResultStep("select");
+    setIsCorrection(false);
+  }
+
+  function openCorrectionModal(match: Match, matchIndex: number) {
+    setResultTarget(match);
+    setResultTargetIndex(matchIndex);
+    // During Inbox Zero batch, local match.result is still "pending" — use justCompleted map
+    const currentResult = justCompleted.get(match.id) || match.result;
+    setResultWinner(currentResult as "team_a" | "team_b");
+    setResultStep("select");
+    setIsCorrection(true);
+  }
+
+  function closeResultModal() {
+    setResultTarget(null);
+    setResultWinner(null);
+    setResultStep("select");
+    setIsCorrection(false);
+    setResultError(null);
+  }
+
+  // TODO: Phase 3 — wrap fan-out writes in a Supabase RPC for true transaction safety.
+  // Current architecture uses Promise.all with read-after-write verification as a safety net.
+  async function submitResult() {
+    if (!resultTarget || !resultWinner) return;
+    setSubmittingResult(true);
+    setResultError(null);
+    const completedId = resultTarget.id;
+
+    const rpcName = isCorrection ? "correct_match_result" : "submit_match_result";
+    const rpcParams = isCorrection
+      ? { p_match_id: resultTarget.id, p_new_winner: resultWinner, p_performed_by: "bookkeeper" }
+      : { p_match_id: resultTarget.id, p_winner: resultWinner, p_performed_by: "bookkeeper" };
+
+    const { data, error } = await supabase.rpc(rpcName, rpcParams);
+
+    if (error) {
+      console.error(`${rpcName} failed:`, error);
+      setResultError(isCorrection ? "更正結果寫入失敗，請稍後再試" : "結果寫入失敗，請稍後再試");
+      setSubmittingResult(false);
+      return;
+    }
+
+    if (data?.affected_bets === 0) {
+      console.warn(`${rpcName}: zero bets affected for match`, resultTarget.id);
+    }
+
+    // Inbox Zero: don't fetchAll or switch tabs. Card stays in place, transforms visually.
+    // Local match state unchanged — justCompleted map drives the visual override.
+    // Cleanup happens on next fetchAll (tab switch or auto-poll resume).
+    setJustCompleted((prev) => new Map(prev).set(completedId, resultWinner!));
+    closeResultModal();
+    setSubmittingResult(false);
+  }
+
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    const { data, error } = await supabase.rpc("cancel_match", { p_match_id: cancelTarget.id, p_performed_by: "bookkeeper" });
+    if (error || (data && !data.success)) {
+      console.error("Cancel match failed:", error || data?.error);
+      setCancelling(false);
+      return;
+    }
+    setCancelling(false);
+    setCancelTarget(null);
+    setShowModal(false);
+    setActiveTab("cancelled");
+    await fetchAll();
+  }
+
+  // Pool helpers
+  function matchPools(matchId: string): SporadicPool[] {
+    return pools.filter(p => p.match_id === matchId);
+  }
+
+  async function submitPoolResult() {
+    if (!poolResultTarget || !poolResultWinner) return;
+    setSubmittingPoolResult(true);
+    const isCorrection = poolResultTarget.result === "team_a" || poolResultTarget.result === "team_b";
+    const rpcName = isCorrection ? "correct_pool_result" : "submit_pool_result";
+    const params = isCorrection
+      ? { p_pool_id: poolResultTarget.id, p_new_winner: poolResultWinner, p_performed_by: "bookkeeper" }
+      : { p_pool_id: poolResultTarget.id, p_winner: poolResultWinner, p_performed_by: "bookkeeper" };
+    const { data, error } = await supabase.rpc(rpcName, params);
+    if (error || (data && !data.success)) {
+      console.error(`${rpcName} failed:`, error || data?.error);
+      setSubmittingPoolResult(false);
+      return;
+    }
+    setSubmittingPoolResult(false);
+    setPoolResultTarget(null);
+    setPoolResultMatch(null);
+    setPoolResultWinner(null);
+    await fetchAll();
+  }
+
+  const memberMap = Object.fromEntries(members.map((m) => [m.id, m.name]));
+  function playerNames(p1: string, p2: string) {
+    return `${memberMap[p1] || "—"} · ${memberMap[p2] || "—"}`;
+  }
+
+  // Sequential team labels per date: match 0 → A/B, match 1 → C/D, etc.
+  function teamLabel(matchIndex: number, side: "A" | "B"): string {
+    return String.fromCharCode(65 + matchIndex * 2 + (side === "A" ? 0 : 1));
+  }
+
+  // Build matchIndex map: group by date, active first then upcoming then completed
+  const matchIndexMap: Record<string, number> = {};
+  const byDate: Record<string, Match[]> = {};
+  for (const m of matches) {
+    if (!byDate[m.date]) byDate[m.date] = [];
+    byDate[m.date].push(m);
+  }
+  const statusOrder: Record<string, number> = { active: 0, scheduled: 1, betting_closed: 1, completed: 2, cancelled: 3 };
+  for (const date of Object.keys(byDate)) {
+    byDate[date]
+      .sort((a, b) => statusOrder[a.status] - statusOrder[b.status])
+      .forEach((m, i) => { matchIndexMap[m.id] = i; });
+  }
+
+  function showUndoToast(matchId: string, name: string) {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoToast({ matchId, name });
+    undoTimerRef.current = setTimeout(() => setUndoToast(null), 4000);
+  }
+
+  async function undoActivate() {
+    if (!undoToast) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    const { error } = await supabase.from("matches").update({ status: "scheduled" }).eq("id", undoToast.matchId);
+    if (error) { console.error("Undo activate failed:", error); }
+    setUndoToast(null);
+    await fetchAll();
+  }
+
+  const activeMatches = matches.filter((m) => m.status === "active");
+  const scheduledMatches = matches.filter((m) => m.status === "scheduled" || m.status === "betting_closed");
+  const completedMatches = matches.filter((m) => m.status === "completed");
+  const cancelledMatches = matches.filter((m) => m.status === "cancelled");
+  const currentMatches = [...activeMatches, ...scheduledMatches];
+
+  // Group completed matches by week (Monday-Sunday), then filter by selected month
+  // A week belongs to the month that contains its Monday — prevents split weeks
+  const completedWeeks = (() => {
+    const weekMap: Record<string, Match[]> = {};
+    for (const m of completedMatches) {
+      const monday = getWeekMonday(m.date);
+      (weekMap[monday] ||= []).push(m);
+    }
+    // Filter: keep weeks whose Monday falls in the selected month
+    const targetMonth = completedMonth.month + 1;
+    const targetYear = completedMonth.year;
+    return Object.entries(weekMap)
+      .filter(([monday]) => {
+        const [y, mo] = monday.split("-").map(Number);
+        return y === targetYear && mo === targetMonth;
+      })
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([monday, matches], i) => ({
+        key: monday,
+        label: `${formatShortDate(monday)} — ${formatShortDate(getWeekSunday(monday))}`,
+        matches: matches.sort((a, b) => a.date.localeCompare(b.date) || (a.start_time || "").localeCompare(b.start_time || "")),
+        isFirst: i === 0,
+      }));
+  })();
+
+  const filteredCompletedCount = completedWeeks.reduce((sum, w) => sum + w.matches.length, 0);
+
+  // Time-based grouping for upcoming matches
+  const chronSort = (a: Match, b: Match) =>
+    a.date.localeCompare(b.date) || (a.start_time || "").localeCompare(b.start_time || "");
+
+  const todayDate = new Date();
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
+
+  const dayOfWeek = todayDate.getDay();
+  const thisMonday = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const nextMonday = new Date(thisMonday);
+  nextMonday.setDate(thisMonday.getDate() + 7);
+  const weekAfterMonday = new Date(nextMonday);
+  weekAfterMonday.setDate(nextMonday.getDate() + 7);
+
+  const toFull = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const nextMondayStr = toFull(nextMonday);
+  const weekAfterStr = toFull(weekAfterMonday);
+  const toShort = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const weekRange = (mon: Date) => {
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const endStr = sun.getFullYear() === mon.getFullYear() ? toShort(sun) : toFull(sun);
+    return `${toFull(mon)} — ${endStr}`;
+  };
+
+  const overdueMatches = activeMatches.filter(m => m.date < todayStr).sort(chronSort);
+  const nonOverdueActive = activeMatches.filter(m => m.date >= todayStr).sort(chronSort);
+  const todayScheduled = scheduledMatches.filter(m => m.date <= todayStr).sort(chronSort);
+  const thisWeekScheduled = scheduledMatches.filter(m => m.date > todayStr && m.date < nextMondayStr).sort(chronSort);
+  const nextWeekScheduled = scheduledMatches.filter(m => m.date >= nextMondayStr && m.date < weekAfterStr).sort(chronSort);
+  const futureScheduled = scheduledMatches.filter(m => m.date >= weekAfterStr).sort(chronSort);
+
+  const todayMatches = [...nonOverdueActive, ...todayScheduled].sort(chronSort);
+
+  const scheduledGroups = [
+    { key: "thisWeek", label: `本週賽事 (${weekRange(thisMonday)})`, matches: thisWeekScheduled },
+    { key: "nextWeek", label: `下週賽事 (${weekRange(nextMonday)})`, matches: nextWeekScheduled },
+    { key: "future", label: `未來賽事 (${toFull(weekAfterMonday)} —)`, matches: futureScheduled },
+  ];
+
+  const allPlayerIds = [form.team_a_p1, form.team_a_p2, form.team_b_p1, form.team_b_p2];
+
+  // Players already assigned to other matches on the same date (cross-match duplicate block)
+  const sameDayPlayerIds = (() => {
+    if (!form.date) return [] as string[];
+    const sameDayMatches = matches.filter(
+      (m) => m.date === form.date && m.status !== "cancelled" && (!editingMatch || m.id !== editingMatch.id)
+    );
+    const ids: string[] = [];
+    for (const m of sameDayMatches) {
+      ids.push(m.team_a_player1_id, m.team_a_player2_id, m.team_b_player1_id, m.team_b_player2_id);
+    }
+    return ids.filter(Boolean);
+  })();
+
+  function MatchCard({ match, matchIndex }: { match: Match; matchIndex: number }) {
+    const labelA = teamLabel(matchIndex, "A");
+    const labelB = teamLabel(matchIndex, "B");
+    const isCompleted = match.status === "completed";
+    const isCancelled = match.status === "cancelled";
+    const isFutureUpcoming = (match.status === "scheduled" || match.status === "betting_closed") && match.date > todayStr;
+    const isOverdue = match.status === "active" && match.date < todayStr;
+    const justCompletedResult = justCompleted.get(match.id);
+    const isJustCompleted = justCompletedResult !== undefined;
+    // Visual state: justCompleted overrides actual status for rendering
+    const showAsCompleted = isCompleted || isJustCompleted;
+    const mPools = matchPools(match.id).filter(p => p.result !== "cancelled");
+    return (
+    <div>
+      <div
+        onClick={isJustCompleted ? undefined
+          : isOverdue ? () => openResultModal(match, matchIndex)
+          : isCompleted ? () => router.push(`/bets?match=${match.id}&from=completed`)
+          : !isCancelled ? (e) => { e.stopPropagation(); openEditMatch(match); }
+          : undefined}
+        className={`bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-4 hover:shadow-2xl transition-shadow ${
+          isCancelled ? "border-red-100 opacity-60"
+          : isJustCompleted ? "border-gray-100"
+          : isOverdue ? "border-l-[5px] border-l-red-400 border-red-200 shadow-md cursor-pointer pl-4"
+          : isCompleted ? "border-gray-100 cursor-pointer"
+          : match.status === "active" ? "border-2 border-teal-400 cursor-pointer"
+          : "border-gray-100 cursor-pointer"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${MATCH_TYPE_STYLE[match.match_type]}`}>
+              {MATCH_TYPE_LABEL[match.match_type]}
+            </span>
+            {isCancelled || showAsCompleted || match.status === "betting_closed" ? (
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${isJustCompleted ? STATUS_STYLE.completed : STATUS_STYLE[match.status]}`}>
+                {isJustCompleted ? STATUS_LABEL.completed : STATUS_LABEL[match.status]}
+              </span>
+            ) : null}
+            {matchPools(match.id).length > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full border-[1.5px] border-fuchsia-400 text-fuchsia-600 bg-fuchsia-50">
+                加強盤 ×{matchPools(match.id).length}
+              </span>
+            )}
+            <span className="text-sm text-slate-500 whitespace-nowrap">{match.date}{match.start_time ? ` · ${match.start_time}` : ""}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {showAsCompleted ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); openCorrectionModal(match, matchIndex); }}
+                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+              >
+                <Pencil size={13} />
+              </button>
+            ) : !isCancelled && (
+              <button
+                onClick={(e) => { e.stopPropagation(); openEditMatch(match); }}
+                className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+              >
+                <Pencil size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Match Name */}
+        {match.name && (
+          <p className={`text-lg font-bold -mt-1 ${isCancelled ? "text-slate-400 line-through italic" : isOverdue || showAsCompleted ? "text-slate-500" : "text-slate-800"}`}>{match.name}</p>
+        )}
+
+        {/* Teams + Handicap */}
+        <div className="flex items-center gap-2">
+          {/* Team A */}
+          <div className="flex-1 min-w-0">
+            <p className={`text-base font-bold mb-1 ${isOverdue || showAsCompleted ? "text-slate-500" : "text-slate-800"}`}>{labelA} 隊</p>
+            <p className="text-sm text-slate-500 truncate">{memberMap[match.team_a_player1_id] || "—"} · {memberMap[match.team_a_player2_id] || "—"}</p>
+          </div>
+
+          {/* Handicap */}
+          <div className="flex flex-col items-center shrink-0 px-2">
+            {match.handicap_type === "不讓分" ? (
+              <span className={`text-xl font-black ${isOverdue || showAsCompleted ? "text-slate-500" : "text-slate-800"}`}>vs.</span>
+            ) : (
+              <>
+                <span className={`text-base font-black mb-0.5 ${isOverdue || showAsCompleted ? "text-slate-500" : "text-slate-800"}`}>
+                  {match.handicap_team === "B" ? "◀" : "▶"}
+                </span>
+                <span className={`text-base font-bold whitespace-nowrap ${isOverdue || showAsCompleted ? "text-slate-500" : "text-orange-500"}`}>
+                  讓 {match.handicap_value} {match.handicap_type === "讓點" ? "點" : "洞"}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Team B */}
+          <div className="flex-1 min-w-0 text-right">
+            <p className={`text-base font-bold mb-1 ${isOverdue || showAsCompleted ? "text-slate-500" : "text-slate-800"}`}>{labelB} 隊</p>
+            <p className="text-sm text-slate-500 truncate">{memberMap[match.team_b_player1_id] || "—"} · {memberMap[match.team_b_player2_id] || "—"}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+          {isCancelled ? (
+            <span className="text-sm text-red-400">此賽事已取消</span>
+          ) : showAsCompleted ? (
+            <div className="w-full bg-emerald-50 rounded-lg py-2 px-4 flex items-center justify-between">
+              <span className="text-base font-semibold text-emerald-600">
+                {(() => {
+                  const winner = justCompletedResult || match.result;
+                  return winner === "team_a" ? `${labelA} 隊勝 ✓` : `${labelB} 隊勝 ✓`;
+                })()}
+              </span>
+              {isCompleted && !isJustCompleted && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&from=completed`); }}
+                  className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                >
+                  查看投注 →
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <button
+                onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&from=current`); }}
+                className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer"
+              >
+                管理投注
+              </button>
+              {(match.status === "scheduled" || match.status === "betting_closed") && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setPoolCreateTarget(match); }}
+                  className="text-sm font-medium text-fuchsia-500 hover:text-fuchsia-700 transition-colors cursor-pointer"
+                >
+                  + 加強盤
+                </button>
+              )}
+              {isFutureUpcoming ? (
+                <span className="text-sm font-medium text-slate-300 cursor-not-allowed">
+                  輸入結果
+                </span>
+              ) : (
+                <button
+                  onClick={(e) => { e.stopPropagation(); openResultModal(match, matchIndex); }}
+                  className={`text-sm font-medium transition-colors cursor-pointer ${isOverdue ? "text-red-500 hover:text-red-700" : "text-orange-500 hover:text-orange-700"}`}
+                >
+                  輸入結果 &gt;
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* Pool child cards (fuchsia border, nested below parent) */}
+      {!isCancelled && mPools.length > 0 && (
+        <div className="border-l-[3px] border-fuchsia-400 ml-5 pl-4 mt-2 space-y-3">
+          {mPools.map((pool, i) => {
+            const poolResolved = pool.result === "team_a" || pool.result === "team_b";
+            return (
+              <div key={pool.id}
+                onClick={() => router.push(`/bets?match=${match.id}&pool=${pool.id}&from=${poolResolved ? "completed" : "current"}`)}
+                className="bg-fuchsia-50 rounded-xl border border-fuchsia-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow cursor-pointer"
+              >
+                {/* Top row: badges + pencil */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${MATCH_TYPE_STYLE[match.match_type]}`}>{MATCH_TYPE_LABEL[match.match_type]}</span>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-fuchsia-100 text-fuchsia-700">加強</span>
+                    <span className="text-xs text-slate-400">{pool.opened_by_team}隊開盤</span>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEditMatch(match); }}
+                    className="text-slate-500 hover:text-orange-500 transition-colors cursor-pointer p-1"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                </div>
+
+                {/* Pool name */}
+                <p className={`text-lg font-bold -mt-1 ${poolResolved ? "text-slate-500" : "text-slate-800"}`}>
+                  {match.name ? `${match.name}-${i + 1}` : `加強盤 ${i + 1}`}
+                </p>
+
+                {/* Teams + Handicap */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-base font-bold mb-1 ${poolResolved ? "text-slate-500" : "text-slate-800"}`}>{labelA} 隊</p>
+                    <p className="text-sm text-slate-500 truncate">{memberMap[match.team_a_player1_id] || "—"} · {memberMap[match.team_a_player2_id] || "—"}</p>
+                  </div>
+                  <div className="flex flex-col items-center shrink-0 px-2">
+                    {pool.handicap_type === "不讓分" ? (
+                      <span className={`text-xl font-black ${poolResolved ? "text-slate-500" : "text-slate-800"}`}>vs.</span>
+                    ) : (
+                      <>
+                        <span className={`text-base font-black mb-0.5 ${poolResolved ? "text-slate-500" : "text-slate-800"}`}>
+                          {pool.handicap_team === "B" ? "◀" : "▶"}
+                        </span>
+                        <span className={`text-base font-bold whitespace-nowrap ${poolResolved ? "text-slate-500" : "text-orange-500"}`}>
+                          讓 {pool.handicap_value} {pool.handicap_type === "讓點" ? "點" : "洞"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-right">
+                    <p className={`text-base font-bold mb-1 ${poolResolved ? "text-slate-500" : "text-slate-800"}`}>{labelB} 隊</p>
+                    <p className="text-sm text-slate-500 truncate">{memberMap[match.team_b_player1_id] || "—"} · {memberMap[match.team_b_player2_id] || "—"}</p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="pt-2 border-t border-fuchsia-100">
+                  {poolResolved ? (
+                    <div className="w-full bg-emerald-50 rounded-lg py-2 px-4 flex items-center justify-between">
+                      <span className="text-base font-semibold text-emerald-600">
+                        {pool.result === "team_a" ? `${labelA} 隊勝 ✓` : `${labelB} 隊勝 ✓`}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&pool=${pool.id}&from=completed`); }}
+                          className="text-sm font-medium text-teal-600 hover:text-teal-800 transition-colors cursor-pointer"
+                        >
+                          查看投注 →
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
+                          className="text-slate-400 hover:text-orange-500 transition-colors cursor-pointer"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); router.push(`/bets?match=${match.id}&pool=${pool.id}&from=current`); }}
+                        className="text-sm font-medium text-teal-500 hover:text-teal-700 transition-colors cursor-pointer"
+                      >
+                        管理投注
+                      </button>
+                      {isFutureUpcoming ? (
+                        <span className="text-sm font-medium text-slate-300 cursor-not-allowed">
+                          輸入結果
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
+                          className="text-sm font-medium text-orange-500 hover:text-orange-700 transition-colors cursor-pointer"
+                        >
+                          輸入結果 &gt;
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+    );
+  }
+
+  return (
+    <div className="p-6 pt-10 pb-72 min-h-screen max-w-5xl mx-auto">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-800">賽事管理</h1>
+            {MATCH_TYPE_INFO.map((info) => (
+              <div key={info.key} className="relative group">
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full cursor-pointer ${info.badgeStyle}`}>
+                  {info.label}
+                </span>
+                <div className={`absolute top-full left-0 mt-2 rounded-2xl border p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-40 w-56 shadow-lg ${info.style}`}>
+                  <span className={`text-sm font-semibold px-2.5 py-1 rounded-full inline-block mb-2 ${info.badgeStyle}`}>
+                    {info.label}
+                  </span>
+                  <ul className="space-y-1">
+                    {info.points.map((point) => (
+                      <li key={point} className="text-sm text-slate-700 flex items-start gap-1.5">
+                        <span className="text-slate-500 mt-0.5">·</span>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-base text-slate-500 mt-1">
+            {(() => {
+              const pendingCount = overdueMatches.filter(m => !justCompleted.has(m.id)).length;
+              return pendingCount > 0 ? (
+                <><span className="text-orange-500 font-semibold">{pendingCount}</span> 場須補結果 <span className="text-lg">·</span> </>
+              ) : null;
+            })()}
+            <span className="text-orange-500 font-semibold">{todayMatches.length}</span> 場今日
+          </p>
+        </div>
+        <button
+          onClick={openNewMatch}
+          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors shadow-sm cursor-pointer"
+        >
+          <Plus size={16} />
+          新增賽事
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+        {([
+          { key: "current" as const, label: `當前賽事 (${currentMatches.length})` },
+          { key: "completed" as const, label: `已完成 (${completedMatches.length})` },
+          { key: "cancelled" as const, label: `已取消 (${cancelledMatches.length})` },
+        ]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => {
+              if (justCompleted.size > 0) {
+                setJustCompleted(new Map());
+                fetchAll();
+              }
+              setActiveTab(tab.key);
+            }}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              activeTab === tab.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Match List */}
+      {fetchError ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <p className="text-sm text-red-500">{fetchError}</p>
+          <button onClick={() => fetchAll()} className="text-sm text-orange-500 hover:text-orange-700 transition-colors cursor-pointer">重新載入</button>
+        </div>
+      ) : loading ? (
+        <div className="flex items-center justify-center py-16 text-slate-400 text-sm">載入中...</div>
+      ) : activeTab === "current" ? (
+        <div className="space-y-8">
+          {/* Overdue matches */}
+          {overdueMatches.length > 0 && (
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-base font-bold text-red-600">請輸入獲勝隊伍</span>
+                <div className="flex-1 h-px bg-red-100" />
+                <span className="text-sm text-red-500 font-medium">{overdueMatches.length} 場</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {overdueMatches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Today's matches (active + today upcoming merged) */}
+          <div>
+            <div className="flex items-center gap-3 mb-3 cursor-pointer" onClick={() => toggleSection("today")}>
+              <ChevronDown size={16} className={`text-teal-600 transition-transform ${collapsedSections.has("today") ? "-rotate-90" : ""}`} />
+              {todayMatches.length > 0 && (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 dot-pulse" />
+                </span>
+              )}
+              <span className="text-base font-bold text-teal-700">今日賽事 ({todayStr})</span>
+              <div className="flex-1 h-px bg-teal-100" />
+              <span className="text-sm text-teal-600 font-medium">{todayMatches.length} 場</span>
+            </div>
+            {!collapsedSections.has("today") && (
+              todayMatches.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {todayMatches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
+                </div>
+              ) : (
+                <div className="text-sm text-slate-400 py-4 pl-7">今日尚無賽事</div>
+              )
+            )}
+          </div>
+
+          {/* Upcoming groups: 本週, 下週, 未來 */}
+          {scheduledGroups.map((group) => (
+            <div key={group.key}>
+              <div className="flex items-center gap-3 mb-3 cursor-pointer" onClick={() => toggleSection(group.key)}>
+                <ChevronDown size={16} className={`text-slate-500 transition-transform ${collapsedSections.has(group.key) ? "-rotate-90" : ""}`} />
+                <span className="text-base font-bold text-slate-700">{group.label}</span>
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-sm text-slate-500 font-medium">{group.matches.length} 場</span>
+              </div>
+              {!collapsedSections.has(group.key) && (
+                group.matches.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {group.matches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-400 py-4 pl-7">尚無賽事</div>
+                )
+              )}
+            </div>
+          ))}
+        </div>
+      ) : activeTab === "completed" ? (
+        <div>
+          {/* Month picker with dropdown */}
+          <div className="flex items-center gap-3 mb-6">
+            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <ChevronLeft size={18} className="text-slate-500" />
+            </button>
+            <div className="relative" ref={monthPickerRef}>
+              <button
+                onClick={() => { setPickerYear(completedMonth.year); setShowMonthPicker(!showMonthPicker); }}
+                className="text-base font-bold text-slate-700 min-w-[100px] text-center cursor-pointer hover:text-orange-500 transition-colors flex items-center gap-1.5"
+              >
+                {completedMonth.year}年{completedMonth.month + 1}月
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${showMonthPicker ? "rotate-180" : ""}`} />
+              </button>
+              {showMonthPicker && (
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded-2xl shadow-lg p-4 z-50 w-64">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setPickerYear(p => p - 1)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                      <ChevronLeft size={16} className="text-slate-500" />
+                    </button>
+                    <span className="text-sm font-bold text-slate-700">{pickerYear}年</span>
+                    <button onClick={() => setPickerYear(p => p + 1)} className="p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                      <ChevronRight size={16} className="text-slate-500" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const isSelected = pickerYear === completedMonth.year && i === completedMonth.month;
+                      const now = new Date();
+                      const isToday = pickerYear === now.getFullYear() && i === now.getMonth();
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => selectMonth(i)}
+                          className={`py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                            isSelected
+                              ? "bg-orange-500 text-white"
+                              : isToday
+                              ? "ring-2 ring-orange-300 text-orange-500 hover:bg-orange-50"
+                              : "text-slate-600 hover:bg-orange-50"
+                          }`}
+                        >
+                          {i + 1}月
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <ChevronRight size={18} className="text-slate-500" />
+            </button>
+          </div>
+
+          {/* Weekly grouped matches */}
+          {completedWeeks.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 text-sm">{completedMonth.year}年{completedMonth.month + 1}月無已完成的賽事</div>
+          ) : (
+            <div className="space-y-6">
+              {completedWeeks.map((week) => {
+                const isCollapsed = week.isFirst ? completedCollapsed.has(week.key) : !completedCollapsed.has(week.key);
+                const isCurrentWeek = week.key === toFull(thisMonday);
+                return (
+                  <div key={week.key}>
+                    <div
+                      className="flex items-center gap-3 mb-3 cursor-pointer"
+                      onClick={() => toggleCompletedWeek(week.key)}
+                    >
+                      <ChevronDown size={16} className={`text-slate-500 transition-transform ${isCollapsed ? "-rotate-90" : ""}`} />
+                      <span className="text-base font-bold text-slate-700">{isCurrentWeek ? <span className="text-teal-600">本週 {week.label}</span> : week.label}</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-sm text-slate-500 font-medium">{week.matches.length} 場</span>
+                    </div>
+                    {!isCollapsed && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {week.matches.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          {cancelledMatches.length === 0 ? (
+            <div className="text-center py-16 text-slate-400 text-sm">尚無已取消的賽事</div>
+          ) : (
+            <div className="space-y-5">
+              {Object.entries(
+                cancelledMatches.reduce<Record<string, Match[]>>((acc, m) => {
+                  (acc[m.date] ||= []).push(m);
+                  return acc;
+                }, {})
+              ).map(([date, group]) => (
+                <div key={date}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-base font-bold text-slate-700">{date}</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-sm text-slate-500 font-medium">{group.length} 場</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {group.map((m) => <MatchCard key={m.id} match={m} matchIndex={matchIndexMap[m.id]} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* New / Edit Match Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`bg-white rounded-2xl w-full shadow-2xl flex flex-col max-h-[90vh] ${showConfirm ? "max-w-sm" : "max-w-md"}`}>
+            <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-slate-800">
+                {showConfirm ? "確認賽事資訊" : editingMatch ? "編輯賽事" : "新增賽事"}
+              </h2>
+            </div>
+
+            {showConfirm ? (
+            <div className="overflow-y-auto px-5 py-4 space-y-3">
+              <div className="space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-base text-slate-500">賽事名稱</span>
+                  <span className="text-base font-semibold text-slate-800">{form.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base text-slate-500">日期</span>
+                  <span className="text-base font-semibold text-slate-800">{form.date}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base text-slate-500">開始時間</span>
+                  <span className="text-base font-semibold text-slate-800">{form.start_time}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base text-slate-500">賽事類型</span>
+                  <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${MATCH_TYPE_STYLE[form.match_type]}`}>
+                    {MATCH_TYPE_LABEL[form.match_type]}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <p className="text-base font-bold text-slate-800">A 隊</p>
+                  <p className="text-base font-semibold text-slate-800 ml-2">{memberMap[form.team_a_p1] || "—"}</p>
+                  <p className="text-base font-semibold text-slate-800 ml-2">{memberMap[form.team_a_p2] || "—"}</p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-base font-bold text-slate-800">B 隊</p>
+                  <p className="text-base font-semibold text-slate-800 ml-2">{memberMap[form.team_b_p1] || "—"}</p>
+                  <p className="text-base font-semibold text-slate-800 ml-2">{memberMap[form.team_b_p2] || "—"}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 space-y-2.5">
+                <p className="text-sm font-semibold text-slate-600">讓分設定</p>
+                {form.handicap_type === "不讓分" ? (
+                  <div className="flex justify-between ml-2">
+                    <span className="text-base text-slate-500">類型</span>
+                    <span className="text-base font-semibold text-slate-800">平盤</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between ml-2">
+                      <span className="text-base text-slate-500">類型</span>
+                      <span className="text-base font-semibold text-slate-800">{form.handicap_type}</span>
+                    </div>
+                    <div className="flex justify-between ml-2">
+                      <span className="text-base text-slate-500">{form.handicap_type === "讓點" ? "讓點數" : "讓洞數"}</span>
+                      <span className="text-base font-semibold text-slate-800">{form.handicap_value}</span>
+                    </div>
+                    <div className="flex justify-between ml-2">
+                      <span className="text-base text-slate-500">讓分方</span>
+                      <span className="text-base font-semibold text-slate-800">{form.handicap_team} 隊</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {form.match_type !== "monday" && (
+                <div className="border-t border-gray-100 pt-3">
+                  <div className="flex justify-between">
+                    <span className="text-base text-slate-500">
+                      限注（兩）
+                    </span>
+                    <span className="text-base font-semibold text-slate-800">
+                      {form.capacity_zhi && Number(form.capacity_zhi) > 0 ? form.capacity_zhi : "無限注"}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            ) : (
+            <div className={`overflow-y-auto px-6 pt-4 pb-8 space-y-5 ${shaking ? "shake" : ""}`}>
+              {/* 基本資訊 */}
+              <div>
+                <p className="text-sm font-semibold text-slate-600 mb-3">基本資訊</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-base text-slate-600 block mb-1.5">
+                      賽事名稱 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => { setForm({ ...form, name: e.target.value }); clearError("name"); }}
+                      placeholder="例：老王邀請賽"
+                      className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 transition-colors ${
+                        formErrors.has("name")
+                          ? "border-red-400 ring-2 ring-red-100 focus:ring-red-400"
+                          : "border-gray-200 focus:ring-orange-400"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-base text-slate-600 block mb-1.5">
+                        日期 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        ref={dateInputRef}
+                        type="date"
+                        value={form.date}
+                        onClick={() => dateInputRef.current?.showPicker()}
+                        onChange={(e) => { setForm({ ...form, date: e.target.value }); clearError("date"); }}
+                        className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 transition-colors cursor-pointer ${
+                          formErrors.has("date")
+                            ? "border-red-400 ring-2 ring-red-100 focus:ring-red-400"
+                            : "border-gray-200 focus:ring-orange-400"
+                        }`}
+                      />
+                    </div>
+                    <div className="w-32">
+                      <label className="text-base text-slate-600 block mb-1.5">
+                        開始時間 <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={form.start_time}
+                        onChange={(e) => { setForm({ ...form, start_time: e.target.value }); clearError("start_time"); }}
+                        className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 cursor-pointer ${
+                          formErrors.has("start_time")
+                            ? "border-red-400 ring-2 ring-red-100 focus:ring-red-400"
+                            : "border-gray-200 focus:ring-orange-400"
+                        }`}
+                      >
+                        <option value="">－</option>
+                        {Array.from({ length: 25 }, (_, i) => {
+                          const totalMins = 360 + i * 30;
+                          const h = String(Math.floor(totalMins / 60)).padStart(2, "0");
+                          const m = String(totalMins % 60).padStart(2, "0");
+                          return `${h}:${m}`;
+                        }).map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-base text-slate-600 block mb-1.5">賽事類型 <span className="text-red-500">*</span></label>
+                    <div className="flex gap-2">
+                      {(["monday", "optional"] as const).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => setForm({ ...form, match_type: type })}
+                          className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors cursor-pointer ${
+                            form.match_type === type
+                              ? MATCH_TYPE_SELECTED[type]
+                              : "border-gray-200 text-slate-500 hover:bg-gray-50"
+                          }`}
+                        >
+                          {MATCH_TYPE_LABEL[type]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* A隊 */}
+              <div>
+                <p className="text-sm font-semibold text-slate-600 mb-3">
+                  A 隊 <span className="text-red-500">*</span>
+                </p>
+                <div className="space-y-2">
+                  <MemberSelect members={members} value={form.team_a_p1}
+                    onChange={(id) => { setForm({ ...form, team_a_p1: id }); clearError("team_a_p1"); }}
+                    placeholder="球員一"
+                    exclude={allPlayerIds.filter((id) => id && id !== form.team_a_p1)}
+                    dayExclude={sameDayPlayerIds}
+                    error={formErrors.has("team_a_p1")} />
+                  <MemberSelect members={members} value={form.team_a_p2}
+                    onChange={(id) => { setForm({ ...form, team_a_p2: id }); clearError("team_a_p2"); }}
+                    placeholder="球員二"
+                    exclude={allPlayerIds.filter((id) => id && id !== form.team_a_p2)}
+                    dayExclude={sameDayPlayerIds}
+                    error={formErrors.has("team_a_p2")} />
+                </div>
+              </div>
+
+              {/* B隊 */}
+              <div>
+                <p className="text-sm font-semibold text-slate-600 mb-3">
+                  B 隊 <span className="text-red-500">*</span>
+                </p>
+                <div className="space-y-2">
+                  <MemberSelect members={members} value={form.team_b_p1}
+                    onChange={(id) => { setForm({ ...form, team_b_p1: id }); clearError("team_b_p1"); }}
+                    placeholder="球員一"
+                    exclude={allPlayerIds.filter((id) => id && id !== form.team_b_p1)}
+                    dayExclude={sameDayPlayerIds}
+                    error={formErrors.has("team_b_p1")} />
+                  <MemberSelect members={members} value={form.team_b_p2}
+                    onChange={(id) => { setForm({ ...form, team_b_p2: id }); clearError("team_b_p2"); }}
+                    placeholder="球員二"
+                    exclude={allPlayerIds.filter((id) => id && id !== form.team_b_p2)}
+                    dayExclude={sameDayPlayerIds}
+                    error={formErrors.has("team_b_p2")} />
+                </div>
+              </div>
+
+              {/* 讓分設定 */}
+              <div>
+                <p className="text-sm font-semibold text-slate-600 mb-3">讓分設定</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-base text-slate-600 block mb-1.5">類型</label>
+                    <div className="flex gap-2">
+                      {(["讓點", "讓洞", "不讓分"] as const).map((type) => {
+                        const label = type === "不讓分" ? "平盤" : type;
+                        return (
+                        <button key={type} type="button"
+                          onClick={() => setForm({ ...form, handicap_type: type })}
+                          className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors cursor-pointer ${
+                            form.handicap_type === type ? "bg-slate-800 text-white border-slate-800" : "border-gray-200 text-slate-500 hover:bg-gray-50"
+                          }`}>{label}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {form.handicap_type !== "不讓分" && (
+                    <>
+                      <div>
+                        <label className="text-base text-slate-600 block mb-1.5">
+                          {form.handicap_type === "讓點" ? "讓點數" : "讓洞數"} <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={form.handicap_value}
+                          onChange={(e) => { setForm({ ...form, handicap_value: e.target.value }); clearError("handicap_value"); }}
+                          placeholder={form.handicap_type === "讓點" ? "如：2" : "如：1"}
+                          className={`w-full border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 transition-colors ${
+                            formErrors.has("handicap_value")
+                              ? "border-red-400 ring-2 ring-red-100 focus:ring-red-400"
+                              : "border-gray-200 focus:ring-orange-400"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-base text-slate-600 block mb-1.5">讓分方</label>
+                        <div className="flex gap-2">
+                          {(["A", "B"] as const).map((team) => (
+                            <button key={team} type="button"
+                              onClick={() => setForm({ ...form, handicap_team: team })}
+                              className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors cursor-pointer ${
+                                form.handicap_team === team ? "bg-slate-800 text-white border-slate-800" : "border-gray-200 text-slate-500 hover:bg-gray-50"
+                              }`}>{team} 隊讓</button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 限注 */}
+              {form.match_type !== "monday" && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-600 mb-3">限注設定</p>
+                  <div>
+                    <label className="text-base text-slate-600 block mb-1.5">
+                      限注（兩）
+                    </label>
+                    <input type="number" min="1" step="1" value={form.capacity_zhi}
+                      onChange={(e) => setForm({ ...form, capacity_zhi: e.target.value })}
+                      placeholder="如：20"
+                      className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400" />
+                  </div>
+                </div>
+              )}
+            </div>
+            )}
+
+            <div className="px-6 py-4 border-t border-gray-100 flex flex-col gap-2">
+              {showConfirm ? (
+                <>
+                  {saveError && (
+                    <p className="text-xs text-red-500 bg-red-50 rounded-lg px-3 py-2 text-center">{saveError}</p>
+                  )}
+                  <div className="flex gap-2 w-full">
+                    <button onClick={() => setShowConfirm(false)}
+                      className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                      <Pencil size={13} />
+                      返回修改
+                    </button>
+                    <button onClick={confirmSave} disabled={saving}
+                      className="flex-1 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-orange-600 disabled:opacity-40 transition-colors cursor-pointer">
+                      {saving ? "儲存中..." : "確認送出"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {editingMatch && editingMatch.status !== "completed" && editingMatch.status !== "cancelled" && (
+                    <button
+                      onClick={() => setCancelTarget(editingMatch)}
+                      className="text-sm text-red-400 hover:text-red-600 transition-colors cursor-pointer mr-auto"
+                    >
+                      取消此賽事
+                    </button>
+                  )}
+                  <div className="flex gap-2 ml-auto">
+                    <button onClick={() => { setSaveError(null); setShowModal(false); }}
+                      className="border border-gray-200 text-slate-600 py-2.5 px-5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer">
+                      關閉
+                    </button>
+                    <button onClick={handleSave} disabled={saving}
+                      className="bg-orange-500 text-white py-2.5 px-5 rounded-xl text-sm font-medium hover:bg-orange-600 disabled:opacity-40 transition-colors cursor-pointer">
+                      {saving ? "儲存中..." : "儲存"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enter / Correct Result Modal */}
+      {resultTarget && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            {resultStep === "select" ? (
+              <>
+                <h2 className="text-lg font-bold text-slate-800 mb-5">
+                  {isCorrection ? "更正結果" : "點選獲勝隊伍"}
+                </h2>
+                <div className="space-y-2 mb-6">
+                  {(["team_a", "team_b"] as const).map((team) => {
+                    const isA = team === "team_a";
+                    const names = isA
+                      ? playerNames(resultTarget.team_a_player1_id, resultTarget.team_a_player2_id)
+                      : playerNames(resultTarget.team_b_player1_id, resultTarget.team_b_player2_id);
+                    const selected = resultWinner === team;
+                    const isCurrent = isCorrection && resultTarget.result === team;
+                    return (
+                      <button key={team} onClick={() => setResultWinner(team)}
+                        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl border-2 transition-colors cursor-pointer ${
+                          selected ? "border-orange-500 bg-orange-50" : "border-gray-200 hover:border-gray-300"
+                        }`}>
+                        <div className="text-left">
+                          <p className="text-sm text-slate-500 font-medium mb-0.5">
+                            {isA ? teamLabel(resultTargetIndex, "A") : teamLabel(resultTargetIndex, "B")} 隊
+                            {isCurrent && <span className="ml-2 text-xs text-slate-400">目前記錄</span>}
+                          </p>
+                          <p className="text-sm font-medium text-slate-800">{names}</p>
+                        </div>
+                        {selected && <span className="text-orange-500 font-bold text-lg">✓</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={closeResultModal}
+                    className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer">
+                    取消
+                  </button>
+                  <button
+                    onClick={() => setResultStep("confirm")}
+                    disabled={!resultWinner || (isCorrection && resultWinner === resultTarget.result)}
+                    className="flex-1 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-orange-600 disabled:opacity-40 transition-colors cursor-pointer">
+                    確認
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-slate-800 mb-4">確認結果</h2>
+                <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-2">
+                  {isCorrection ? (
+                    <>
+                      <p className="text-base font-semibold text-slate-800">
+                        確認將獲勝隊伍改為{" "}
+                        <span className="text-orange-500">
+                          {resultWinner === "team_a" ? teamLabel(resultTargetIndex, "A") : teamLabel(resultTargetIndex, "B")} 隊
+                        </span>
+                        ？
+                      </p>
+                      <p className="text-sm text-slate-500">此操作將重新計算所有相關投注。</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-base font-semibold text-slate-800">
+                        確認{" "}
+                        <span className="text-orange-500">
+                          {resultWinner === "team_a" ? teamLabel(resultTargetIndex, "A") : teamLabel(resultTargetIndex, "B")} 隊
+                        </span>{" "}
+                        獲勝？
+                      </p>
+                      <p className="text-sm text-slate-500">此操作將更新所有相關投注。</p>
+                    </>
+                  )}
+                </div>
+                {resultError && (
+                  <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{resultError}</p>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => setResultStep("select")}
+                    className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer">
+                    返回
+                  </button>
+                  <button onClick={submitResult} disabled={submittingResult}
+                    className="flex-1 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-orange-600 disabled:opacity-40 transition-colors cursor-pointer">
+                    {submittingResult ? "儲存中..." : "確認"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {cancelTarget && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+              <span className="text-red-500 text-xl font-bold">✕</span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-800 text-center mb-1">確定取消此賽事？</h2>
+            <p className="text-sm text-slate-500 text-center mb-1">
+              「{cancelTarget.name || "未命名賽事"}」將被標記為已取消。
+            </p>
+            <p className="text-xs text-red-400 text-center mb-5">所有待處理的投注將自動作廢。</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCancelTarget(null)}
+                className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                返回
+              </button>
+              <button
+                onClick={confirmCancel}
+                disabled={cancelling}
+                className="flex-1 bg-red-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-red-600 disabled:opacity-40 transition-colors cursor-pointer"
+              >
+                {cancelling ? "處理中..." : "確定取消"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Name Conflict Modal */}
+      {nameConflict && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 className="text-lg font-bold text-slate-800 mb-3">賽事名稱重複</h2>
+            {nameConflict.renameExisting ? (
+              <>
+                <p className="text-sm text-slate-600 mb-1">
+                  同日已有一場「{nameConflict.renameExisting.name}」。
+                </p>
+                <p className="text-sm text-slate-600 mb-5">
+                  是否將原賽事更名為「<span className="font-semibold text-slate-800">{nameConflict.renameExisting.renameTo}</span>」，
+                  新賽事命名為「<span className="font-semibold text-slate-800">{nameConflict.newName}</span>」？
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-slate-600 mb-5">
+                同日已有相同名稱的賽事，新賽事將命名為「<span className="font-semibold text-slate-800">{nameConflict.newName}</span>」。
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setNameConflict(null)}
+                className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmNameConflict}
+                className="flex-1 bg-orange-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-orange-600 transition-colors cursor-pointer"
+              >
+                確認更名
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Undo toast */}
+      {undoToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-fade-in">
+          <span>已將「{undoToast.name}」切換為進行中</span>
+          <button onClick={undoActivate} className="text-orange-300 hover:text-orange-200 font-medium cursor-pointer">
+            復原
+          </button>
+        </div>
+      )}
+      {/* Pool creation modal */}
+      {poolCreateTarget && (
+        <PoolCreationModal
+          match={poolCreateTarget}
+          onClose={() => setPoolCreateTarget(null)}
+          onCreated={() => fetchAll()}
+        />
+      )}
+
+      {/* Pool result modal */}
+      {poolResultTarget && poolResultMatch && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4" onClick={() => { setPoolResultTarget(null); setPoolResultMatch(null); }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-slate-800 mb-1">
+              {poolResultTarget.result === "team_a" || poolResultTarget.result === "team_b" ? "更正加強盤結果" : "加強盤結果"}
+            </h2>
+            <p className="text-sm text-slate-400 mb-5">{poolResultMatch.name || "此賽事"} · {poolResultTarget.opened_by_team}隊開盤</p>
+            <div className="flex gap-3 mb-5">
+              {(["team_a", "team_b"] as const).map(r => (
+                <button key={r} onClick={() => setPoolResultWinner(r)}
+                  className={`flex-1 py-3 text-base font-bold rounded-xl border-2 cursor-pointer transition-all ${
+                    poolResultWinner === r ? "border-emerald-400 bg-emerald-50 text-emerald-700 shadow-md" : "border-gray-200 text-slate-600 hover:border-gray-300"
+                  }`}>
+                  {r === "team_a" ? "A 隊勝" : "B 隊勝"}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setPoolResultTarget(null); setPoolResultMatch(null); }}
+                className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 cursor-pointer transition-colors">
+                取消
+              </button>
+              <button onClick={submitPoolResult} disabled={!poolResultWinner || submittingPoolResult}
+                className="flex-1 bg-fuchsia-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-fuchsia-600 disabled:opacity-40 cursor-pointer transition-colors">
+                {submittingPoolResult ? "處理中..." : "確認"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

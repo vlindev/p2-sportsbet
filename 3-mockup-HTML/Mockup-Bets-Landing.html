@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — Bets Page Default Landing v7</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Noto Sans TC', sans-serif; }
+  body { background: #f8fafc; }
+  .tab-active { border-bottom: 2px solid #f97316; color: #1e293b; font-weight: 700; }
+  .tab-inactive { border-bottom: 2px solid transparent; color: #94a3b8; font-weight: 600; }
+  .tab-inactive:hover { color: #64748b; }
+  .match-row { transition: all 0.15s; cursor: pointer; }
+  .match-row:hover { background: #f8fafc; }
+  .match-row:active { background: #f1f5f9; }
+</style>
+</head>
+<body>
+
+<div class="max-w-4xl mx-auto p-6 pt-10 space-y-12">
+
+  <!-- Title -->
+  <div class="text-center">
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Bets Page — Default Landing v7</h1>
+    <p class="text-sm text-slate-500 mb-1">No headers · no time · A/B split bar · solid buttons left-aligned</p>
+    <p class="text-xs text-slate-400">Click scenario buttons to switch views</p>
+  </div>
+
+  <!-- Scenario switcher -->
+  <div class="flex gap-2 justify-center flex-wrap">
+    <button onclick="showScenario('match-list')" class="scenario-btn px-4 py-2 text-sm font-medium rounded-lg border-2 border-slate-800 bg-slate-800 text-white cursor-pointer" data-scenario="match-list">賽事投注 Tab</button>
+    <button onclick="showScenario('member-tab')" class="scenario-btn px-4 py-2 text-sm font-medium rounded-lg border-2 border-gray-200 bg-white text-slate-600 cursor-pointer" data-scenario="member-tab">會員查詢 Tab</button>
+  </div>
+
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO 1: Match List Tab (賽事投注) -->
+  <!-- Grid: 5 (match) + 4 (status bar) + 2 (action) + 1 (chevron) = 12 -->
+  <!-- No column headers — self-explanatory -->
+  <!-- ================================================================ -->
+  <div id="scene-match-list" class="max-w-3xl mx-auto">
+
+    <!-- Page header -->
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-xl font-bold text-slate-800">投注管理</h2>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-6 border-b border-gray-200 mb-5">
+      <button class="tab-active pb-3 text-base px-1 cursor-pointer">賽事投注</button>
+      <button class="tab-inactive pb-3 text-base px-1 cursor-pointer">會員查詢</button>
+    </div>
+
+    <!-- Slim status line -->
+    <div class="flex items-center gap-4 text-sm text-slate-500 mb-4">
+      <span>已封盤 <span class="font-bold text-amber-600">5</span>/9 場</span>
+      <span class="text-slate-300">·</span>
+      <span>已派注 <span class="font-bold text-blue-500">1</span>/7 場</span>
+    </div>
+
+    <!-- Match list -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+
+      <!-- ——— DATE SECTION: 3/17 (一) ——— -->
+      <div class="px-5 py-2.5 bg-slate-50 border-b border-gray-100">
+        <span class="text-sm font-bold text-slate-600">3/17 (一)</span>
+        <span class="text-sm text-slate-400 ml-2">7 場</span>
+      </div>
+
+      <!-- Row 1: scheduled, 平盤 — A38 B33 /85 -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第1組</span>
+            <span class="text-sm text-slate-400">平盤</span>
+          </div>
+          <p class="text-sm text-slate-400">A 張大明 · 李志強 ｜ B 王建宏 · 林俊傑</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">38</span></span>
+            <span class="text-xs text-slate-400">71/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">33</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 44.7%, #e5e7eb 44.7%, #e5e7eb 61.2%, #60a5fa 61.2%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-base font-medium text-white bg-amber-500 hover:bg-amber-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 2: scheduled, A 讓 3 點 — A20 B25 /85 -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第2組</span>
+            <span class="text-sm text-orange-500 font-medium">A 讓 3 點</span>
+          </div>
+          <p class="text-sm text-slate-400">A 陳文雄 · 黃國華 ｜ B 吳明哲 · 劉家豪</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">20</span></span>
+            <span class="text-xs text-slate-400">45/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">25</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 23.5%, #e5e7eb 23.5%, #e5e7eb 70.6%, #60a5fa 70.6%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-base font-medium text-white bg-amber-500 hover:bg-amber-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 3: betting_closed, B 讓 1 洞 — A35 B37 /85, not auto-placed -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第3組</span>
+            <span class="text-sm text-orange-500 font-medium">B 讓 1 洞</span>
+          </div>
+          <p class="text-sm text-slate-400">A 林正義 · 許志明 ｜ B 蔡國強 · 周俊宏</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">35</span></span>
+            <span class="text-xs text-slate-400">72/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">37</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 41.2%, #e5e7eb 41.2%, #e5e7eb 56.5%, #60a5fa 56.5%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <div class="flex flex-col items-start gap-1">
+            <button class="text-base font-medium text-white bg-blue-500 hover:bg-blue-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">派注</button>
+            <button class="text-sm text-slate-400 hover:text-slate-600 cursor-pointer pl-3" onclick="event.stopPropagation()">取消封盤</button>
+          </div>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 4: betting_closed, 平盤 — A43 B42 85/85, auto-placed -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第4組</span>
+            <span class="text-sm text-slate-400">平盤</span>
+          </div>
+          <p class="text-sm text-slate-400">A 何國棟 · 鄭志偉 ｜ B 楊俊賢 · 趙文正</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">43</span></span>
+            <span class="text-xs font-medium text-emerald-600">85/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">42</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 50.6%, #60a5fa 50.6%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <div class="flex flex-col items-start gap-1">
+            <span class="text-base text-emerald-600 font-medium pl-3 py-1.5">已派注 ✓</span>
+            <button class="text-sm text-slate-400 hover:text-slate-600 cursor-pointer pl-3" onclick="event.stopPropagation()">取消封盤</button>
+          </div>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 5: scheduled, A 讓 2 點 — A29 B33 /85 -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第5組</span>
+            <span class="text-sm text-orange-500 font-medium">A 讓 2 點</span>
+          </div>
+          <p class="text-sm text-slate-400">A 廖建國 · 蘇志遠 ｜ B 方文華 · 邱國安</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">29</span></span>
+            <span class="text-xs text-slate-400">62/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">33</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 34.1%, #e5e7eb 34.1%, #e5e7eb 61.2%, #60a5fa 61.2%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-base font-medium text-white bg-amber-500 hover:bg-amber-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 6: betting_closed, B 讓 3 點 — A40 B38 /85, sporadic pools -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第6組</span>
+            <span class="text-sm text-orange-500 font-medium">B 讓 3 點</span>
+            <span class="text-sm font-medium px-1.5 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700">加強 ×2</span>
+          </div>
+          <p class="text-sm text-slate-400">A 謝志豪 · 葉國華 ｜ B 沈俊宏 · 盧建明</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">40</span></span>
+            <span class="text-xs text-slate-400">78/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">38</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 47.1%, #e5e7eb 47.1%, #e5e7eb 55.3%, #60a5fa 55.3%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <div class="flex flex-col items-start gap-1">
+            <button class="text-base font-medium text-white bg-blue-500 hover:bg-blue-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">派注</button>
+            <button class="text-sm text-slate-400 hover:text-slate-600 cursor-pointer pl-3" onclick="event.stopPropagation()">取消封盤</button>
+          </div>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Row 7: scheduled, 平盤 — A18 B20 /85 -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-100 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+            <span class="text-base font-bold text-slate-800">第7組</span>
+            <span class="text-sm text-slate-400">平盤</span>
+          </div>
+          <p class="text-sm text-slate-400">A 潘國強 · 鍾志偉 ｜ B 江俊賢 · 石文正</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">18</span></span>
+            <span class="text-xs text-slate-400">38/85</span>
+            <span class="font-medium text-slate-700"><span class="font-bold">20</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 21.2%, #e5e7eb 21.2%, #e5e7eb 76.5%, #60a5fa 76.5%, #60a5fa 100%);"></div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-base font-medium text-white bg-amber-500 hover:bg-amber-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- ——— DATE SECTION: 3/20 (四) ——— -->
+      <div class="px-5 py-2.5 bg-slate-50 border-b border-gray-100">
+        <span class="text-sm font-bold text-slate-600">3/20 (四)</span>
+        <span class="text-sm text-slate-400 ml-2">2 場</span>
+      </div>
+
+      <!-- Optional match 1: capacity 20支/side — A5 B3, proportional bar -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 border-b border-gray-50 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-lime-100 text-lime-700">熱身</span>
+            <span class="text-base font-bold text-slate-800">第1組</span>
+            <span class="text-sm text-orange-500 font-medium">A 讓 2 點</span>
+          </div>
+          <p class="text-sm text-slate-400">A 張大明 · 李志強 ｜ B 陳文雄 · 黃國華</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">5</span></span>
+            <span class="font-medium text-slate-700"><span class="font-bold">3</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 62.5%, #60a5fa 62.5%, #60a5fa 100%);"></div>
+          <div class="flex justify-between text-xs text-slate-400 mt-1">
+            <span>5/20支</span>
+            <span>3/20支</span>
+          </div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-base font-medium text-white bg-amber-500 hover:bg-amber-600 cursor-pointer px-3 py-1.5 rounded-md" onclick="event.stopPropagation()">封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+      <!-- Optional match 2: capacity 25支/side — A2 B2, betting_closed, sporadic pool -->
+      <div class="match-row grid grid-cols-12 gap-2 px-5 py-4 items-center">
+        <div class="col-span-5">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-lime-100 text-lime-700">熱身</span>
+            <span class="text-base font-bold text-slate-800">第2組</span>
+            <span class="text-sm text-orange-500 font-medium">B 讓 1 洞</span>
+            <span class="text-sm font-medium px-1.5 py-0.5 rounded bg-fuchsia-100 text-fuchsia-700">加強 ×1</span>
+          </div>
+          <p class="text-sm text-slate-400">A 王建宏 · 林俊傑 ｜ B 吳明哲 · 劉家豪</p>
+        </div>
+        <div class="col-span-4 pr-12">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-slate-700">A <span class="font-bold">2</span></span>
+            <span class="font-medium text-slate-700"><span class="font-bold">2</span> B</span>
+          </div>
+          <div class="w-full h-2 rounded-full overflow-hidden" style="background: linear-gradient(to right, #2dd4bf 0%, #2dd4bf 50%, #60a5fa 50%, #60a5fa 100%);"></div>
+          <div class="flex justify-between text-xs text-slate-400 mt-1">
+            <span>2/25支</span>
+            <span>2/25支</span>
+          </div>
+        </div>
+        <div class="col-span-2">
+          <button class="text-sm text-slate-400 hover:text-slate-600 cursor-pointer pl-3" onclick="event.stopPropagation()">取消封盤</button>
+        </div>
+        <div class="col-span-1 text-right text-slate-300 text-lg">&#x203A;</div>
+      </div>
+
+    </div>
+
+    <p class="text-xs text-slate-400 text-center mt-4">熱身賽無派注（僅限例行賽）</p>
+  </div>
+
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO 2: Member lookup tab (會員查詢) -->
+  <!-- ================================================================ -->
+  <div id="scene-member-tab" class="max-w-3xl mx-auto hidden">
+
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-xl font-bold text-slate-800">投注管理</h2>
+    </div>
+
+    <div class="flex gap-6 border-b border-gray-200 mb-5">
+      <button class="tab-inactive pb-3 text-base px-1 cursor-pointer">賽事投注</button>
+      <button class="tab-active pb-3 text-base px-1 cursor-pointer">會員查詢</button>
+    </div>
+
+    <!-- Member search -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-5">
+      <input type="text" value="陳文雄" class="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-orange-300" placeholder="搜尋會員姓名...">
+    </div>
+
+    <!-- Member result -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-5">
+      <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <p class="text-base font-bold text-slate-800">陳文雄</p>
+        <p class="text-sm text-slate-500">週一 <span class="font-bold text-slate-800">5</span>/7 場 · 熱身 <span class="font-bold text-slate-800">1</span>/1 場</p>
+      </div>
+
+      <div class="divide-y divide-gray-50">
+
+        <!-- Date header: 3/17 -->
+        <div class="px-5 py-2 bg-slate-50">
+          <span class="text-sm font-bold text-slate-600">3/17 (一)</span>
+        </div>
+
+        <!-- Match 1: has bet -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第1組</span>
+              <span class="text-sm text-slate-400">平盤</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 張大明 · 李志強 ｜ B 王建宏 · 林俊傑</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm font-medium text-emerald-600">A 隊 · 2兩</span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 hover:text-orange-500 cursor-pointer px-2 py-1 rounded hover:bg-orange-50">編輯 →</button>
+          </div>
+        </div>
+
+        <!-- Match 2: is player -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第2組</span>
+              <span class="text-sm text-orange-500 font-medium">A 讓 3 點</span>
+              <span class="text-sm font-medium text-teal-600">選手</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 陳文雄 · 黃國華 ｜ B 吳明哲 · 劉家豪</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm font-medium text-emerald-600">A 隊 · 5兩</span>
+          </div>
+          <div class="shrink-0">
+            <span class="text-sm text-slate-300 px-2 py-1">選手</span>
+          </div>
+        </div>
+
+        <!-- Match 3: has bet -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第3組</span>
+              <span class="text-sm text-orange-500 font-medium">B 讓 1 洞</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 林正義 · 許志明 ｜ B 蔡國強 · 周俊宏</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm font-medium text-emerald-600">B 隊 · 1兩</span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 hover:text-orange-500 cursor-pointer px-2 py-1 rounded hover:bg-orange-50">編輯 →</button>
+          </div>
+        </div>
+
+        <!-- Match 4: auto-placed (補) -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第4組</span>
+              <span class="text-sm text-slate-400">平盤</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 何國棟 · 鄭志偉 ｜ B 楊俊賢 · 趙文正</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="inline-flex items-center gap-1 text-sm text-slate-400">
+              <span class="text-sm font-medium px-1.5 py-0.5 rounded bg-gray-100 text-slate-500">補</span>
+              A 隊 · 1兩
+            </span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 hover:text-orange-500 cursor-pointer px-2 py-1 rounded hover:bg-orange-50">編輯 →</button>
+          </div>
+        </div>
+
+        <!-- Match 5: has bet -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第5組</span>
+              <span class="text-sm text-orange-500 font-medium">A 讓 2 點</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 廖建國 · 蘇志遠 ｜ B 方文華 · 邱國安</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm font-medium text-emerald-600">B 隊 · 2兩</span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 hover:text-orange-500 cursor-pointer px-2 py-1 rounded hover:bg-orange-50">編輯 →</button>
+          </div>
+        </div>
+
+        <!-- Match 6: NO bet — MANDATORY (orange highlight + A/B quick-pick) -->
+        <div class="px-5 py-3.5 flex items-center gap-4 bg-orange-50/40">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第6組</span>
+              <span class="text-sm text-orange-500 font-medium">B 讓 3 點</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 謝志豪 · 葉國華 ｜ B 沈俊宏 · 盧建明</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm text-orange-500 font-medium">未投注</span>
+          </div>
+          <div class="shrink-0">
+            <div class="flex gap-1">
+              <button class="text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 cursor-pointer px-3 py-1.5 rounded-md">A</button>
+              <button class="text-sm font-medium text-orange-500 border border-orange-300 hover:bg-orange-50 cursor-pointer px-3 py-1.5 rounded-md">B</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Match 7: NO bet — MANDATORY (orange highlight + A/B quick-pick) -->
+        <div class="px-5 py-3.5 flex items-center gap-4 bg-orange-50/40">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">週一</span>
+              <span class="text-base font-bold text-slate-700">第7組</span>
+              <span class="text-sm text-slate-400">平盤</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 潘國強 · 鍾志偉 ｜ B 江俊賢 · 石文正</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm text-orange-500 font-medium">未投注</span>
+          </div>
+          <div class="shrink-0">
+            <div class="flex gap-1">
+              <button class="text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 cursor-pointer px-3 py-1.5 rounded-md">A</button>
+              <button class="text-sm font-medium text-orange-500 border border-orange-300 hover:bg-orange-50 cursor-pointer px-3 py-1.5 rounded-md">B</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Different date -->
+        <div class="px-5 py-2 bg-slate-50">
+          <span class="text-sm font-bold text-slate-600">3/20 (四)</span>
+        </div>
+
+        <!-- Optional match 1: has bet -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-lime-100 text-lime-700">熱身</span>
+              <span class="text-base font-bold text-slate-700">第1組</span>
+              <span class="text-sm text-orange-500 font-medium">A 讓 2 點</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 張大明 · 李志強 ｜ B 陳文雄 · 黃國華</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm font-medium text-emerald-600">B 隊 · 1兩</span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 hover:text-orange-500 cursor-pointer px-2 py-1 rounded hover:bg-orange-50">編輯 →</button>
+          </div>
+        </div>
+
+        <!-- Optional match 2: NO bet — OPTIONAL (neutral) -->
+        <div class="px-5 py-3.5 flex items-center gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+              <span class="text-sm font-medium px-2 py-0.5 rounded-full bg-lime-100 text-lime-700">熱身</span>
+              <span class="text-base font-bold text-slate-700">第2組</span>
+              <span class="text-sm text-orange-500 font-medium">B 讓 1 洞</span>
+            </div>
+            <p class="text-sm text-slate-400 truncate">A 王建宏 · 林俊傑 ｜ B 吳明哲 · 劉家豪</p>
+          </div>
+          <div class="shrink-0 text-right">
+            <span class="text-sm text-slate-300">未投注</span>
+          </div>
+          <div class="shrink-0">
+            <button class="text-sm text-slate-400 border border-gray-200 hover:border-orange-300 hover:text-orange-500 cursor-pointer px-2.5 py-1 rounded hover:bg-orange-50">新增 →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Quick actions — merged: bulk buttons first, then amount toggle -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-3.5 flex items-center justify-between flex-wrap gap-2">
+      <span class="text-sm text-slate-500">週一未投注 2 場 —</span>
+      <div class="flex items-center gap-3">
+        <div class="flex gap-2">
+          <button class="text-sm font-medium text-orange-500 border border-orange-300 hover:bg-orange-50 cursor-pointer px-3 py-1.5 rounded-md">全部買 A 隊</button>
+          <button class="text-sm font-medium text-orange-500 border border-orange-300 hover:bg-orange-50 cursor-pointer px-3 py-1.5 rounded-md">全部買 B 隊</button>
+        </div>
+        <span class="text-slate-200">|</span>
+        <div class="flex items-center gap-1.5">
+          <button class="text-sm font-medium px-3 py-1 rounded-md bg-slate-800 text-white cursor-pointer">1兩</button>
+          <button class="text-sm font-medium px-3 py-1 rounded-md border border-gray-200 text-slate-500 cursor-pointer">2兩</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pb-20"></div>
+</div>
+
+<script>
+function showScenario(id) {
+  ['match-list','member-tab'].forEach(s => {
+    document.getElementById('scene-' + s).classList.add('hidden');
+  });
+  document.getElementById('scene-' + id).classList.remove('hidden');
+
+  document.querySelectorAll('.scenario-btn').forEach(b => {
+    if (b.dataset.scenario === id) {
+      b.classList.remove('border-gray-200', 'bg-white', 'text-slate-600');
+      b.classList.add('border-slate-800', 'bg-slate-800', 'text-white');
+    } else {
+      b.classList.add('border-gray-200', 'bg-white', 'text-slate-600');
+      b.classList.remove('border-slate-800', 'bg-slate-800', 'text-white');
+    }
+  });
+}
+</script>
+
+</body>
+</html>

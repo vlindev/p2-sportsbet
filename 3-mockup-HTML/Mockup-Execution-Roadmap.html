@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>p2.sportsbet — MVP Execution Roadmap</title>
+<style>
+  :root {
+    --infra: #0ea5e9;
+    --infra-bg: #f0f9ff;
+    --infra-border: #bae6fd;
+    --book: #f97316;
+    --book-bg: #fff7ed;
+    --book-border: #fed7aa;
+    --member: #10b981;
+    --member-bg: #ecfdf5;
+    --member-border: #a7f3d0;
+    --shared: #8b5cf6;
+    --shared-bg: #f5f3ff;
+    --shared-border: #ddd6fe;
+    --crit: #dc2626;
+    --grey: #94a3b8;
+    --grey-bg: #f8fafc;
+    --grey-border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --bg: #ffffff;
+    --surface: #f8fafc;
+    --blackout: #1e293b;
+    --blackout-bg: #0f172a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+    background: var(--surface);
+    line-height: 1.5;
+    padding: 24px 16px;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  /* Deadline banner */
+  .deadline-banner {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 14px 16px;
+    background: var(--blackout-bg);
+    border-radius: 10px;
+    color: #e2e8f0;
+  }
+
+  .deadline-item {
+    text-align: center;
+  }
+
+  .deadline-item .date {
+    font-size: 13px;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .deadline-item .label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .deadline-item.warn .date { color: #fbbf24; }
+  .deadline-item.danger .date { color: #f87171; }
+  .deadline-item.go .date { color: #34d399; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 8px;
+    border: 1px solid var(--grey-border);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Phase header */
+  .phase-header {
+    margin: 28px 0 16px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .phase-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .phase-header .phase-meta {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .phase-header.phase-a {
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+  }
+
+  .phase-header.phase-a .phase-meta { color: #3b82f6; }
+
+  .phase-header.phase-blackout {
+    background: var(--blackout-bg);
+    color: #f87171;
+    border: 1px solid #374151;
+  }
+
+  .phase-header.phase-blackout .phase-meta { color: #94a3b8; }
+
+  .phase-header.phase-b {
+    background: linear-gradient(135deg, #fefce8, #fffbeb);
+    border: 1px solid #fde68a;
+    color: #92400e;
+  }
+
+  .phase-header.phase-b .phase-meta { color: #b45309; }
+
+  .phase-header.phase-c {
+    background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+  }
+
+  .phase-header.phase-c .phase-meta { color: #059669; }
+
+  /* Timeline */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--grey-border);
+  }
+
+  /* Step card */
+  .step {
+    position: relative;
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--grey-border);
+    border-left: 4px solid var(--grey);
+  }
+
+  .step::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--grey);
+    z-index: 1;
+  }
+
+  .step.infra { border-left-color: var(--infra); }
+  .step.infra::before { border-color: var(--infra); }
+  .step.book { border-left-color: var(--book); }
+  .step.book::before { border-color: var(--book); }
+  .step.member { border-left-color: var(--member); }
+  .step.member::before { border-color: var(--member); }
+  .step.shared { border-left-color: var(--shared); }
+  .step.shared::before { border-color: var(--shared); }
+
+  .step.critical { box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.12); }
+  .step.critical::before { background: var(--crit); border-color: var(--crit); }
+
+  .step.critical::after {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 30px;
+    width: 2px;
+    height: calc(100% + 2px);
+    background: var(--crit);
+    z-index: 0;
+  }
+
+  .step.no-crit-line::after { display: none; }
+
+  /* Step header */
+  .step-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 5px;
+    flex-wrap: wrap;
+  }
+
+  .step-number {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .step-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+
+  .badge.scope-infra { background: var(--infra-bg); color: var(--infra); border: 1px solid var(--infra-border); }
+  .badge.scope-book { background: var(--book-bg); color: var(--book); border: 1px solid var(--book-border); }
+  .badge.scope-member { background: var(--member-bg); color: var(--member); border: 1px solid var(--member-border); }
+  .badge.scope-shared { background: var(--shared-bg); color: var(--shared); border: 1px solid var(--shared-border); }
+  .badge.sessions { background: var(--grey-bg); color: var(--text-muted); border: 1px solid var(--grey-border); }
+  .badge.cumulative { background: #fef2f2; color: var(--crit); border: 1px solid #fecaca; font-weight: 700; }
+  .badge.critical-path { background: #fef2f2; color: var(--crit); border: 1px solid #fecaca; }
+  .badge.checkpoint { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .badge.security { background: #fef2f2; color: var(--crit); border: 1px solid #fecaca; }
+  .badge.buffer { background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; }
+  .badge.floatable { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--grey-border); }
+
+  .step-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .step-desc ul {
+    margin: 4px 0 0 16px;
+    padding: 0;
+  }
+
+  .step-desc li { margin-bottom: 2px; }
+
+  .callout {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .callout.risk { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  .callout.checkpoint { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .callout.security { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .callout.info { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+
+  /* Dependency graph */
+  .dep-graph {
+    margin: 24px 0;
+    padding: 20px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--grey-border);
+    overflow-x: auto;
+  }
+
+  .dep-graph h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .graph-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .graph-node {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: center;
+    border: 2px solid transparent;
+  }
+
+  .graph-node.n-infra { background: var(--infra-bg); color: var(--infra); border-color: var(--infra-border); }
+  .graph-node.n-book { background: var(--book-bg); color: var(--book); border-color: var(--book-border); }
+  .graph-node.n-member { background: var(--member-bg); color: var(--member); border-color: var(--member-border); }
+  .graph-node.n-shared { background: var(--shared-bg); color: var(--shared); border-color: var(--shared-border); }
+  .graph-node.n-crit { outline: 2px solid var(--crit); outline-offset: 1px; }
+
+  .graph-arrow {
+    font-size: 13px;
+    color: var(--grey);
+    padding: 0 3px;
+    flex-shrink: 0;
+  }
+
+  .graph-arrow.crit { color: var(--crit); font-weight: 700; }
+
+  .graph-section { margin-bottom: 12px; }
+
+  .graph-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .graph-divider {
+    margin: 12px 0;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+  }
+
+  .graph-divider.blackout {
+    background: var(--blackout-bg);
+    color: #f87171;
+  }
+
+  .graph-divider.polish {
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  .graph-divider.launch {
+    background: #ecfdf5;
+    color: #065f46;
+  }
+
+  /* Phase 2 */
+  .phase2-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .phase2-item {
+    padding: 10px 14px;
+    background: var(--grey-bg);
+    border-radius: 8px;
+    border: 1px solid var(--grey-border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .phase2-item strong { color: var(--grey); font-weight: 600; }
+  .phase2-item .reason { font-size: 12px; margin-top: 2px; }
+
+  /* Polish items */
+  .polish-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding-left: 28px;
+  }
+
+  .polish-card {
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--grey-border);
+    border-left: 4px solid #f59e0b;
+  }
+
+  .polish-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .polish-card .step-desc { font-size: 12px; }
+
+  /* Milestones */
+  .milestone {
+    padding-left: 28px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .milestone::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  .milestone.presentation::before { background: #f59e0b; }
+  .milestone.golive::before { background: #10b981; }
+
+  .milestone-card {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .milestone.presentation .milestone-card {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  .milestone.golive .milestone-card {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+  }
+
+  .milestone-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .milestone-card p { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+  .footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--grey-border);
+    font-size: 12px;
+    color: var(--grey);
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 16px 12px; }
+    h1 { font-size: 19px; }
+    .step { padding: 12px 14px; }
+    .step-title { font-size: 14px; }
+    .step-header { flex-direction: column; gap: 6px; }
+    .legend { gap: 8px; padding: 10px 12px; }
+    .graph-node { font-size: 9px; padding: 3px 6px; }
+    .graph-arrow { font-size: 11px; padding: 0 2px; }
+    .dep-graph { padding: 14px; }
+    .deadline-banner { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 400px) {
+    .timeline { padding-left: 22px; }
+    .step::before { left: -18px; width: 10px; height: 10px; }
+    .step.critical::after { left: -18px; }
+    .timeline::before { left: 7px; }
+    .deadline-banner { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>p2.sportsbet — MVP Execution Roadmap</h1>
+<p class="subtitle">Timeline-constrained plan &middot; Session 28 &middot; Bookkeeper + member read-only launch May 11, member bet-placement post-launch</p>
+
+<!-- Deadline banner -->
+<div class="deadline-banner">
+  <div class="deadline-item">
+    <div class="date">Mar 4 → Apr 7</div>
+    <div class="label">Active Dev (~20-25 sessions)</div>
+  </div>
+  <div class="deadline-item warn">
+    <div class="date">Apr 8–26</div>
+    <div class="label">Blackout (Zero Work)</div>
+  </div>
+  <div class="deadline-item">
+    <div class="date">Apr 27–30</div>
+    <div class="label">Polish Window (4 days)</div>
+  </div>
+  <div class="deadline-item danger">
+    <div class="date">May 1</div>
+    <div class="label">Production Ready</div>
+  </div>
+  <div class="deadline-item warn">
+    <div class="date">May 4 (Mon)</div>
+    <div class="label">Presentation</div>
+  </div>
+  <div class="deadline-item go">
+    <div class="date">May 11 (Mon)</div>
+    <div class="label">Go Live</div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background: var(--infra)"></div>Infrastructure</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--book)"></div>Bookkeeper</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--member)"></div>Member</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--shared)"></div>All / Shared</div>
+  <div class="legend-item"><div class="legend-dot" style="background: var(--crit)"></div>Critical Path</div>
+</div>
+
+<!-- Dependency Graph -->
+<div class="dep-graph">
+  <h3>Dependency Graph</h3>
+
+  <div class="graph-section">
+    <div class="graph-label">Phase A — Active Dev (Mar 4 → Apr 7)</div>
+    <div class="graph-row">
+      <div class="graph-node n-infra n-crit">1 Settlement</div>
+      <div class="graph-arrow crit">&rarr;</div>
+      <div class="graph-node n-infra n-crit">2 Result RPC</div>
+      <div class="graph-arrow crit">&rarr;</div>
+      <div class="graph-node n-infra n-crit">3a Pipeline (schema)</div>
+      <div class="graph-arrow crit">&rarr;</div>
+      <div class="graph-node n-book n-crit">4 Bet Entry &#9670;</div>
+    </div>
+    <div style="margin-left: 8px; margin-top: 4px;">
+      <div class="graph-row">
+        <div style="width: 24px"></div>
+        <div class="graph-arrow crit">&rarr;</div>
+        <div class="graph-node n-book n-crit">5 Report</div>
+        <div class="graph-arrow">&rarr;</div>
+        <div class="graph-node n-book">6 Weekly</div>
+        <div class="graph-arrow crit">&rarr;</div>
+        <div class="graph-node n-book n-crit">7 Settlement</div>
+        <div class="graph-arrow crit">&rarr;</div>
+        <div class="graph-node n-shared n-crit">9 Auth + Member Read-Only &#9888;</div>
+      </div>
+    </div>
+    <div style="margin-left: 8px; margin-top: 4px;">
+      <div class="graph-row">
+        <div style="width: 24px"></div>
+        <div class="graph-arrow">&rarr;</div>
+        <div class="graph-node n-shared" style="border-style: dashed">Buffer: Presentation + Step 10</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="graph-divider blackout">&#9888; Apr 8–26: Blackout</div>
+
+  <div class="graph-section">
+    <div class="graph-label">Phase B — Polish (Apr 27–30)</div>
+    <div class="graph-row">
+      <div class="graph-node" style="background: #f1f5f9; color: var(--text-muted); border-color: var(--grey-border);">Reboot (&#189; day)</div>
+      <div class="graph-arrow">&rarr;</div>
+      <div class="graph-node n-shared">Testing</div>
+      <div class="graph-arrow">&rarr;</div>
+      <div class="graph-node n-shared">Data Migration</div>
+      <div class="graph-arrow">&rarr;</div>
+      <div class="graph-node n-shared">Presentation Final</div>
+    </div>
+  </div>
+
+  <div class="graph-divider launch">&#10003; May 1: Production Ready &middot; May 4: Presentation &middot; May 11: Go Live</div>
+
+  <div class="graph-section">
+    <div class="graph-label">Phase C — Post-Launch (May 11+)</div>
+    <div class="graph-row">
+      <div class="graph-node n-infra">3b Concurrency</div>
+      <div class="graph-arrow">&rarr;</div>
+      <div class="graph-node n-member">11 Member Eng</div>
+    </div>
+    <div style="margin-left: 8px; margin-top: 4px;">
+      <div class="graph-row">
+        <div class="graph-node n-book" style="border-style: dashed">8 Dashboard</div>
+        <span style="font-size: 10px; color: var(--text-muted); margin-left: 6px">(floatable)</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size: 11px; color: var(--crit); margin-top: 12px; font-weight: 600;">
+    Critical path to launch: 1 &rarr; 2 &rarr; 3a &rarr; 4 &rarr; 5 &rarr; 7 &rarr; 9 (incl. member read-only) &rarr; Polish &rarr; Launch
+  </p>
+  <p style="font-size: 11px; color: var(--member); margin-top: 2px; font-weight: 600;">
+    Critical path to member bet-placement: 3b &rarr; 11 (post-launch)
+  </p>
+</div>
+
+<!-- PHASE A -->
+<div class="phase-header phase-a">
+  <h2>Phase A: Active Dev</h2>
+  <div class="phase-meta">Mar 4 → Apr 7 &middot; 13–19 sessions core + 4–9 buffer</div>
+</div>
+
+<div class="timeline">
+
+  <!-- Step 1 -->
+  <div class="step infra critical">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 1</div>
+        <div class="step-title">Settlement Engine + Financial Foundation</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-infra">Infra</span>
+        <span class="badge sessions">2–3 sessions</span>
+        <span class="badge cumulative">cum: 2–3</span>
+        <span class="badge critical-path">Critical</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li><code>match_team_player_shares</code> + <code>club_billing_config</code> tables</li>
+        <li>Payout: 1:1 model (R16), share allocation (R17), 64-bit NTD (R18), per-winner rake (R19)</li>
+        <li>Provider fee (R20) — returns 0 during free period</li>
+        <li>Pure TS in <code>src/lib/settlement.ts</code> — test-first approach</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step infra critical">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 2</div>
+        <div class="step-title">Result Entry RPC + Audit Log</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-infra">Infra</span>
+        <span class="badge sessions">1 session</span>
+        <span class="badge cumulative">cum: 3–4</span>
+        <span class="badge critical-path">Critical</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li><code>audit_log</code> table (append-only, R29)</li>
+        <li>Atomic <code>submit_match_result</code> + <code>correct_match_result</code> RPCs</li>
+        <li>Replace non-transactional <code>submitResult()</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Step 3a -->
+  <div class="step infra critical">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 3a</div>
+        <div class="step-title">Bet Pipeline — Schema + Basic Routing</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-infra">Infra</span>
+        <span class="badge sessions">1–2 sessions</span>
+        <span class="badge cumulative">cum: 4–6</span>
+        <span class="badge critical-path">Critical</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li><code>bet_requests</code> + <code>sporadic_pools</code> tables (full schema)</li>
+        <li>Attribution columns (R26) on bets + bet_requests</li>
+        <li>Routing: mandatory_self → direct; others → bet_requests → basic capacity check → bets</li>
+      </ul>
+    </div>
+    <div class="callout info">
+      Concurrency hardening (row locks, LIFO, race protection) deferred to Step 3b post-launch. Schema is identical — only transaction isolation changes. Single-bookkeeper workflow has no concurrency risk.
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step book critical">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 4</div>
+        <div class="step-title">Bookkeeper Bet Entry + Match Enhancements + Inbox Zero</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-book">Bookkeeper</span>
+        <span class="badge sessions">2–3 sessions</span>
+        <span class="badge cumulative">cum: 6–9</span>
+        <span class="badge critical-path">Critical</span>
+        <span class="badge checkpoint">&#9670; Checkpoint</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li>Bet entry at <code>/bets</code>, mandatory self-bet auto-gen, 小盤 option</li>
+        <li>Sporadic pool creation, Monday auto-placement (manual trigger)</li>
+        <li>Betting close (封盤), player change flow, bulk reduction</li>
+        <li>Inbox zero pattern on matches page</li>
+      </ul>
+    </div>
+    <div class="callout checkpoint">
+      &#9670; <strong>Checkpoint:</strong> Bookkeeper core is functional. Reassess velocity and re-estimate remaining steps.
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step book critical">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 5</div>
+        <div class="step-title">Per-Match Report Redesign</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-book">Bookkeeper</span>
+        <span class="badge sessions">1–2 sessions</span>
+        <span class="badge cumulative">cum: 7–11</span>
+        <span class="badge critical-path">Critical</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      Rewrite <code>MatchBetReport.tsx</code> with correct 1:1 payout model. Per-person breakdown, multi-match day routing, sporadic pool report.
+    </div>
+  </div>
+
+  <!-- Step 6 -->
+  <div class="step book">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 6</div>
+        <div class="step-title">Weekly Report (每週報表)</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-book">Bookkeeper</span>
+        <span class="badge sessions">1–2 sessions</span>
+        <span class="badge cumulative">cum: 8–13</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <code>/reports</code> page — per-member weekly summary. Screenshot-friendly for Line group.
+    </div>
+  </div>
+
+  <!-- Step 7 -->
+  <div class="step book critical no-crit-line">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 7</div>
+        <div class="step-title">Monthly Settlement (月度結算)</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-book">Bookkeeper</span>
+        <span class="badge sessions">2 sessions</span>
+        <span class="badge cumulative">cum: 10–15</span>
+        <span class="badge critical-path">Critical</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <code>/settlement</code> page — auto-calculated, double-check audit, settlement lifecycle, inactive debt → referrer.
+    </div>
+  </div>
+
+  <!-- Step 9 -->
+  <div class="step shared critical no-crit-line">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 9</div>
+        <div class="step-title">Auth + Member Read-Only View</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-shared">Shared</span>
+        <span class="badge sessions">2–3 sessions</span>
+        <span class="badge cumulative">cum: 12–18</span>
+        <span class="badge critical-path">Critical</span>
+        <span class="badge security">&#9888; Security Gate</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li>Bookkeeper: Supabase Auth + middleware + RLS</li>
+        <li>Members: <code>member_tokens</code> table + personal links + token validation</li>
+        <li>Member read-only view at <code>/m/[token]/</code>: today's matches, my bets, my balance</li>
+        <li>No write operations — bookkeeper enters all bets. Mobile-first layout.</li>
+      </ul>
+    </div>
+    <div class="callout security">
+      &#9888; <strong>No real data before this.</strong> Steps 1–7 run with permissive RLS. No real financial data until auth is complete.
+    </div>
+  </div>
+
+  <!-- Buffer -->
+  <div class="step shared" style="border-left-style: dashed; border-left-color: #8b5cf6;">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Buffer (5–10 sessions)</div>
+        <div class="step-title">Presentation Prep + Member UX Design</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge buffer">Buffer Priority</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <strong>Priority 1:</strong> Presentation deck + pitch strategy (thinking-heavy, benefits from time)<br>
+      <strong>Priority 2:</strong> Step 10 — member bet-placement UX design (design-only, no code, accelerates post-launch)<br>
+      <strong>Do NOT start Step 11</strong> (member bet-placement engineering) — avoid two incomplete workstreams at blackout
+    </div>
+  </div>
+
+  <!-- Pre-blackout checklist -->
+  <div class="step shared no-crit-line" style="border-left: 4px dashed #f87171; background: #fef2f2;">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Before Apr 7</div>
+        <div class="step-title">Pre-Blackout Checklist</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge security">&#9888; Must Complete</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      <ul>
+        <li><strong>Request 85-member roster from bookkeeper</strong> — don't discover on Apr 27 you're waiting on data</li>
+        <li>Verify <code>club_billing_config</code> values with organizer</li>
+        <li>All code committed and pushed — nothing lives only on local during 19-day gap</li>
+        <li>Dry-run <code>reboot</code> codeword — confirm it works before you need it</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- BLACKOUT -->
+<div class="phase-header phase-blackout">
+  <h2>&#9888; Blackout</h2>
+  <div class="phase-meta">Apr 8–26 &middot; 19 days &middot; Zero work</div>
+</div>
+
+<!-- PHASE B -->
+<div class="phase-header phase-b">
+  <h2>Phase B: Polish Window</h2>
+  <div class="phase-meta">Apr 27–30 &middot; 4 days &middot; Bug fixes, testing, launch prep only</div>
+</div>
+
+<div class="polish-grid">
+  <div class="polish-card" style="border-left-color: #94a3b8;">
+    <h4>Day 0.5: Re-orientation (Apr 27 AM)</h4>
+    <div class="step-desc">Run <code>reboot</code> codeword. Read last-wrap + plan. Run app, click through every page. Confirm member roster arrived. <strong>No productive work — just rebuild context after 19 days away.</strong></div>
+  </div>
+  <div class="polish-card">
+    <h4>Integration Testing (~1 day)</h4>
+    <div class="step-desc">Full bookkeeper pipeline E2E. Correction flow through settlement. Balance accuracy. Every query under RLS.</div>
+  </div>
+  <div class="polish-card">
+    <h4>Production Data Migration (~1 day)</h4>
+    <div class="step-desc">Clean test data. Import 85-member roster <strong>(data should be in hand from pre-blackout request)</strong>. Generate tokens. Verification queries. Documented and repeatable.</div>
+  </div>
+  <div class="polish-card">
+    <h4>Presentation Finalization (~1 day)</h4>
+    <div class="step-desc">Refine deck. <strong>Prepare demo fallback:</strong> pre-recorded walkthrough + screenshot deck (live demos fail — have a backup). Rehearsal pass. User guide. Member handout.</div>
+  </div>
+</div>
+
+<!-- Milestones -->
+<div style="margin-top: 20px;">
+  <div class="milestone presentation">
+    <div class="milestone-card">
+      <h4>May 4 (Monday) — Presentation to Members</h4>
+      <p>Live demo: bookkeeper system + member read-only view. &ldquo;You'll see your matches, bets, and balance in real-time from day one.&rdquo; Demo fallback: recorded walkthrough + screenshots.</p>
+    </div>
+  </div>
+  <div class="milestone golive">
+    <div class="milestone-card">
+      <h4>May 11 (Monday) — Go Live</h4>
+      <p>First real matches processed. Bookkeeper enters all bets + members see their data in real-time (read-only). Member bet-placement follows post-launch (~late May).</p>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE C -->
+<div class="phase-header phase-c">
+  <h2>Phase C: Post-Launch</h2>
+  <div class="phase-meta">May 11+ &middot; ~4–6 sessions &middot; Member bet-placement sprint</div>
+</div>
+
+<div class="timeline">
+
+  <!-- Step 3b -->
+  <div class="step infra">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 3b</div>
+        <div class="step-title">Pipeline Concurrency Hardening</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-infra">Infra</span>
+        <span class="badge sessions">1–2 sessions</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      Row-level locking (R27), serialized transactions, LIFO under concurrent load, race protection. Must complete before Step 11.
+    </div>
+  </div>
+
+  <!-- Step 11 -->
+  <div class="step member">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 11</div>
+        <div class="step-title">Member Bet-Placement — Engineering</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-member">Member</span>
+        <span class="badge sessions">2–3 sessions</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      Add write operations to existing <code>/m/[token]/</code> pages. Bet placement (through pipeline), edit/cancel before close, deadline enforcement, collision handling. Lighter — read-only pages already exist from Step 9.
+    </div>
+  </div>
+
+  <!-- Step 8 -->
+  <div class="step book no-crit-line" style="border-left-style: dashed; opacity: 0.7;">
+    <div class="step-header">
+      <div>
+        <div class="step-number">Step 8</div>
+        <div class="step-title">Dashboard</div>
+      </div>
+      <div class="step-meta">
+        <span class="badge scope-book">Bookkeeper</span>
+        <span class="badge sessions">1 session</span>
+        <span class="badge floatable">Floatable</span>
+      </div>
+    </div>
+    <div class="step-desc">
+      Dashboard at <code>/</code> — stats, quick links, pending actions. Anytime post-launch.
+    </div>
+  </div>
+
+</div>
+
+<!-- Session Estimates Summary -->
+<div class="dep-graph" style="margin-top: 24px;">
+  <h3>Session Estimates Summary</h3>
+  <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--grey-border); text-align: left;">
+        <th style="padding: 6px 8px;">Step</th>
+        <th style="padding: 6px 8px;">Sessions</th>
+        <th style="padding: 6px 8px;">Cumulative</th>
+        <th style="padding: 6px 8px;">Phase</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">1. Settlement Engine</td>
+        <td style="padding: 5px 8px;">2–3</td>
+        <td style="padding: 5px 8px;">2–3</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">2. Result RPC + Audit</td>
+        <td style="padding: 5px 8px;">1</td>
+        <td style="padding: 5px 8px;">3–4</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">3a. Pipeline (schema)</td>
+        <td style="padding: 5px 8px;">1–2</td>
+        <td style="padding: 5px 8px;">4–6</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">4. Bet Entry + Inbox Zero</td>
+        <td style="padding: 5px 8px;">2–3</td>
+        <td style="padding: 5px 8px; font-weight: 600;">6–9 &#9670;</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">5. Report Redesign</td>
+        <td style="padding: 5px 8px;">1–2</td>
+        <td style="padding: 5px 8px;">7–11</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">6. Weekly Report</td>
+        <td style="padding: 5px 8px;">1–2</td>
+        <td style="padding: 5px 8px;">8–13</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">7. Monthly Settlement</td>
+        <td style="padding: 5px 8px;">2</td>
+        <td style="padding: 5px 8px;">10–15</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">9. Auth + Member Read-Only</td>
+        <td style="padding: 5px 8px;">2–3</td>
+        <td style="padding: 5px 8px; font-weight: 600; color: var(--crit);">12–18</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;">A</span></td>
+      </tr>
+      <tr style="border-bottom: 2px solid var(--grey-border); background: #f8fafc;">
+        <td style="padding: 5px 8px; font-weight: 600;">Buffer (presentation + Step 10)</td>
+        <td style="padding: 5px 8px;">1–2</td>
+        <td style="padding: 5px 8px;">14–20</td>
+        <td style="padding: 5px 8px;"><span class="badge buffer">Buffer</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">3b. Concurrency Hardening</td>
+        <td style="padding: 5px 8px;">1–2</td>
+        <td style="padding: 5px 8px; color: var(--text-muted);">post-launch</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">C</span></td>
+      </tr>
+      <tr style="border-bottom: 1px solid var(--grey-border);">
+        <td style="padding: 5px 8px;">11. Member Bet-Placement</td>
+        <td style="padding: 5px 8px;">2–3</td>
+        <td style="padding: 5px 8px; color: var(--text-muted);">post-launch</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">C</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 5px 8px;">8. Dashboard</td>
+        <td style="padding: 5px 8px;">1</td>
+        <td style="padding: 5px 8px; color: var(--text-muted);">post-launch</td>
+        <td style="padding: 5px 8px;"><span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">C</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Phase 2 -->
+<div class="phase-header" style="background: var(--grey-bg); border: 1px solid var(--grey-border); color: var(--grey);">
+  <h2>Phase 2 Deferrals (Post-Launch, Lower Priority)</h2>
+</div>
+
+<div class="phase2-list">
+  <div class="phase2-item">
+    <strong>Admin permission matrix</strong>
+    <div class="reason">Single bookkeeper for MVP. Multiple roles come later.</div>
+  </div>
+  <div class="phase2-item">
+    <strong>Match query optimisation</strong>
+    <div class="reason">Premature optimisation. Fix when/if slowdown appears.</div>
+  </div>
+  <div class="phase2-item">
+    <strong>介紹人 full accountability UI</strong>
+    <div class="reason">Settlement tracks debt. Full profile/report view is polish.</div>
+  </div>
+  <div class="phase2-item">
+    <strong>Monday auto-placement cron</strong>
+    <div class="reason">Manual trigger works. Automate after patterns stabilize.</div>
+  </div>
+  <div class="phase2-item">
+    <strong>Match format variations (1v1, 1v2, 1v3)</strong>
+    <div class="reason">Not yet specified. Not blocking MVP.</div>
+  </div>
+  <div class="phase2-item">
+    <strong>LINE Login</strong>
+    <div class="reason">Upgrade path from personal links.</div>
+  </div>
+</div>
+
+<div class="footer">
+  p2.sportsbet &middot; MVP Execution Plan &middot; Session 28 (2026-03-04) &middot; Bookkeeper + member read-only launch May 11 &middot; Member bet-placement ~late May
+</div>
+
+</body>
+</html>

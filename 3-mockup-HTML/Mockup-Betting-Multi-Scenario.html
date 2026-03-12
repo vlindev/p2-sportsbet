@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unified Mockup: #4 Share Ratios + #5 Sporadic Pools + #6 Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; padding: 24px; max-width: 760px; margin: 0 auto; padding-bottom: 120px; }
+
+  /* Part dividers */
+  .part-divider { border: none; border-top: 4px solid #334155; margin: 56px 0 16px 0; }
+  .part-label { font-size: 13px; font-weight: 700; color: white; background: #334155; display: inline-block; padding: 4px 12px; border-radius: 4px; margin-bottom: 6px; letter-spacing: 0.5px; }
+  .part-title { font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .part-desc { font-size: 14px; color: #64748b; margin-bottom: 24px; line-height: 1.6; }
+  .example-divider { border: none; border-top: 2px dashed #cbd5e1; margin: 36px 0 20px 0; }
+  .example-label { font-size: 16px; font-weight: 700; color: #475569; margin-bottom: 16px; }
+  .annotation { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #92400e; margin-bottom: 12px; line-height: 1.5; }
+  .annotation strong { font-weight: 700; }
+  .decision-ref { background: #dbeafe; border: 1px solid #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #1e40af; margin-bottom: 12px; line-height: 1.5; }
+  .decision-ref strong { font-weight: 700; }
+
+  /* Shared page container */
+  .page-frame { background: #f8fafc; border-radius: 20px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+
+  /* Navigation */
+  .back-link { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #64748b; cursor: pointer; margin-bottom: 16px; }
+  .back-link:hover { color: #f97316; }
+
+  /* Tab bar */
+  .tab-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tab-pill { padding: 6px 12px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; min-width: 76px; text-align: center; }
+  .tab-pill.active { background: #f97316; color: white; border-color: #f97316; }
+  .tab-pill.active-teal { background: #0d9488; color: white; border-color: #0d9488; }
+
+  /* Match header card */
+  .match-header { background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 16px; }
+  .match-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 99px; }
+  .badge-monday { background: #dbeafe; color: #2563eb; }
+  .badge-closed { background: #fef3c7; color: #b45309; }
+  .badge-fuchsia { background: #fae8ff; color: #a21caf; }
+  .match-date { font-size: 14px; color: #64748b; }
+  .match-name { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 12px; }
+  .teams-row { display: flex; align-items: center; gap: 12px; }
+  .team-col { flex: 1; min-width: 0; }
+  .team-col.right { text-align: right; }
+  .team-label { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .team-players { font-size: 14px; color: #64748b; }
+  .team-players .dot { font-weight: 700; color: #94a3b8; }
+  .handicap-center { flex-shrink: 0; text-align: center; padding: 0 8px; }
+  .handicap-detail { font-size: 14px; font-weight: 700; color: #f97316; white-space: nowrap; }
+  .handicap-arrow { font-size: 16px; font-weight: 900; color: #1e293b; }
+
+  /* Result banner */
+  .result-banner { background: #ecfdf5; border-radius: 12px; padding: 10px; text-align: center; margin-top: 8px; }
+  .result-banner span { font-size: 16px; font-weight: 600; color: #059669; }
+
+  /* ============================================================ */
+  /* SHARE RATIO SECTION (#4) */
+  /* ============================================================ */
+
+  .share-section { background: white; border-radius: 14px; border: 1px solid #e2e8f0; padding: 16px 20px; margin-bottom: 16px; }
+
+  /* Compact state */
+  .share-compact { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .share-icon { font-size: 15px; color: #94a3b8; flex-shrink: 0; }
+  .share-label { font-size: 14px; font-weight: 600; color: #475569; }
+  .share-value { font-size: 14px; color: #64748b; }
+  .share-value .highlight { color: #1e293b; font-weight: 600; }
+  .share-edit-btn { margin-left: auto; font-size: 13px; font-weight: 600; color: #0d9488; cursor: pointer; padding: 4px 10px; border-radius: 6px; border: 1px solid #99f6e4; background: #f0fdfa; transition: all 0.15s; }
+  .share-edit-btn:hover { background: #ccfbf1; border-color: #5eead4; }
+  .share-locked { margin-left: auto; font-size: 12px; color: #94a3b8; }
+
+  /* Edit state */
+  .share-edit { display: flex; flex-direction: column; gap: 16px; }
+  .share-edit-title { font-size: 15px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+  .share-team-block { background: #f8fafc; border-radius: 10px; padding: 14px 16px; border: 1px solid #f1f5f9; }
+  .share-team-label { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 10px; }
+  .share-players-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .share-player { display: flex; align-items: center; gap: 6px; }
+  .share-player-name { font-size: 14px; font-weight: 500; color: #1e293b; }
+  .share-player-input { width: 56px; padding: 6px 8px; font-size: 14px; font-weight: 600; border: 1.5px solid #e2e8f0; border-radius: 8px; text-align: center; color: #1e293b; background: white; }
+  .share-player-input:focus { border-color: #0d9488; outline: none; }
+  .share-player-pct { font-size: 14px; color: #64748b; }
+  .share-player-auto { font-size: 12px; color: #94a3b8; }
+  .share-swap { font-size: 16px; color: #94a3b8; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+  .share-swap:hover { color: #0d9488; background: #f0fdfa; }
+  .share-presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .share-preset { padding: 5px 12px; font-size: 13px; font-weight: 500; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; }
+  .share-preset:hover { border-color: #0d9488; color: #0d9488; }
+  .share-preset.active { background: #0d9488; color: white; border-color: #0d9488; }
+  .share-custom-input { width: 44px; padding: 5px 4px; font-size: 13px; font-weight: 600; border: 1.5px solid #e2e8f0; border-radius: 6px; text-align: center; color: #1e293b; background: white; }
+  .share-custom-input:focus { border-color: #0d9488; outline: none; }
+  .share-custom-sep { font-size: 13px; color: #94a3b8; }
+  .share-custom-derived { font-size: 13px; font-weight: 600; color: #64748b; }
+  .share-estimate { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 10px; background: #f0fdfa; border-radius: 8px; border: 1px solid #ccfbf1; font-size: 13px; color: #475569; flex-wrap: wrap; }
+  .share-estimate .est-label { font-weight: 600; color: #0d9488; flex-shrink: 0; }
+  .share-estimate .est-source { color: #94a3b8; flex-shrink: 0; }
+  .share-estimate .est-amount { font-weight: 600; font-variant-numeric: tabular-nums; color: #1e293b; }
+  .share-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 4px; }
+  .share-btn-cancel { padding: 7px 16px; font-size: 13px; font-weight: 500; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; }
+  .share-btn-save { padding: 7px 20px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; background: #0d9488; color: white; cursor: pointer; }
+  .share-btn-save:hover { background: #0f766e; }
+
+  /* ============================================================ */
+  /* BET COLUMNS (entry view, abbreviated) */
+  /* ============================================================ */
+
+  .bet-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .bet-col-card { background: white; border-radius: 12px; border: 1px solid #f1f5f9; padding: 14px; }
+  .bet-col-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .bet-col-title { font-size: 16px; font-weight: 700; color: #334155; }
+  .bet-col-stat { font-size: 12px; color: #94a3b8; }
+  .bet-row { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 3px 0; }
+  .bet-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; }
+  .bet-row .amount { font-weight: 500; font-variant-numeric: tabular-nums; color: #334155; }
+  .bet-row .tag { font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px; }
+  .tag-self { background: #eff6ff; color: #2563eb; }
+  .tag-auto { background: #f1f5f9; color: #64748b; }
+  .tag-vol { background: #fff7ed; color: #ea580c; }
+
+  /* ============================================================ */
+  /* REPORT STYLES (reused from mockup-report.html) */
+  /* ============================================================ */
+
+  .section-title { font-size: 15px; font-weight: 700; color: #475569; margin-bottom: 12px; margin-top: 8px; }
+  .bet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .rpt-col { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; }
+  .rpt-col.winner { border-color: #a7f3d0; background: rgba(236,253,245,0.3); }
+  .rpt-col.loser { border-color: #e2e8f0; background: rgba(248,250,252,0.3); }
+  .rpt-col-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .rpt-team { font-size: 16px; font-weight: 700; }
+  .rpt-team.winner { color: #047857; }
+  .rpt-team.loser { color: #94a3b8; }
+  .rpt-badge { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
+  .rpt-badge-win { background: #d1fae5; color: #047857; }
+  .rpt-badge-lose { background: #f1f5f9; color: #94a3b8; }
+  .rpt-count { margin-left: auto; font-size: 13px; }
+  .rpt-count.winner { color: #059669; }
+  .rpt-count.loser { color: #94a3b8; }
+  .rpt-bet-row { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 3px 0; }
+  .rpt-bet-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rpt-bet-row .name.w { color: #1e293b; }
+  .rpt-bet-row .name.l { color: #94a3b8; }
+  .rpt-bet-row .amt { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .rpt-bet-row .amt.w { color: #047857; }
+  .rpt-bet-row .amt.l { color: #94a3b8; }
+  .rpt-subtotal { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 8px; border-top: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; }
+  .rpt-subtotal.winner { color: #047857; }
+  .rpt-subtotal.loser { color: #94a3b8; }
+
+  /* Settlement rows */
+  .settle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .settle-col { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; }
+  .settle-col.winner { border-color: #a7f3d0; background: rgba(236,253,245,0.3); }
+  .settle-col.loser { border-color: #e2e8f0; background: rgba(248,250,252,0.3); }
+  .settle-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+  .settle-team { font-size: 15px; font-weight: 700; }
+  .settle-team.winner { color: #047857; }
+  .settle-team.loser { color: #94a3b8; }
+  .settle-row { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 6px 4px; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+  .settle-row:hover { background: #e2e8f0; }
+  .settle-row .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .player-tag { font-size: 11px; color: #64748b; font-weight: 400; margin-left: 2px; }
+  .share-pct { font-size: 12px; color: #94a3b8; font-weight: 400; }
+  .settle-row .net { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .settle-row .net.pos { color: #059669; }
+  .settle-row .net.neg { color: #dc2626; }
+  .settle-row .ntd { font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; margin-left: 4px; }
+
+  /* Expanded detail */
+  .settle-detail { background: #f1f5f9; border-radius: 8px; padding: 10px 12px; margin: 2px 0 6px 0; font-size: 13px; color: #475569; line-height: 1.7; display: none; }
+  .settle-detail.open { display: block; }
+  .settle-detail .line { display: flex; justify-content: space-between; }
+  .settle-detail .line .dl { color: #64748b; }
+  .settle-detail .line .dv { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .settle-detail .line .dv.pos { color: #059669; }
+  .settle-detail .line .dv.neg { color: #dc2626; }
+  .settle-detail .divider { border-top: 1px solid #e2e8f0; margin: 4px 0; }
+  .settle-detail .line.total { font-weight: 600; color: #1e293b; }
+
+  /* Summary card */
+  .summary-card { background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 20px; margin-bottom: 24px; }
+  .summary-row { display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+  .summary-row .sl { color: #64748b; }
+  .summary-row .sv { font-weight: 600; color: #1e293b; }
+  .summary-row .sv .ntd { color: #94a3b8; font-weight: 400; margin-left: 6px; }
+  .summary-divider { border-top: 1px solid #f1f5f9; margin: 8px 0; }
+  .summary-section-label { font-size: 13px; font-weight: 600; color: #94a3b8; margin-top: 6px; margin-bottom: 2px; }
+  .export-row { display: flex; gap: 10px; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+  .export-btn { flex: 1; padding: 10px 0; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #475569; cursor: pointer; text-align: center; }
+  .export-btn:hover { border-color: #f97316; color: #f97316; }
+
+  /* Pool section header */
+  .pool-header { background: #fdf4ff; border: 1.5px solid #e9d5ff; border-radius: 14px; padding: 16px 20px; margin-bottom: 16px; margin-top: 8px; }
+  .pool-header-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .pool-badge { font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: #fae8ff; color: #a21caf; }
+  .pool-info { font-size: 14px; color: #7c3aed; }
+  .pool-capacity { font-size: 13px; color: #a21caf; font-weight: 600; }
+  .pool-handicap { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #64748b; }
+  .pool-handicap .val { font-weight: 700; color: #f97316; }
+  .pool-result { background: #ecfdf5; border-radius: 8px; padding: 8px; text-align: center; margin-top: 8px; }
+  .pool-result span { font-size: 14px; font-weight: 600; color: #059669; }
+  .pool-restricted-note { font-size: 12px; color: #a21caf; font-style: normal; margin-top: 4px; }
+
+  /* Fuchsia accented columns for pool bets/settlement */
+  .rpt-col.pool-winner { border-color: #e9d5ff; background: rgba(253,244,255,0.3); }
+  .rpt-col.pool-loser { border-color: #e2e8f0; background: rgba(248,250,252,0.3); }
+  .settle-col.pool-winner { border-color: #e9d5ff; background: rgba(253,244,255,0.3); }
+</style>
+</head>
+<body>
+
+
+<!-- ============================================================ -->
+<!-- PART 1: SHARE RATIO EDITING (#4) -->
+<!-- ============================================================ -->
+
+<div class="part-label">PART 1</div>
+<div class="part-title">選手分配比例 — 編輯介面</div>
+<div class="part-desc">Share ratio editing on the bets entry page. Sits between MatchHeader and bet columns. Three visual states shown below.</div>
+
+
+<!-- ──────────────────────────────────────── -->
+<!-- Example 1a: Default 50/50 (compact) -->
+<!-- ──────────────────────────────────────── -->
+
+<div class="example-label">State 1: Default 50/50 (compact)</div>
+
+<div class="decision-ref"><strong>D1:</strong> Section lives on the bets entry page (match-first view), between MatchHeader and bet columns. The bookkeeper sees bet totals alongside shares — important for understanding exposure context.</div>
+<div class="decision-ref"><strong>D2:</strong> When 50/50 (default), a single compact line. No player names needed — "50/50" is self-explanatory. Edit button in teal.</div>
+
+<div class="page-frame">
+  <div class="match-header" style="margin-bottom: 12px;">
+    <div class="match-meta">
+      <span class="badge badge-monday">週一例行賽</span>
+      <span class="badge badge-closed">封盤</span>
+      <span class="match-date">2026-03-02</span>
+    </div>
+    <div class="match-name">第3組</div>
+    <div class="teams-row">
+      <div class="team-col"><div class="team-label">A 隊</div><div class="team-players">張大明 <span class="dot">&middot;</span> 李志強</div></div>
+      <div class="handicap-center"><div class="handicap-arrow">&blacktriangleright;</div><div class="handicap-detail">讓 3 點</div></div>
+      <div class="team-col right"><div class="team-label">B 隊</div><div class="team-players">王建民 <span class="dot">&middot;</span> 陳小華</div></div>
+    </div>
+  </div>
+
+  <!-- SHARE RATIO — compact 50/50 -->
+  <div class="share-section">
+    <div class="share-compact">
+      <span class="share-icon">&#9878;</span>
+      <span class="share-label">選手分配</span>
+      <span class="share-value">A隊 50 / 50 &nbsp;&middot;&nbsp; B隊 50 / 50</span>
+      <span class="share-edit-btn">編輯</span>
+    </div>
+  </div>
+
+  <div class="bet-cols">
+    <div class="bet-col-card">
+      <div class="bet-col-hdr"><span class="bet-col-title">A 隊</span><span class="bet-col-stat">8筆 &middot; 18兩</span></div>
+      <div class="bet-row"><span class="name">張大明</span><span class="amount">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="bet-row"><span class="name">李志強</span><span class="amount">5兩</span><span class="tag tag-self">自</span></div>
+      <div style="font-size: 12px; color: #94a3b8; padding: 4px 0;">... +6 more</div>
+    </div>
+    <div class="bet-col-card">
+      <div class="bet-col-hdr"><span class="bet-col-title">B 隊</span><span class="bet-col-stat">7筆 &middot; 16兩</span></div>
+      <div class="bet-row"><span class="name">王建民</span><span class="amount">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="bet-row"><span class="name">陳小華</span><span class="amount">5兩</span><span class="tag tag-self">自</span></div>
+      <div style="font-size: 12px; color: #94a3b8; padding: 4px 0;">... +5 more</div>
+    </div>
+  </div>
+</div>
+
+
+<hr class="example-divider">
+
+
+<!-- ──────────────────────────────────────── -->
+<!-- Example 1b: Edit mode (expanded) -->
+<!-- ──────────────────────────────────────── -->
+
+<div class="example-label">State 2: Edit mode (expanded)</div>
+
+<div class="decision-ref"><strong>D3:</strong> Each team edited independently. Preset buttons + custom input for any integer split. Swap button flips assignment. Estimation row shows exactly how much 兩 flows through each player based on current opposing bets — bookkeeper sees financial impact instantly.</div>
+<div class="decision-ref"><strong>D4:</strong> Estimation logic: the opposing team's total bets are what gets split by share ratio (same amount whether win or lose — direction changes, magnitude doesn't). Updates live as presets or custom values change.</div>
+
+<div class="page-frame">
+  <div class="share-section" style="border-color: #99f6e4;">
+    <div class="share-edit">
+      <div class="share-edit-title">選手分配比例</div>
+
+      <div class="share-team-block">
+        <div class="share-team-label">A 隊</div>
+        <div class="share-players-row">
+          <div class="share-player">
+            <span class="share-player-name">張大明</span>
+            <input class="share-player-input" type="text" value="60">
+            <span class="share-player-pct">%</span>
+          </div>
+          <span class="share-swap" title="交換">&#8596;</span>
+          <div class="share-player">
+            <span class="share-player-name">李志強</span>
+            <span class="share-player-pct" style="font-weight: 600; color: #1e293b;">40%</span>
+            <span class="share-player-auto">(自動)</span>
+          </div>
+        </div>
+        <div class="share-presets">
+          <span class="share-preset">50/50</span>
+          <span class="share-preset active">60/40</span>
+          <span class="share-preset">70/30</span>
+          <span class="share-preset">80/20</span>
+        </div>
+        <div class="share-estimate">
+          <span class="est-label">估算</span>
+          <span>張大明 <span class="est-amount">9.6兩</span></span>
+          <span style="color: #94a3b8;">&middot;</span>
+          <span>李志強 <span class="est-amount">6.4兩</span></span>
+        </div>
+      </div>
+
+      <div class="share-team-block">
+        <div class="share-team-label">B 隊</div>
+        <div class="share-players-row">
+          <div class="share-player">
+            <span class="share-player-name">王建民</span>
+            <input class="share-player-input" type="text" value="50">
+            <span class="share-player-pct">%</span>
+          </div>
+          <span class="share-swap" title="交換">&#8596;</span>
+          <div class="share-player">
+            <span class="share-player-name">陳小華</span>
+            <span class="share-player-pct" style="font-weight: 600; color: #1e293b;">50%</span>
+            <span class="share-player-auto">(自動)</span>
+          </div>
+        </div>
+        <div class="share-presets">
+          <span class="share-preset active">50/50</span>
+          <span class="share-preset">60/40</span>
+          <span class="share-preset">70/30</span>
+          <span class="share-preset">80/20</span>
+        </div>
+        <div class="share-estimate">
+          <span class="est-label">估算</span>
+          <span>王建民 <span class="est-amount">9兩</span></span>
+          <span style="color: #94a3b8;">&middot;</span>
+          <span>陳小華 <span class="est-amount">9兩</span></span>
+        </div>
+      </div>
+
+      <div class="share-actions">
+        <button class="share-btn-cancel">取消</button>
+        <button class="share-btn-save">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<hr class="example-divider">
+
+
+<!-- ──────────────────────────────────────── -->
+<!-- Example 1c: Non-default ratio saved (compact) -->
+<!-- ──────────────────────────────────────── -->
+
+<div class="example-label">State 3: Custom ratio saved (60/40, compact)</div>
+
+<div class="decision-ref"><strong>D5:</strong> When not 50/50, player names and percentages are shown explicitly. The non-default side is visually distinct so the bookkeeper notices at a glance.</div>
+
+<div class="page-frame">
+  <div class="share-section" style="border-color: #99f6e4; border-width: 1.5px;">
+    <div class="share-compact">
+      <span class="share-icon">&#9878;</span>
+      <span class="share-label">選手分配</span>
+      <span class="share-value">A隊 <span class="highlight">張大明 60%</span> &middot; <span class="highlight">李志強 40%</span> &nbsp;|&nbsp; B隊 50 / 50</span>
+      <span class="share-edit-btn">編輯</span>
+    </div>
+  </div>
+</div>
+
+
+<hr class="example-divider">
+
+
+<!-- ──────────────────────────────────────── -->
+<!-- Example 1d: Locked state (match active/completed) -->
+<!-- ──────────────────────────────────────── -->
+
+<div class="example-label">State 4: Locked (match active or completed)</div>
+
+<div class="decision-ref"><strong>D6:</strong> Once match is active, shares are locked (R17.9). Edit button replaced with muted "已鎖定" text. Still visible for reference, just not editable.</div>
+
+<div class="page-frame">
+  <div class="share-section" style="background: #f8fafc;">
+    <div class="share-compact">
+      <span class="share-icon" style="color: #cbd5e1;">&#9878;</span>
+      <span class="share-label" style="color: #94a3b8;">選手分配</span>
+      <span class="share-value" style="color: #94a3b8;">A隊 張大明 60% &middot; 李志強 40% &nbsp;|&nbsp; B隊 50 / 50</span>
+      <span class="share-locked">已鎖定</span>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ============================================================ -->
+<!-- PART 2: PER-MATCH REPORT WITH SPORADIC POOL (#5 + #6) -->
+<!-- ============================================================ -->
+
+<hr class="part-divider">
+<div class="part-label">PART 2</div>
+<div class="part-title">完整報表 — 基本盤 + 加強盤</div>
+<div class="part-desc">Per-match report for a completed match with custom shares (60/40) AND a sporadic pool. Shows how pool settlement integrates into the same report page. All settlement math uses the actual engine logic.</div>
+
+
+<div class="decision-ref"><strong>D7:</strong> Pool sections appear inline below base match — same page, scrolled down. No tabs or separate pages. Bookkeeper sees the full financial picture for one match in a single view. Screenshot-friendly.</div>
+<div class="decision-ref"><strong>D8:</strong> Pool sections use fuchsia accents matching the app-wide pool visual identity. Clear visual separation between base match and each pool.</div>
+
+<div class="page-frame">
+
+  <a class="back-link">&larr; 返回賽事</a>
+  <div class="tab-bar">
+    <div class="tab-pill">第1組</div>
+    <div class="tab-pill">第2組</div>
+    <div class="tab-pill active-teal">第3組</div>
+    <div class="tab-pill">第4組</div>
+    <div class="tab-pill">第5組</div>
+    <div class="tab-pill">第6組</div>
+    <div class="tab-pill">第7組</div>
+  </div>
+
+  <!-- Match Header -->
+  <div class="match-header">
+    <div class="match-meta">
+      <span class="badge badge-monday">週一例行賽</span>
+      <span class="badge badge-fuchsia">加強盤 &times;1</span>
+      <span class="match-date">2026-03-02</span>
+      <span class="match-date">07:00 開始</span>
+    </div>
+    <div class="match-name">第3組</div>
+    <div class="teams-row">
+      <div class="team-col"><div class="team-label">A 隊</div><div class="team-players">張大明 <span class="dot">&middot;</span> 李志強</div></div>
+      <div class="handicap-center"><div class="handicap-arrow">&blacktriangleright;</div><div class="handicap-detail">讓 3 點</div></div>
+      <div class="team-col right"><div class="team-label">B 隊</div><div class="team-players">王建民 <span class="dot">&middot;</span> 陳小華</div></div>
+    </div>
+    <div class="result-banner"><span>A 隊勝</span></div>
+  </div>
+
+  <!-- Share ratio display (locked, read-only in report) -->
+  <div class="share-section" style="background: #f8fafc; margin-bottom: 20px;">
+    <div class="share-compact">
+      <span class="share-icon" style="color: #cbd5e1;">&#9878;</span>
+      <span class="share-label" style="color: #94a3b8;">選手分配</span>
+      <span class="share-value" style="color: #94a3b8;">A隊 張大明 60% &middot; 李志強 40% &nbsp;|&nbsp; B隊 50 / 50</span>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- BASE MATCH SECTION -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <div class="section-title">基本盤 — 投注明細</div>
+
+  <div class="decision-ref"><strong>D9:</strong> When a match has pools, the base match section is explicitly labeled "基本盤" to distinguish from pool sections below.</div>
+
+  <div class="bet-grid">
+    <!-- A side (winners) -->
+    <div class="rpt-col winner">
+      <div class="rpt-col-hdr">
+        <span class="rpt-team winner">A 隊</span>
+        <span class="rpt-badge rpt-badge-win">勝</span>
+        <span class="rpt-count winner">8 筆</span>
+      </div>
+      <div class="rpt-bet-row"><span class="name w">張大明</span><span class="amt w">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="rpt-bet-row"><span class="name w">李志強</span><span class="amt w">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="rpt-bet-row"><span class="name w">趙一</span><span class="amt w">2兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name w">錢二</span><span class="amt w">2兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name w">林美玲</span><span class="amt w">1兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name w">黃大衛</span><span class="amt w">1兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name w">吳小明</span><span class="amt w">1兩</span><span class="tag tag-auto">補</span></div>
+      <div class="rpt-bet-row"><span class="name w">周雅琪</span><span class="amt w">1兩</span><span class="tag tag-auto">補</span></div>
+      <div class="rpt-subtotal winner"><span>小計: 18兩</span></div>
+    </div>
+    <!-- B side (losers) -->
+    <div class="rpt-col loser">
+      <div class="rpt-col-hdr">
+        <span class="rpt-team loser">B 隊</span>
+        <span class="rpt-badge rpt-badge-lose">敗</span>
+        <span class="rpt-count loser">7 筆</span>
+      </div>
+      <div class="rpt-bet-row"><span class="name l">王建民</span><span class="amt l">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="rpt-bet-row"><span class="name l">陳小華</span><span class="amt l">5兩</span><span class="tag tag-self">自</span></div>
+      <div class="rpt-bet-row"><span class="name l">孫三</span><span class="amt l">2兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name l">周四</span><span class="amt l">1兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name l">鄭五</span><span class="amt l">1兩</span><span class="tag tag-vol">願</span></div>
+      <div class="rpt-bet-row"><span class="name l">何六</span><span class="amt l">1兩</span><span class="tag tag-auto">補</span></div>
+      <div class="rpt-bet-row"><span class="name l">劉七</span><span class="amt l">1兩</span><span class="tag tag-auto">補</span></div>
+      <div class="rpt-subtotal loser"><span>小計: 16兩</span></div>
+    </div>
+  </div>
+
+
+  <!-- BASE MATCH — Settlement -->
+  <div class="section-title">基本盤 — 結算明細</div>
+
+  <div class="settle-grid">
+    <div class="settle-col winner">
+      <div class="settle-hdr">
+        <span class="settle-team winner">A 隊</span>
+        <span class="rpt-badge rpt-badge-win">勝</span>
+      </div>
+      <!-- Players pinned top with share % (shown because not 50/50) -->
+      <div class="settle-row" onclick="toggleDetail('base-ap1')">
+        <span class="name">張大明<span class="player-tag">（選手）</span> <span class="share-pct">(60%)</span></span>
+        <span class="net pos">+13.9兩</span>
+        <span class="ntd">($13,900)</span>
+      </div>
+      <div class="settle-detail" id="base-ap1">
+        <div class="line"><span class="dl">自投 A隊 5兩 (贏)</span><span class="dv pos">+5兩</span></div>
+        <div class="line"><span class="dl">莊家收入 (60%)</span><span class="dv pos">+9.6兩</span></div>
+        <div class="divider"></div>
+        <div class="line"><span class="dl">小計</span><span class="dv pos">+14.6兩</span></div>
+        <div class="line"><span class="dl">抽水 (5%)</span><span class="dv neg">-0.7兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv pos">+13.9兩</span></div>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('base-ap2')">
+        <span class="name">李志強<span class="player-tag">（選手）</span> <span class="share-pct">(40%)</span></span>
+        <span class="net pos">+10.8兩</span>
+        <span class="ntd">($10,800)</span>
+      </div>
+      <div class="settle-detail" id="base-ap2">
+        <div class="line"><span class="dl">自投 A隊 5兩 (贏)</span><span class="dv pos">+5兩</span></div>
+        <div class="line"><span class="dl">莊家收入 (40%)</span><span class="dv pos">+6.4兩</span></div>
+        <div class="divider"></div>
+        <div class="line"><span class="dl">小計</span><span class="dv pos">+11.4兩</span></div>
+        <div class="line"><span class="dl">抽水 (5%)</span><span class="dv neg">-0.6兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv pos">+10.8兩</span></div>
+      </div>
+      <!-- External bettors sorted by net -->
+      <div class="settle-row"><span class="name">趙一</span><span class="net pos">+1.9兩</span><span class="ntd">($1,900)</span></div>
+      <div class="settle-row"><span class="name">錢二</span><span class="net pos">+1.9兩</span><span class="ntd">($1,900)</span></div>
+      <div class="settle-row"><span class="name">林美玲</span><span class="net pos">+0.9兩</span><span class="ntd">($900)</span></div>
+      <div class="settle-row"><span class="name">黃大衛</span><span class="net pos">+0.9兩</span><span class="ntd">($900)</span></div>
+      <div class="settle-row"><span class="name">吳小明</span><span class="net pos">+0.9兩</span><span class="ntd">($900)</span></div>
+      <div class="settle-row"><span class="name">周雅琪</span><span class="net pos">+0.9兩</span><span class="ntd">($900)</span></div>
+    </div>
+
+    <div class="settle-col loser">
+      <div class="settle-hdr">
+        <span class="settle-team loser">B 隊</span>
+        <span class="rpt-badge rpt-badge-lose">敗</span>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('base-bp1')">
+        <span class="name">王建民<span class="player-tag">（選手）</span></span>
+        <span class="net neg">-14兩</span>
+        <span class="ntd">(-$14,000)</span>
+      </div>
+      <div class="settle-detail" id="base-bp1">
+        <div class="line"><span class="dl">自投 B隊 5兩 (輸)</span><span class="dv neg">-5兩</span></div>
+        <div class="line"><span class="dl">莊家負債 (50%)</span><span class="dv neg">-9兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv neg">-14兩</span></div>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('base-bp2')">
+        <span class="name">陳小華<span class="player-tag">（選手）</span></span>
+        <span class="net neg">-14兩</span>
+        <span class="ntd">(-$14,000)</span>
+      </div>
+      <div class="settle-detail" id="base-bp2">
+        <div class="line"><span class="dl">自投 B隊 5兩 (輸)</span><span class="dv neg">-5兩</span></div>
+        <div class="line"><span class="dl">莊家負債 (50%)</span><span class="dv neg">-9兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv neg">-14兩</span></div>
+      </div>
+      <div class="settle-row"><span class="name">孫三</span><span class="net neg">-2兩</span><span class="ntd">(-$2,000)</span></div>
+      <div class="settle-row"><span class="name">周四</span><span class="net neg">-1兩</span><span class="ntd">(-$1,000)</span></div>
+      <div class="settle-row"><span class="name">鄭五</span><span class="net neg">-1兩</span><span class="ntd">(-$1,000)</span></div>
+      <div class="settle-row"><span class="name">何六</span><span class="net neg">-1兩</span><span class="ntd">(-$1,000)</span></div>
+      <div class="settle-row"><span class="name">劉七</span><span class="net neg">-1兩</span><span class="ntd">(-$1,000)</span></div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SPORADIC POOL SECTION -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <div class="decision-ref"><strong>D10:</strong> Pool section has its own header card showing: pool number, which team opened it, pool-specific handicap, capacity, and independent result. Fuchsia color scheme throughout.</div>
+
+  <div class="pool-header">
+    <div class="pool-header-top">
+      <span class="pool-badge">加強盤 #1</span>
+      <span class="pool-info">B隊開盤</span>
+      <span class="pool-capacity">容量 30支</span>
+    </div>
+    <div class="pool-handicap">
+      <span>B隊</span>
+      <span class="val">讓 2 洞</span>
+    </div>
+    <div class="pool-result"><span>A 隊勝（獨立結算）</span></div>
+  </div>
+
+
+  <!-- Pool bets -->
+  <div class="section-title">加強盤 #1 — 投注明細</div>
+
+  <div class="decision-ref"><strong>D11:</strong> Opening team column (B) shows a "開盤方" tag and restricted note. Only players of that team can bet on this side (R5.4). Opposing team column (A) is open to external bettors. Amounts shown in 支 with 兩 conversion.</div>
+
+  <div class="bet-grid">
+    <div class="rpt-col pool-winner">
+      <div class="rpt-col-hdr">
+        <span class="rpt-team winner">A 隊</span>
+        <span class="rpt-badge rpt-badge-win">勝</span>
+        <span class="rpt-count winner">3 筆</span>
+      </div>
+      <div class="rpt-bet-row"><span class="name w">趙一</span><span class="amt w">9兩</span><span style="font-size:12px; color:#94a3b8;">(3支)</span></div>
+      <div class="rpt-bet-row"><span class="name w">錢二</span><span class="amt w">6兩</span><span style="font-size:12px; color:#94a3b8;">(2支)</span></div>
+      <div class="rpt-bet-row"><span class="name w">林美玲</span><span class="amt w">3兩</span><span style="font-size:12px; color:#94a3b8;">(1支)</span></div>
+      <div class="rpt-subtotal winner"><span>小計: 18兩 (6支)</span></div>
+    </div>
+    <div class="rpt-col pool-loser" style="border-left: 2px dashed #d8b4fe;">
+      <div class="rpt-col-hdr">
+        <span class="rpt-team loser">B 隊</span>
+        <span class="rpt-badge rpt-badge-lose">敗</span>
+        <span style="font-size: 11px; color: #a21caf; font-weight: 600; margin-left: auto;">開盤方</span>
+      </div>
+      <div class="rpt-bet-row"><span class="name l">王建民</span><span class="amt l">30兩</span><span style="font-size:12px; color:#94a3b8;">(10支)</span></div>
+      <div class="rpt-bet-row"><span class="name l">陳小華</span><span class="amt l">15兩</span><span style="font-size:12px; color:#94a3b8;">(5支)</span></div>
+      <div class="rpt-subtotal loser"><span>小計: 45兩 (15支)</span></div>
+      <div class="pool-restricted-note">僅限 B隊選手投注</div>
+    </div>
+  </div>
+
+
+  <!-- Pool settlement -->
+  <div class="section-title">加強盤 #1 — 結算明細</div>
+
+  <div class="decision-ref"><strong>D12:</strong> Pool settlement uses the same two-column layout. Players appear in settlement even if they didn't bet in the pool (they receive/pay player flows). Pool shares shown when not 50/50 (this example is 50/50, so no % shown).</div>
+
+  <div class="settle-grid">
+    <div class="settle-col pool-winner">
+      <div class="settle-hdr">
+        <span class="settle-team winner">A 隊</span>
+        <span class="rpt-badge rpt-badge-win">勝</span>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('pool-ap1')">
+        <span class="name">張大明<span class="player-tag">（選手）</span></span>
+        <span class="net pos">+21.4兩</span>
+        <span class="ntd">($21,400)</span>
+      </div>
+      <div class="settle-detail" id="pool-ap1">
+        <div class="line"><span class="dl">莊家收入 (50%)</span><span class="dv pos">+22.5兩</span></div>
+        <div class="divider"></div>
+        <div class="line"><span class="dl">小計</span><span class="dv pos">+22.5兩</span></div>
+        <div class="line"><span class="dl">抽水 (5%)</span><span class="dv neg">-1.1兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv pos">+21.4兩</span></div>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('pool-ap2')">
+        <span class="name">李志強<span class="player-tag">（選手）</span></span>
+        <span class="net pos">+21.4兩</span>
+        <span class="ntd">($21,400)</span>
+      </div>
+      <div class="settle-detail" id="pool-ap2">
+        <div class="line"><span class="dl">莊家收入 (50%)</span><span class="dv pos">+22.5兩</span></div>
+        <div class="divider"></div>
+        <div class="line"><span class="dl">小計</span><span class="dv pos">+22.5兩</span></div>
+        <div class="line"><span class="dl">抽水 (5%)</span><span class="dv neg">-1.1兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv pos">+21.4兩</span></div>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('pool-ae1')">
+        <span class="name">趙一</span>
+        <span class="net pos">+8.5兩</span>
+        <span class="ntd">($8,500)</span>
+      </div>
+      <div class="settle-detail" id="pool-ae1">
+        <div class="line"><span class="dl">投注 A隊 9兩 (贏)</span><span class="dv pos">+9兩</span></div>
+        <div class="line"><span class="dl">抽水 (5%)</span><span class="dv neg">-0.5兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv pos">+8.5兩</span></div>
+      </div>
+      <div class="settle-row"><span class="name">錢二</span><span class="net pos">+5.7兩</span><span class="ntd">($5,700)</span></div>
+      <div class="settle-row"><span class="name">林美玲</span><span class="net pos">+2.8兩</span><span class="ntd">($2,800)</span></div>
+    </div>
+
+    <div class="settle-col loser">
+      <div class="settle-hdr">
+        <span class="settle-team loser">B 隊</span>
+        <span class="rpt-badge rpt-badge-lose">敗</span>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('pool-bp1')">
+        <span class="name">王建民<span class="player-tag">（選手）</span></span>
+        <span class="net neg">-39兩</span>
+        <span class="ntd">(-$39,000)</span>
+      </div>
+      <div class="settle-detail" id="pool-bp1">
+        <div class="line"><span class="dl">投注 B隊 30兩 (輸)</span><span class="dv neg">-30兩</span></div>
+        <div class="line"><span class="dl">莊家負債 (50%)</span><span class="dv neg">-9兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv neg">-39兩</span></div>
+      </div>
+      <div class="settle-row" onclick="toggleDetail('pool-bp2')">
+        <span class="name">陳小華<span class="player-tag">（選手）</span></span>
+        <span class="net neg">-24兩</span>
+        <span class="ntd">(-$24,000)</span>
+      </div>
+      <div class="settle-detail" id="pool-bp2">
+        <div class="line"><span class="dl">投注 B隊 15兩 (輸)</span><span class="dv neg">-15兩</span></div>
+        <div class="line"><span class="dl">莊家負債 (50%)</span><span class="dv neg">-9兩</span></div>
+        <div class="divider"></div>
+        <div class="line total"><span class="dl">淨額</span><span class="dv neg">-24兩</span></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- GRAND SUMMARY -->
+  <!-- ═══════════════════════════════════════ -->
+
+  <div class="decision-ref"><strong>D13:</strong> Grand summary at the bottom itemizes base match and each pool separately, then shows combined totals. Bookkeeper sees both the breakdown and the grand total.</div>
+
+  <div class="summary-card">
+    <div class="summary-section-label">基本盤</div>
+    <div class="summary-row"><span class="sl">投注</span><span class="sv">34兩<span class="ntd">($34,000)</span></span></div>
+    <div class="summary-row"><span class="sl">A 隊</span><span class="sv">18兩</span></div>
+    <div class="summary-row"><span class="sl">B 隊</span><span class="sv">16兩</span></div>
+    <div class="summary-row"><span class="sl">抽水</span><span class="sv">1.9兩<span class="ntd">($1,900)</span></span></div>
+
+    <div class="summary-divider"></div>
+
+    <div class="summary-section-label" style="color: #a21caf;">加強盤 #1</div>
+    <div class="summary-row"><span class="sl">投注</span><span class="sv">63兩<span class="ntd">($63,000)</span></span></div>
+    <div class="summary-row"><span class="sl">A 隊</span><span class="sv">18兩 (6支)</span></div>
+    <div class="summary-row"><span class="sl">B 隊（開盤方）</span><span class="sv">45兩 (15支)</span></div>
+    <div class="summary-row"><span class="sl">抽水</span><span class="sv">3.2兩<span class="ntd">($3,200)</span></span></div>
+
+    <div class="summary-divider" style="border-top: 2px solid #e2e8f0;"></div>
+
+    <div class="summary-row" style="font-size: 15px;">
+      <span class="sl" style="font-weight: 600; color: #334155;">合計投注</span>
+      <span class="sv">97兩<span class="ntd">($97,000)</span></span>
+    </div>
+    <div class="summary-row" style="font-size: 15px;">
+      <span class="sl" style="font-weight: 600; color: #334155;">合計抽水</span>
+      <span class="sv">5.1兩<span class="ntd">($5,100)</span></span>
+    </div>
+
+    <div class="export-row">
+      <button class="export-btn">&#128196; 匯出 Excel</button>
+      <button class="export-btn">&#128247; 快速截圖</button>
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+}
+</script>
+
+</body>
+</html>

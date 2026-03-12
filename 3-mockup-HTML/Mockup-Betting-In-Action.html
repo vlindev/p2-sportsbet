@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup — #2 Tab Bar + #3 Betting Actions</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Noto Sans TC', sans-serif; }
+  body { background: #f8fafc; }
+</style>
+</head>
+<body>
+
+<div class="max-w-4xl mx-auto p-6 pt-10 space-y-16">
+
+  <!-- Scenario label -->
+  <div class="text-center">
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Unified Architecture — #2 Tab Bar + #3 Betting Actions</h1>
+    <p class="text-sm text-slate-500">Two scenarios shown: before and after 封盤</p>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO A: Match is SCHEDULED (betting still open) -->
+  <!-- ================================================================ -->
+  <div>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 mb-4 text-sm text-blue-700 font-medium">
+      Scenario A: 賽事狀態 = scheduled（投注中）
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <!-- Back button -->
+      <button class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-500 cursor-pointer mb-4">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        返回賽事
+      </button>
+
+      <!-- #2: Tab bar (fixed-width pills, truncated, hover tooltip) -->
+      <div class="flex gap-1.5 flex-wrap mb-4">
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第1組">第1組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第2組">第2組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-orange-500 text-white border-orange-500 cursor-pointer truncate text-center px-2" title="第3組">第3組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第4組">第4組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第5組">第5組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="熱身賽 週四">熱身賽 週四</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第7組">第7組</button>
+      </div>
+
+      <!-- Match header (Layout B stacked) -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+        <div class="flex items-center gap-2 flex-wrap mb-3">
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">週一例行賽</span>
+          <span class="text-sm text-slate-500">2026-03-09</span>
+          <span class="text-sm text-slate-500">07:00 開始</span>
+        </div>
+        <p class="text-lg font-bold text-slate-800 mb-3">第3組</p>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="flex-1"><p class="text-base font-bold text-slate-800 mb-0.5">A 隊</p><p class="text-sm text-slate-500">張大明 <span class="font-bold text-slate-400">·</span> 李志強</p></div>
+          <div class="shrink-0 px-2 text-center"><span class="text-base font-black text-slate-800">&#9664;</span><p class="text-sm font-bold text-orange-500">讓 3 點</p></div>
+          <div class="flex-1 text-right"><p class="text-base font-bold text-slate-800 mb-0.5">B 隊</p><p class="text-sm text-slate-500">王建宏 <span class="font-bold text-slate-400">·</span> 林俊傑</p></div>
+        </div>
+      </div>
+
+      <!-- #3: Scheduled state — small 封盤 link at right -->
+      <div class="flex justify-end mb-3">
+        <button class="text-sm font-medium text-amber-600 hover:text-amber-700 cursor-pointer">
+          封盤
+        </button>
+      </div>
+
+      <!-- Bet columns -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <!-- A side -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-slate-700">A 隊</span>
+            <span class="text-xs text-slate-400">5筆 · 12兩</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="flex-1 truncate text-slate-700">張大明</span>
+              <span class="font-medium tabular-nums text-slate-700">5兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="flex-1 truncate text-slate-700">李志強</span>
+              <span class="font-medium tabular-nums text-slate-700">5兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm group">
+              <span class="flex-1 truncate text-slate-700">小陳</span>
+              <span class="font-medium tabular-nums text-slate-700">2兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span>
+              <span class="text-slate-300 hover:text-red-400 cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            </div>
+          </div>
+        </div>
+        <!-- B side -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-slate-700">B 隊</span>
+            <span class="text-xs text-slate-400">4筆 · 9兩</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm">
+              <span class="flex-1 truncate text-slate-700">王建宏</span>
+              <span class="font-medium tabular-nums text-slate-700">5兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="flex-1 truncate text-slate-700">林俊傑</span>
+              <span class="font-medium tabular-nums text-slate-700">5兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm group">
+              <span class="flex-1 truncate text-slate-700">小黃</span>
+              <span class="font-medium tabular-nums text-slate-700">2兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span>
+              <span class="text-slate-300 hover:text-red-400 cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            </div>
+            <div class="flex items-center gap-2 text-sm group">
+              <span class="flex-1 truncate text-slate-700">小林</span>
+              <span class="font-medium tabular-nums text-slate-700">1兩</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span>
+              <span class="text-slate-300 hover:text-red-400 cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entry form -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p class="text-sm font-medium text-slate-500 mb-3">新增投注</p>
+        <div class="flex gap-3 items-center flex-wrap">
+          <div class="flex-1 min-w-[160px]">
+            <input type="text" placeholder="搜尋會員..." class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-orange-300">
+          </div>
+          <div class="flex gap-1.5">
+            <button class="px-4 py-2 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer">A 隊</button>
+            <button class="px-4 py-2 text-sm font-medium rounded-lg border bg-orange-500 text-white border-orange-500 cursor-pointer">B 隊</button>
+          </div>
+          <div class="flex gap-1.5">
+            <button class="px-3 py-2 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 cursor-pointer">1兩</button>
+            <button class="px-3 py-2 text-sm font-medium rounded-lg border bg-slate-700 text-white border-slate-700 cursor-pointer">2兩</button>
+          </div>
+          <button class="px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg cursor-pointer">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO B: Match is BETTING_CLOSED (封盤) -->
+  <!-- ================================================================ -->
+  <div>
+    <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mb-4 text-sm text-amber-700 font-medium">
+      Scenario B: 賽事狀態 = betting_closed（已封盤）— Monday match
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <!-- Back button -->
+      <button class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-500 cursor-pointer mb-4">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        返回賽事
+      </button>
+
+      <!-- #2: Tab bar (fixed-width pills, truncated, hover tooltip) -->
+      <div class="flex gap-1.5 flex-wrap mb-4">
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第1組">第1組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第2組">第2組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-orange-500 text-white border-orange-500 cursor-pointer truncate text-center px-2" title="第3組">第3組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第4組">第4組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第5組">第5組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="熱身賽 週四">熱身賽 週四</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第7組">第7組</button>
+      </div>
+
+      <!-- Match header (Layout B stacked) -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+        <div class="flex items-center gap-2 flex-wrap mb-3">
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">週一例行賽</span>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">封盤</span>
+          <span class="text-sm text-slate-500">2026-03-09</span>
+          <span class="text-sm text-slate-500">07:00 開始</span>
+        </div>
+        <p class="text-lg font-bold text-slate-800 mb-3">第3組</p>
+        <div class="flex items-center gap-3 mb-1">
+          <div class="flex-1"><p class="text-base font-bold text-slate-800 mb-0.5">A 隊</p><p class="text-sm text-slate-500">張大明 <span class="font-bold text-slate-400">·</span> 李志強</p></div>
+          <div class="shrink-0 px-2 text-center"><span class="text-base font-black text-slate-800">&#9664;</span><p class="text-sm font-bold text-orange-500">讓 3 點</p></div>
+          <div class="flex-1 text-right"><p class="text-base font-bold text-slate-800 mb-0.5">B 隊</p><p class="text-sm text-slate-500">王建宏 <span class="font-bold text-slate-400">·</span> 林俊傑</p></div>
+        </div>
+      </div>
+
+      <!-- #3: Betting closed banner with actions -->
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="text-sm text-amber-700">已封盤 · 會員無法自行下注</span>
+          <div class="flex items-center gap-3">
+            <button class="text-sm text-slate-500 hover:text-slate-700 cursor-pointer">取消封盤</button>
+            <button class="text-sm font-medium text-blue-500 hover:text-blue-700 cursor-pointer">自動派注</button>
+            <button class="text-sm font-medium text-orange-500 hover:text-orange-700 cursor-pointer" onclick="document.getElementById('bulk-modal').classList.remove('hidden')">全額降注</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bet columns (same as above, just context) -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-slate-700">A 隊</span>
+            <span class="text-xs text-slate-400">5筆 · 12兩</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">張大明</span><span class="font-medium tabular-nums text-slate-700">5兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">李志強</span><span class="font-medium tabular-nums text-slate-700">5兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">小陳</span><span class="font-medium tabular-nums text-slate-700">2兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-slate-700">B 隊</span>
+            <span class="text-xs text-slate-400">4筆 · 9兩</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">王建宏</span><span class="font-medium tabular-nums text-slate-700">5兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">林俊傑</span><span class="font-medium tabular-nums text-slate-700">5兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">小黃</span><span class="font-medium tabular-nums text-slate-700">2兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">小林</span><span class="font-medium tabular-nums text-slate-700">1兩</span><span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entry form still visible after 封盤 (bookkeeper retains power) -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <p class="text-sm font-medium text-slate-500 mb-3">新增投注</p>
+        <div class="flex gap-3 items-center flex-wrap">
+          <div class="flex-1 min-w-[160px]">
+            <input type="text" placeholder="搜尋會員..." class="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-orange-300">
+          </div>
+          <div class="flex gap-1.5">
+            <button class="px-4 py-2 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 cursor-pointer">A 隊</button>
+            <button class="px-4 py-2 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 cursor-pointer">B 隊</button>
+          </div>
+          <button class="px-5 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg opacity-40 cursor-not-allowed">新增</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO C: Report view with tab bar -->
+  <!-- ================================================================ -->
+  <div>
+    <div class="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 mb-4 text-sm text-emerald-700 font-medium">
+      Scenario C: 已完成賽事 — Report view with tab bar navigation
+    </div>
+
+    <div class="max-w-3xl mx-auto">
+      <button class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-500 cursor-pointer mb-4">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        返回賽事
+      </button>
+
+      <!-- #2: Tab bar on report view (fixed-width pills, truncated, hover tooltip) -->
+      <div class="flex gap-1.5 flex-wrap mb-4">
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-orange-500 text-white border-orange-500 cursor-pointer truncate text-center px-2" title="第1組">第1組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第2組">第2組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第3組">第3組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第4組">第4組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第5組">第5組</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="熱身賽 週四">熱身賽 週四</button>
+        <button class="w-[76px] py-1.5 text-sm font-medium rounded-lg border bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer truncate text-center px-2" title="第7組">第7組</button>
+      </div>
+
+      <!-- Report header -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+        <div class="flex items-center gap-2 flex-wrap mb-3">
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-700">週一例行賽</span>
+          <span class="text-sm text-slate-500">2026-03-02</span>
+          <span class="text-sm text-slate-500">07:00 開始</span>
+        </div>
+        <p class="text-lg font-bold text-slate-800 mb-3">第1組</p>
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex-1"><p class="text-base font-bold text-slate-800 mb-0.5">A 隊</p><p class="text-sm text-slate-500">張大明 <span class="font-bold text-slate-400">·</span> 李志強</p></div>
+          <div class="shrink-0 px-2 text-center"><span class="text-base font-black text-slate-800">&#9664;</span><p class="text-sm font-bold text-orange-500">讓 3 點</p></div>
+          <div class="flex-1 text-right"><p class="text-base font-bold text-slate-800 mb-0.5">B 隊</p><p class="text-sm text-slate-500">王建宏 <span class="font-bold text-slate-400">·</span> 林俊傑</p></div>
+        </div>
+        <div class="w-full bg-emerald-50 rounded-lg py-2.5 text-center mt-2">
+          <span class="text-base font-semibold text-emerald-600">A 隊勝 &#10003;</span>
+        </div>
+      </div>
+
+      <!-- Report bet columns -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="rounded-xl border p-4 border-emerald-200 bg-emerald-50/30">
+          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-emerald-700">A 隊</span>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">勝</span>
+            <span class="ml-auto text-sm text-emerald-600">5 筆</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">張大明</span><span class="font-medium tabular-nums text-emerald-600">5兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">李志強</span><span class="font-medium tabular-nums text-emerald-600">5兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-700">小陳</span><span class="font-medium tabular-nums text-emerald-600">2兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+          </div>
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 text-sm font-semibold text-emerald-700">
+            <span>小計: 12兩</span>
+          </div>
+        </div>
+        <div class="rounded-xl border p-4 border-gray-200 bg-gray-50/30">
+          <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <span class="text-base font-bold text-slate-400">B 隊</span>
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-slate-400">敗</span>
+            <span class="ml-auto text-sm text-slate-400">4 筆</span>
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-400">王建宏</span><span class="font-medium tabular-nums text-slate-400">5兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-400">林俊傑</span><span class="font-medium tabular-nums text-slate-400">5兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">自</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-400">小黃</span><span class="font-medium tabular-nums text-slate-400">2兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+            <div class="flex items-center gap-2 text-sm"><span class="flex-1 truncate text-slate-400">小林</span><span class="font-medium tabular-nums text-slate-400">1兩</span><span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-50 text-orange-600">願</span></div>
+          </div>
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 text-sm font-semibold text-slate-400">
+            <span>小計: 13兩</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-slate-500">總投注</span>
+          <div class="text-right">
+            <span class="font-semibold text-slate-800">25兩</span>
+            <span class="text-slate-400 ml-1.5">($25,000)</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-2 pt-2 border-t border-gray-100">結算金額待報表頁計算（1:1 派彩模式）</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- SCENARIO D: 全額降注 Modal -->
+  <!-- ================================================================ -->
+  <div>
+    <div class="bg-purple-50 border border-purple-200 rounded-lg px-4 py-2 mb-4 text-sm text-purple-700 font-medium">
+      Scenario D: 全額降注 Modal（點擊全額降注後）
+    </div>
+
+    <div class="max-w-sm mx-auto">
+      <div class="bg-white rounded-2xl shadow-xl p-6">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">全額降注</h3>
+        <p class="text-sm text-slate-500 mb-4">將 2兩投注改為 1兩</p>
+        <div class="space-y-2 mb-5">
+          <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-orange-300 bg-orange-50 cursor-pointer">
+            <input type="radio" name="demo-side" checked class="accent-orange-500">
+            <span class="text-sm text-slate-700">全部</span>
+            <span class="text-xs text-slate-400 ml-auto">4 筆</span>
+          </label>
+          <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer">
+            <input type="radio" name="demo-side" class="accent-orange-500">
+            <span class="text-sm text-slate-700">A 隊</span>
+            <span class="text-xs text-slate-400 ml-auto">2 筆</span>
+          </label>
+          <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer">
+            <input type="radio" name="demo-side" class="accent-orange-500">
+            <span class="text-sm text-slate-700">B 隊</span>
+            <span class="text-xs text-slate-400 ml-auto">2 筆</span>
+          </label>
+        </div>
+        <div class="flex gap-3">
+          <button class="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">取消</button>
+          <button class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-orange-500 rounded-lg hover:bg-orange-600 cursor-pointer">確認降注 4 筆</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pb-20"></div>
+</div>
+
+</body>
+</html>

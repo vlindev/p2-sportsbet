@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Member UI Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, 'Noto Sans TC', 'Helvetica Neue', sans-serif;
+    background: #f1f5f9;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+
+  /* ── Phone Frame ── */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #fff;
+    border-radius: 40px;
+    border: 8px solid #1e293b;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notch {
+    width: 160px;
+    height: 28px;
+    background: #1e293b;
+    border-radius: 0 0 20px 20px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  /* ── Top Bar ── */
+  .top-bar {
+    padding: 12px 20px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .top-bar .greeting {
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .top-bar .name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .top-bar .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f97316, #fb923c);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  /* ── Content Area ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Progress Banner ── */
+  .progress-section {
+    padding: 12px 20px 16px;
+  }
+  .progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .progress-header .label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .progress-header .count {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f97316;
+  }
+  .progress-bar-bg {
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f97316, #fb923c);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+  .progress-bar-fill.complete {
+    background: linear-gradient(90deg, #10b981, #34d399);
+  }
+
+  /* ── Incomplete Banner (on 我的紀錄) ── */
+  .incomplete-banner {
+    margin: 0 20px 12px;
+    padding: 12px 16px;
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .incomplete-banner:active { background: #ffedd5; }
+  .incomplete-banner .text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ea580c;
+  }
+  .incomplete-banner .arrow {
+    font-size: 18px;
+    color: #f97316;
+  }
+
+  /* ── Section Header ── */
+  .section-header {
+    padding: 4px 20px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── Match Card ── */
+  .match-card {
+    margin: 0 16px 12px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .match-card:active { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .match-card.my-match { border-color: #60a5fa; border-width: 2px; }
+  .match-card.betted { border-color: #a3e635; }
+
+  .match-card-inner { padding: 16px; }
+
+  .match-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .match-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: #64748b;
+  }
+  .match-time {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .my-match-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #2563eb;
+    background: #eff6ff;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+
+  .teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .team-block { flex: 1; }
+  .team-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+  .team-names {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.4;
+  }
+  .vs-divider {
+    flex: 0 0 40px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #cbd5e1;
+  }
+  .handicap-info {
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: -2px;
+  }
+
+  /* ── Bet Distribution Bar ── */
+  .dist-section { margin-bottom: 12px; }
+  .dist-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .dist-bar-container {
+    flex: 1;
+    height: 20px;
+    background: #f8fafc;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+  }
+  .dist-bar-a {
+    height: 100%;
+    background: #bfdbfe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #1e40af;
+    transition: width 0.4s ease;
+    min-width: 28px;
+  }
+  .dist-bar-b {
+    height: 100%;
+    background: #fde68a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #92400e;
+    transition: width 0.4s ease;
+    min-width: 28px;
+  }
+  .dist-labels {
+    display: flex;
+    justify-content: space-between;
+  }
+  .dist-payout {
+    font-size: 11px;
+    color: #64748b;
+  }
+  .dist-payout strong {
+    color: #334155;
+  }
+
+  /* ── Card Action Row ── */
+  .card-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  .bet-btn {
+    padding: 10px 28px;
+    background: #f97316;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+  }
+  .bet-btn:active { background: #ea580c; }
+
+  .bet-placed-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .bet-placed-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bet-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #a3e635;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #fff;
+    font-weight: 700;
+  }
+  .bet-placed-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .bet-placed-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: #65a30d;
+  }
+
+  /* ═══ BET MODAL ═══ */
+  .modal-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.show {
+    display: flex;
+  }
+  .bet-modal {
+    background: #fff;
+    width: 100%;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 40px;
+    transform: translateY(0);
+  }
+
+  .modal-handle {
+    width: 36px;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .modal-match-info {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .modal-match-info .num {
+    font-size: 13px;
+    color: #94a3b8;
+    font-weight: 600;
+  }
+  .modal-match-info .handicap {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .modal-teams {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .modal-team-btn {
+    flex: 1;
+    padding: 18px 12px;
+    border: 2.5px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .modal-team-btn:active { transform: scale(0.98); }
+  .modal-team-btn.selected-a { border-color: #3b82f6; background: #eff6ff; }
+  .modal-team-btn.selected-b { border-color: #f59e0b; background: #fffbeb; }
+  .modal-team-btn .t-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+  .modal-team-btn.selected-a .t-label { color: #2563eb; }
+  .modal-team-btn.selected-b .t-label { color: #d97706; }
+  .modal-team-btn .t-names {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.4;
+  }
+  .modal-team-btn .t-bets {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+  .modal-team-btn .t-payout {
+    font-size: 13px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .modal-team-btn.selected-a .t-payout { color: #2563eb; }
+  .modal-team-btn.selected-b .t-payout { color: #d97706; }
+
+  .modal-amount-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 10px;
+  }
+  .amount-grid {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .amount-btn {
+    flex: 1;
+    padding: 14px 0;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .amount-btn:active { transform: scale(0.97); }
+  .amount-btn.selected { border-color: #f97316; background: #fff7ed; color: #ea580c; }
+  .amount-btn .unit { font-size: 12px; font-weight: 500; color: #94a3b8; }
+  .amount-btn.selected .unit { color: #f97316; }
+
+  .modal-summary {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .modal-summary .line1 {
+    font-size: 13px;
+    color: #64748b;
+  }
+  .modal-summary .line2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 4px;
+  }
+  .modal-summary .line3 {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+  }
+
+  .confirm-btn {
+    width: 100%;
+    padding: 16px;
+    background: #f97316;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .confirm-btn:active { background: #ea580c; transform: scale(0.99); }
+  .confirm-btn:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+  .cancel-link {
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #94a3b8;
+    cursor: pointer;
+  }
+
+  /* ═══ TOAST ═══ */
+  .toast {
+    display: none;
+    position: absolute;
+    top: 56px;
+    left: 20px;
+    right: 20px;
+    background: #065f46;
+    color: #fff;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 200;
+    animation: slideDown 0.3s ease;
+  }
+  .toast.show { display: block; }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══ ALL DONE CELEBRATION ═══ */
+  .all-done-banner {
+    margin: 0 20px 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #065f46, #047857);
+    border-radius: 14px;
+    text-align: center;
+    color: #fff;
+  }
+  .all-done-banner .big { font-size: 18px; font-weight: 700; }
+  .all-done-banner .sub { font-size: 13px; color: #a7f3d0; margin-top: 4px; }
+
+  /* ═══ MY RECORD SCREEN ═══ */
+  .summary-card {
+    margin: 0 16px 16px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+    padding: 20px;
+  }
+  .summary-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .summary-stat-row:last-child { border-bottom: none; }
+  .summary-stat-row .s-label {
+    font-size: 14px;
+    color: #64748b;
+  }
+  .summary-stat-row .s-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .summary-stat-row .s-value.green { color: #16a34a; }
+  .summary-stat-row .s-value.red { color: #dc2626; }
+
+  .record-match {
+    margin: 0 16px 10px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .record-match .rm-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .record-match .rm-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+  }
+  .record-match .rm-team {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .record-match .rm-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: #334155;
+  }
+  .record-match .rm-payout {
+    font-size: 12px;
+    color: #64748b;
+    text-align: right;
+  }
+  .record-match.pending { opacity: 0.4; }
+
+  .monthly-section {
+    margin: 24px 16px 16px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e2e8f0;
+  }
+  .monthly-section h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 12px;
+  }
+
+  /* ═══ BOTTOM NAV ═══ */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 72px;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    z-index: 50;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .nav-item .nav-icon { font-size: 22px; }
+  .nav-item .nav-label { font-size: 11px; font-weight: 600; color: #94a3b8; }
+  .nav-item.active .nav-label { color: #f97316; }
+  .nav-item .nav-badge {
+    position: absolute;
+    top: 8px;
+    right: calc(50% - 22px);
+    min-width: 18px;
+    height: 18px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+  }
+
+  /* ── Helper ── */
+  .px-20 { padding-left: 20px; padding-right: 20px; }
+  .mt-8 { margin-top: 8px; }
+  .mb-16 { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="notch"></div>
+
+  <!-- ── Top Bar ── -->
+  <div class="top-bar">
+    <div>
+      <div class="greeting">週日晚上</div>
+      <div class="name">陳先生，晚安</div>
+    </div>
+    <div class="avatar">陳</div>
+  </div>
+
+  <!-- ── Toast ── -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── Content ── -->
+  <div class="content">
+
+    <!-- ═══════════ SCREEN: MATCHES (賽事) ═══════════ -->
+    <div class="screen active" id="screen-matches">
+
+      <!-- Progress -->
+      <div class="progress-section">
+        <div class="progress-header">
+          <div class="label">週一賽事下注進度</div>
+          <div class="count" id="progress-text">2 / 7 已下注</div>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-bar" style="width: 28.5%"></div>
+        </div>
+      </div>
+
+      <div class="section-header">3月3日 週一 ・ 7 場</div>
+
+      <!-- ── Match 1: Player's own match (already bet - mandatory self-bet) ── -->
+      <div class="match-card my-match betted" id="card-1">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第一場</span>
+            <span class="match-time">08:00</span>
+            <span class="my-match-tag">你的比賽</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">陳先生(你)<br>王大明</div>
+            </div>
+            <div class="vs-divider">
+              vs.
+              <div class="handicap-info">讓點 2 (A讓)</div>
+            </div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">林俊傑<br>張家豪</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 38%;">16</div>
+                <div class="dist-bar-b" style="width: 62%;">26</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+1.63兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+0.62兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action">
+            <div class="bet-placed-row">
+              <div class="bet-placed-info">
+                <div class="bet-check">&#10003;</div>
+                <div class="bet-placed-text">A隊（自己隊伍）</div>
+              </div>
+              <div class="bet-placed-amount">5兩</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Match 2: Already bet ── -->
+      <div class="match-card betted" id="card-2">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第二場</span>
+            <span class="match-time">08:00</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">黃文彬<br>蔡國華</div>
+            </div>
+            <div class="vs-divider">
+              vs.
+              <div class="handicap-info">平盤</div>
+            </div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">吳明哲<br>許志豪</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 50%;">22</div>
+                <div class="dist-bar-b" style="width: 50%;">22</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+1.00兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+1.00兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action">
+            <div class="bet-placed-row">
+              <div class="bet-placed-info">
+                <div class="bet-check">&#10003;</div>
+                <div class="bet-placed-text">A隊</div>
+              </div>
+              <div class="bet-placed-amount">2兩</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Match 3: NOT YET BET ── -->
+      <div class="match-card" id="card-3">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第三場</span>
+            <span class="match-time">08:30</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">趙明德<br>鄭文雄</div>
+            </div>
+            <div class="vs-divider">
+              vs.
+              <div class="handicap-info">讓點 3 (B讓)</div>
+            </div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">劉建宏<br>周志明</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 30%;" id="dist-3-a">12</div>
+                <div class="dist-bar-b" style="width: 70%;" id="dist-3-b">28</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout" id="payout-3-a">A 贏: 每注 <strong>+2.33兩</strong></div>
+              <div class="dist-payout" id="payout-3-b">B 贏: 每注 <strong>+0.43兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action" id="action-3">
+            <button class="bet-btn" onclick="openBetModal(3)">下注</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Match 4: NOT YET BET ── -->
+      <div class="match-card" id="card-4">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第四場</span>
+            <span class="match-time">08:30</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">洪國榮<br>楊世杰</div>
+            </div>
+            <div class="vs-divider">
+              vs.
+              <div class="handicap-info">讓洞 1 (A讓)</div>
+            </div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">潘建志<br>蕭正文</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 55%;">24</div>
+                <div class="dist-bar-b" style="width: 45%;">20</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+0.83兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+1.20兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action" id="action-4">
+            <button class="bet-btn" onclick="openBetModal(4)">下注</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Match 5-7: Simplified (NOT YET BET) ── -->
+      <div class="match-card" id="card-5">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第五場</span>
+            <span class="match-time">09:00</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">方志偉<br>葉俊宏</div>
+            </div>
+            <div class="vs-divider">vs.<div class="handicap-info">平盤</div></div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">謝明山<br>何建安</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 60%;">18</div>
+                <div class="dist-bar-b" style="width: 40%;">12</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+0.67兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+1.50兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action" id="action-5">
+            <button class="bet-btn" onclick="openBetModal(5)">下注</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="match-card" id="card-6">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第六場</span>
+            <span class="match-time">09:00</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">郭俊彥<br>李東明</div>
+            </div>
+            <div class="vs-divider">vs.<div class="handicap-info">讓點 1 (A讓)</div></div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">徐家銘<br>呂文清</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 45%;">20</div>
+                <div class="dist-bar-b" style="width: 55%;">24</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+1.20兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+0.83兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action" id="action-6">
+            <button class="bet-btn" onclick="openBetModal(6)">下注</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="match-card" id="card-7">
+        <div class="match-card-inner">
+          <div class="match-meta">
+            <span class="match-num">第七場</span>
+            <span class="match-time">09:30</span>
+          </div>
+          <div class="teams-row">
+            <div class="team-block">
+              <div class="team-label">TEAM A</div>
+              <div class="team-names">高文達<br>孫建國</div>
+            </div>
+            <div class="vs-divider">vs.<div class="handicap-info">平盤</div></div>
+            <div class="team-block" style="text-align: right;">
+              <div class="team-label">TEAM B</div>
+              <div class="team-names">范國強<br>曹志偉</div>
+            </div>
+          </div>
+          <div class="dist-section">
+            <div class="dist-bar-row">
+              <div class="dist-bar-container">
+                <div class="dist-bar-a" style="width: 48%;">14</div>
+                <div class="dist-bar-b" style="width: 52%;">15</div>
+              </div>
+            </div>
+            <div class="dist-labels">
+              <div class="dist-payout">A 贏: 每注 <strong>+1.07兩</strong></div>
+              <div class="dist-payout">B 贏: 每注 <strong>+0.93兩</strong></div>
+            </div>
+          </div>
+          <div class="card-action" id="action-7">
+            <button class="bet-btn" onclick="openBetModal(7)">下注</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="height: 24px;"></div>
+    </div>
+
+    <!-- ═══════════ SCREEN: MY RECORD (我的紀錄) ═══════════ -->
+    <div class="screen" id="screen-record">
+
+      <!-- Incomplete banner (shown when not all bets placed) -->
+      <div class="incomplete-banner" id="incomplete-banner" onclick="switchTab('matches')">
+        <div class="text" id="incomplete-text">還有 5 場未下注</div>
+        <div class="arrow">&#8594;</div>
+      </div>
+
+      <!-- All done banner (hidden until complete) -->
+      <div class="all-done-banner" id="done-banner" style="display: none;">
+        <div class="big">7 / 7 全部完成</div>
+        <div class="sub">週一賽事已全數下注</div>
+      </div>
+
+      <div class="section-header">本週下注總覽</div>
+
+      <div class="summary-card">
+        <div class="summary-stat-row">
+          <div class="s-label">已下注場次</div>
+          <div class="s-value" id="rec-count">2 / 7</div>
+        </div>
+        <div class="summary-stat-row">
+          <div class="s-label">本週總下注</div>
+          <div class="s-value" id="rec-total">7 兩</div>
+        </div>
+        <div class="summary-stat-row">
+          <div class="s-label">最佳情況（全贏）</div>
+          <div class="s-value green" id="rec-best">+10.15 兩</div>
+        </div>
+        <div class="summary-stat-row">
+          <div class="s-label">最差情況（全輸）</div>
+          <div class="s-value red" id="rec-worst">-7.00 兩</div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top: 8px;">逐場明細</div>
+
+      <div id="record-list">
+        <div class="record-match">
+          <div class="rm-left">
+            <div class="rm-num">第一場</div>
+            <div class="rm-team">A隊 (你的比賽)</div>
+          </div>
+          <div>
+            <div class="rm-amount">5兩</div>
+            <div class="rm-payout">贏 +8.15兩 / 輸 -5.00兩</div>
+          </div>
+        </div>
+        <div class="record-match">
+          <div class="rm-left">
+            <div class="rm-num">第二場</div>
+            <div class="rm-team">A隊</div>
+          </div>
+          <div>
+            <div class="rm-amount">2兩</div>
+            <div class="rm-payout">贏 +2.00兩 / 輸 -2.00兩</div>
+          </div>
+        </div>
+        <div class="record-match pending" id="rec-3">
+          <div class="rm-left">
+            <div class="rm-num">第三場</div>
+            <div class="rm-team" style="color: #94a3b8;">未下注</div>
+          </div>
+          <div><div class="rm-amount" style="color: #cbd5e1;">—</div></div>
+        </div>
+        <div class="record-match pending" id="rec-4">
+          <div class="rm-left">
+            <div class="rm-num">第四場</div>
+            <div class="rm-team" style="color: #94a3b8;">未下注</div>
+          </div>
+          <div><div class="rm-amount" style="color: #cbd5e1;">—</div></div>
+        </div>
+        <div class="record-match pending" id="rec-5">
+          <div class="rm-left">
+            <div class="rm-num">第五場</div>
+            <div class="rm-team" style="color: #94a3b8;">未下注</div>
+          </div>
+          <div><div class="rm-amount" style="color: #cbd5e1;">—</div></div>
+        </div>
+        <div class="record-match pending" id="rec-6">
+          <div class="rm-left">
+            <div class="rm-num">第六場</div>
+            <div class="rm-team" style="color: #94a3b8;">未下注</div>
+          </div>
+          <div><div class="rm-amount" style="color: #cbd5e1;">—</div></div>
+        </div>
+        <div class="record-match pending" id="rec-7">
+          <div class="rm-left">
+            <div class="rm-num">第七場</div>
+            <div class="rm-team" style="color: #94a3b8;">未下注</div>
+          </div>
+          <div><div class="rm-amount" style="color: #cbd5e1;">—</div></div>
+        </div>
+      </div>
+
+      <div class="monthly-section">
+        <h3>本月結餘</h3>
+        <div class="summary-stat-row">
+          <div class="s-label">三月累計</div>
+          <div class="s-value green">+12.40 兩</div>
+        </div>
+        <div class="summary-stat-row">
+          <div class="s-label">換算金額</div>
+          <div class="s-value green">+$12,400</div>
+        </div>
+      </div>
+
+      <div style="height: 24px;"></div>
+    </div>
+  </div>
+
+  <!-- ═══ BET MODAL ═══ -->
+  <div class="modal-overlay" id="modal">
+    <div class="bet-modal">
+      <div class="modal-handle"></div>
+
+      <div class="modal-match-info">
+        <div class="num" id="modal-match-num">第三場 ・ 08:30</div>
+        <div class="handicap" id="modal-handicap">讓點 3 (B讓)</div>
+      </div>
+
+      <div class="modal-teams">
+        <div class="modal-team-btn" id="modal-team-a" onclick="selectTeam('a')">
+          <div class="t-label">TEAM A</div>
+          <div class="t-names" id="modal-names-a">趙明德<br>鄭文雄</div>
+          <div class="t-bets" id="modal-bets-a">12 注</div>
+          <div class="t-payout" id="modal-payout-a">贏 +2.33兩</div>
+        </div>
+        <div class="modal-team-btn" id="modal-team-b" onclick="selectTeam('b')">
+          <div class="t-label">TEAM B</div>
+          <div class="t-names" id="modal-names-b">劉建宏<br>周志明</div>
+          <div class="t-bets" id="modal-bets-b">28 注</div>
+          <div class="t-payout" id="modal-payout-b">贏 +0.43兩</div>
+        </div>
+      </div>
+
+      <div class="modal-amount-label">下注金額</div>
+      <div class="amount-grid">
+        <div class="amount-btn" onclick="selectAmount(this, 1)">1<br><span class="unit">兩</span></div>
+        <div class="amount-btn" onclick="selectAmount(this, 2)">2<br><span class="unit">兩</span></div>
+        <div class="amount-btn" onclick="selectAmount(this, 3)">3<br><span class="unit">兩</span></div>
+        <div class="amount-btn" onclick="selectAmount(this, 5)">5<br><span class="unit">兩</span></div>
+      </div>
+
+      <div class="modal-summary" id="modal-summary" style="display: none;">
+        <div class="line1" id="summary-line1"></div>
+        <div class="line2" id="summary-line2"></div>
+        <div class="line3" id="summary-line3"></div>
+      </div>
+
+      <button class="confirm-btn" id="confirm-btn" disabled onclick="confirmBet()">請選擇隊伍與金額</button>
+      <div class="cancel-link" onclick="closeModal()">取消</div>
+    </div>
+  </div>
+
+  <!-- ═══ BOTTOM NAV ═══ -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-matches" onclick="switchTab('matches')">
+      <div class="nav-icon">&#9917;</div>
+      <div class="nav-label">賽事</div>
+    </div>
+    <div class="nav-item" id="nav-record" onclick="switchTab('record')">
+      <div class="nav-icon">&#128203;</div>
+      <div class="nav-label">我的紀錄</div>
+      <div class="nav-badge" id="record-badge">5</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── State ──
+  let betsPlaced = { 1: true, 2: true, 3: false, 4: false, 5: false, 6: false, 7: false };
+  let betDetails = {
+    1: { team: 'a', amount: 5 },
+    2: { team: 'a', amount: 2 },
+  };
+  let currentModal = null;
+  let selectedTeam = null;
+  let selectedAmount = null;
+
+  const matchData = {
+    3: { num: '第三場 ・ 08:30', handicap: '讓點 3 (B讓)', a: '趙明德<br>鄭文雄', b: '劉建宏<br>周志明', betsA: 12, betsB: 28 },
+    4: { num: '第四場 ・ 08:30', handicap: '讓洞 1 (A讓)', a: '洪國榮<br>楊世杰', b: '潘建志<br>蕭正文', betsA: 24, betsB: 20 },
+    5: { num: '第五場 ・ 09:00', handicap: '平盤', a: '方志偉<br>葉俊宏', b: '謝明山<br>何建安', betsA: 18, betsB: 12 },
+    6: { num: '第六場 ・ 09:00', handicap: '讓點 1 (A讓)', a: '郭俊彥<br>李東明', b: '徐家銘<br>呂文清', betsA: 20, betsB: 24 },
+    7: { num: '第七場 ・ 09:30', handicap: '平盤', a: '高文達<br>孫建國', b: '范國強<br>曹志偉', betsA: 14, betsB: 15 },
+  };
+
+  function getPlacedCount() {
+    return Object.values(betsPlaced).filter(Boolean).length;
+  }
+
+  function getRemaining() {
+    return 7 - getPlacedCount();
+  }
+
+  function updateProgress() {
+    const count = getPlacedCount();
+    const pct = (count / 7) * 100;
+    document.getElementById('progress-text').textContent = count + ' / 7 已下注';
+    const bar = document.getElementById('progress-bar');
+    bar.style.width = pct + '%';
+    if (count === 7) bar.classList.add('complete');
+    else bar.classList.remove('complete');
+
+    // Badge
+    const remaining = getRemaining();
+    const badge = document.getElementById('record-badge');
+    if (remaining > 0) {
+      badge.style.display = 'flex';
+      badge.textContent = remaining;
+    } else {
+      badge.style.display = 'none';
+    }
+
+    // Record screen
+    document.getElementById('rec-count').textContent = count + ' / 7';
+    const totalAmount = Object.values(betDetails).reduce((s, b) => s + b.amount, 0);
+    document.getElementById('rec-total').textContent = totalAmount + ' 兩';
+    document.getElementById('rec-best').textContent = '+' + (totalAmount * 1.45).toFixed(2) + ' 兩';
+    document.getElementById('rec-worst').textContent = '-' + totalAmount.toFixed(2) + ' 兩';
+
+    // Incomplete banner
+    const ib = document.getElementById('incomplete-banner');
+    const db = document.getElementById('done-banner');
+    if (remaining > 0) {
+      ib.style.display = 'flex';
+      db.style.display = 'none';
+      document.getElementById('incomplete-text').textContent = '還有 ' + remaining + ' 場未下注';
+    } else {
+      ib.style.display = 'none';
+      db.style.display = 'block';
+    }
+  }
+
+  // ── Tab switching ──
+  function switchTab(tab) {
+    document.getElementById('screen-matches').classList.toggle('active', tab === 'matches');
+    document.getElementById('screen-record').classList.toggle('active', tab === 'record');
+    document.getElementById('nav-matches').classList.toggle('active', tab === 'matches');
+    document.getElementById('nav-record').classList.toggle('active', tab === 'record');
+    // scroll to top
+    document.querySelector('.content').scrollTop = 0;
+  }
+
+  // ── Modal ──
+  function openBetModal(matchNum) {
+    currentModal = matchNum;
+    selectedTeam = null;
+    selectedAmount = null;
+    const m = matchData[matchNum];
+
+    document.getElementById('modal-match-num').textContent = m.num;
+    document.getElementById('modal-handicap').textContent = m.handicap;
+    document.getElementById('modal-names-a').innerHTML = m.a;
+    document.getElementById('modal-names-b').innerHTML = m.b;
+    document.getElementById('modal-bets-a').textContent = m.betsA + ' 注';
+    document.getElementById('modal-bets-b').textContent = m.betsB + ' 注';
+
+    const ratioA = (m.betsB / m.betsA).toFixed(2);
+    const ratioB = (m.betsA / m.betsB).toFixed(2);
+    document.getElementById('modal-payout-a').textContent = '贏 +' + ratioA + '兩';
+    document.getElementById('modal-payout-b').textContent = '贏 +' + ratioB + '兩';
+
+    // Reset selection visuals
+    document.getElementById('modal-team-a').className = 'modal-team-btn';
+    document.getElementById('modal-team-b').className = 'modal-team-btn';
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('modal-summary').style.display = 'none';
+    document.getElementById('confirm-btn').disabled = true;
+    document.getElementById('confirm-btn').textContent = '請選擇隊伍與金額';
+
+    document.getElementById('modal').classList.add('show');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    currentModal = null;
+  }
+
+  function selectTeam(team) {
+    selectedTeam = team;
+    document.getElementById('modal-team-a').className = 'modal-team-btn' + (team === 'a' ? ' selected-a' : '');
+    document.getElementById('modal-team-b').className = 'modal-team-btn' + (team === 'b' ? ' selected-b' : '');
+    updateModalSummary();
+  }
+
+  function selectAmount(btn, amount) {
+    selectedAmount = amount;
+    document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    updateModalSummary();
+  }
+
+  function updateModalSummary() {
+    if (!selectedTeam || !selectedAmount) {
+      document.getElementById('modal-summary').style.display = 'none';
+      document.getElementById('confirm-btn').disabled = true;
+      document.getElementById('confirm-btn').textContent = '請選擇隊伍與金額';
+      return;
+    }
+
+    const m = matchData[currentModal];
+    const teamLabel = selectedTeam === 'a' ? 'A隊' : 'B隊';
+    const winRatio = selectedTeam === 'a' ? (m.betsB / m.betsA) : (m.betsA / m.betsB);
+    const potentialWin = (selectedAmount * winRatio * 0.95).toFixed(1);
+
+    document.getElementById('summary-line1').textContent = teamLabel + ' ・ ' + selectedAmount + '兩';
+    document.getElementById('summary-line2').textContent = '贏 +' + potentialWin + '兩 / 輸 -' + selectedAmount + '兩';
+    document.getElementById('summary-line3').textContent = '(贏方扣除 5% 後實領)';
+    document.getElementById('modal-summary').style.display = 'block';
+
+    document.getElementById('confirm-btn').disabled = false;
+    document.getElementById('confirm-btn').textContent = '確認下注 ' + selectedAmount + '兩 ' + teamLabel;
+  }
+
+  function confirmBet() {
+    if (!selectedTeam || !selectedAmount || !currentModal) return;
+
+    const matchNum = currentModal;
+    const team = selectedTeam;
+    const amount = selectedAmount;
+    const teamLabel = team === 'a' ? 'A隊' : 'B隊';
+    const matchLabel = '第' + ['', '一', '二', '三', '四', '五', '六', '七'][matchNum] + '場';
+
+    // Save bet
+    betsPlaced[matchNum] = true;
+    betDetails[matchNum] = { team, amount };
+
+    // Update match card
+    const card = document.getElementById('card-' + matchNum);
+    card.classList.add('betted');
+    const actionDiv = document.getElementById('action-' + matchNum);
+    actionDiv.innerHTML = '<div class="bet-placed-row"><div class="bet-placed-info"><div class="bet-check">&#10003;</div><div class="bet-placed-text">' + teamLabel + '</div></div><div class="bet-placed-amount">' + amount + '兩</div></div>';
+
+    // Update record row
+    const recRow = document.getElementById('rec-' + matchNum);
+    if (recRow) {
+      recRow.classList.remove('pending');
+      recRow.innerHTML = '<div class="rm-left"><div class="rm-num">' + matchLabel + '</div><div class="rm-team">' + teamLabel + '</div></div><div><div class="rm-amount">' + amount + '兩</div></div>';
+    }
+
+    closeModal();
+    updateProgress();
+
+    // Toast
+    const toast = document.getElementById('toast');
+    toast.textContent = '已下注：' + matchLabel + ' ' + teamLabel + ' ' + amount + '兩';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2200);
+
+    // If all done, auto-switch to record after brief delay
+    if (getPlacedCount() === 7) {
+      setTimeout(() => {
+        switchTab('record');
+      }, 2500);
+    }
+  }
+</script>
+
+</body>
+</html>

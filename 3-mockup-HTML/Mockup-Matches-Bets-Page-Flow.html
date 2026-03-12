@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matches + Bets Page Flow Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f8fafc; color: #1e293b; }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .panel { min-width: 0; }
+  .panel-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .panel-subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 24px; }
+
+  /* Match cards */
+  .match-card { background: white; border-radius: 16px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 22px; margin-bottom: 16px; transition: box-shadow 0.2s; }
+  .match-card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+  .match-card.overdue { border: 2px solid #fca5a5; }
+  .match-card.completed { opacity: 0.7; }
+
+  .card-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .badge { font-size: 14px; font-weight: 600; padding: 4px 12px; border-radius: 20px; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-lime { background: #ecfccb; color: #4d7c0f; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .badge-fuchsia { background: #fae8ff; color: #a21caf; }
+  .card-date { font-size: 15px; color: #94a3b8; }
+
+  .card-name { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+
+  /* Teams — stacked two-column layout */
+  .card-teams { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .card-team { flex: 1; min-width: 0; }
+  .card-team-right { text-align: right; }
+  .card-team-label { font-size: 17px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+  .card-team-names { font-size: 15px; color: #64748b; }
+  .card-team-names .dot { font-weight: 800; margin: 0 3px; color: #94a3b8; }
+  .card-handicap-center { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; padding: 0 6px; }
+  .card-handicap-center .vs { font-size: 20px; font-weight: 900; color: #334155; }
+  .card-handicap-center .handicap-arrow { font-size: 17px; font-weight: 900; color: #334155; margin-bottom: 2px; }
+  .card-handicap-center .handicap-text { font-size: 16px; font-weight: 700; color: #f97316; white-space: nowrap; }
+  .card-teams.muted .card-team-label { color: #94a3b8; }
+  .card-teams.muted .card-team-names { color: #b0b8c4; }
+  .card-teams.muted .card-team-names .dot { color: #cbd5e1; }
+  .card-teams.muted .card-handicap-center .vs,
+  .card-teams.muted .card-handicap-center .handicap-arrow { color: #94a3b8; }
+  .card-teams.muted .card-handicap-center .handicap-text { color: #b0b8c4; }
+
+  .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; border-top: 1px solid #f1f5f9; }
+  .card-footer-right { display: flex; align-items: center; gap: 16px; }
+
+  .action-link { font-size: 16px; font-weight: 600; cursor: pointer; transition: color 0.15s; text-decoration: none; }
+  .action-teal { color: #14b8a6; }
+  .action-teal:hover { color: #0d9488; }
+  .action-orange { color: #f97316; }
+  .action-orange:hover { color: #ea580c; }
+  .action-red { color: #ef4444; }
+  .action-red:hover { color: #dc2626; }
+  .action-muted { color: #cbd5e1; cursor: not-allowed; }
+
+  /* Result band */
+  .result-band { background: #ecfdf5; border-radius: 8px; padding: 10px; text-align: center; }
+  .result-band span { font-size: 16px; font-weight: 700; color: #059669; }
+
+  /* Pencil icon (Lucide-style, top-right) */
+  .pencil-icon { color: #94a3b8; cursor: pointer; transition: color 0.15s; margin-left: auto; display: flex; align-items: center; }
+  .pencil-icon:hover { color: #f97316; }
+  .pencil-icon svg { width: 16px; height: 16px; }
+
+  /* Bets page mockup */
+  .bets-page { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 26px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .bets-back { font-size: 15px; color: #64748b; cursor: pointer; margin-bottom: 16px; display: flex; align-items: center; gap: 4px; }
+  .bets-back:hover { color: #f97316; }
+  .bets-match-header { background: #f8fafc; border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+  .bets-match-header .card-header { margin-bottom: 6px; }
+
+  /* Status action bar */
+  .status-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 10px; margin-bottom: 18px; }
+  .status-bar.scheduled-bar { background: #f0fdfa; border-color: #ccfbf1; }
+  .status-bar-label { font-size: 15px; font-weight: 600; }
+  .status-bar-action { font-size: 15px; font-weight: 600; padding: 7px 18px; border-radius: 8px; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-amber { background: #f59e0b; color: white; }
+  .btn-amber:hover { background: #d97706; }
+  .btn-blue { background: #3b82f6; color: white; }
+  .btn-blue:hover { background: #2563eb; }
+  .btn-muted { background: transparent; color: #94a3b8; font-weight: 500; }
+  .btn-muted:hover { color: #64748b; }
+
+  /* Bet columns */
+  .bet-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .bet-col { background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #f1f5f9; }
+  .bet-col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; }
+  .bet-col-title { font-size: 16px; font-weight: 700; }
+  .bet-col-count { font-size: 14px; color: #94a3b8; }
+  .bet-row { display: flex; align-items: center; gap: 8px; font-size: 15px; padding: 5px 0; }
+  .bet-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bet-row-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bet-badge { font-size: 14px; font-weight: 600; padding: 2px 7px; border-radius: 5px; }
+  .bet-badge-auto { background: #f1f5f9; color: #64748b; }
+  .bet-row-auto { color: #94a3b8; }
+
+  /* Entry form */
+  .entry-form { background: #f8fafc; border-radius: 14px; padding: 20px; border: 1px dashed #e2e8f0; }
+  .entry-form-title { font-size: 15px; font-weight: 600; color: #64748b; margin-bottom: 12px; }
+  .entry-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .entry-input { flex: 1; min-width: 120px; padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px; background: white; }
+  .entry-toggle { padding: 7px 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; background: white; color: #64748b; }
+  .entry-submit { padding: 7px 20px; background: #f97316; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .entry-submit:hover { background: #ea580c; }
+
+  /* Edit modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; justify-content: center; align-items: center; }
+  .modal-overlay.visible { display: flex; }
+  .modal { background: white; border-radius: 20px; width: 440px; max-height: 80vh; overflow: auto; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 18px; }
+  .modal-tabs { display: flex; gap: 4px; margin-bottom: 22px; background: #f1f5f9; border-radius: 10px; padding: 4px; }
+  .modal-tab { flex: 1; text-align: center; padding: 9px 14px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.15s; }
+  .modal-tab.active { background: white; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .modal-tab:hover:not(.active) { color: #334155; }
+  .modal-body { font-size: 15px; color: #64748b; line-height: 1.8; }
+  .modal-close { display: block; margin-top: 22px; padding: 11px; width: 100%; text-align: center; background: #f1f5f9; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; color: #64748b; cursor: pointer; }
+  .modal-close:hover { background: #e2e8f0; }
+
+  /* Flow annotations */
+  .flow-note { font-size: 14px; color: #f97316; font-weight: 600; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 7px 12px; margin-top: 8px; display: inline-block; }
+
+  /* Scenario selector */
+  .scenario-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .scenario-btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 2px solid #e2e8f0; background: white; color: #64748b; transition: all 0.2s; }
+  .scenario-btn.active { border-color: #1e293b; background: #1e293b; color: white; }
+  .scenario-btn:hover:not(.active) { border-color: #94a3b8; }
+
+  h2 { font-size: 18px; font-weight: 700; color: #334155; margin-bottom: 18px; margin-top: 34px; }
+  h2:first-of-type { margin-top: 0; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1 style="font-size: 26px; font-weight: 800; margin-bottom: 6px;">Matches + Bets Page — Flow Mockup v5</h1>
+  <p style="font-size: 15px; color: #94a3b8; margin-bottom: 24px;">Click scenario buttons to see how match cards and the bets page adapt per status. v5: proportional type hierarchy (14px floor).</p>
+
+  <div class="scenario-bar">
+    <button class="scenario-btn active" onclick="showScenario('scheduled')">Scheduled — 平盤</button>
+    <button class="scenario-btn" onclick="showScenario('scheduled_handicap')">Scheduled — 讓點</button>
+    <button class="scenario-btn" onclick="showScenario('scheduled_hole')">Scheduled — 讓洞</button>
+    <button class="scenario-btn" onclick="showScenario('betting_closed')">Betting Closed</button>
+    <button class="scenario-btn" onclick="showScenario('overdue')">Overdue</button>
+    <button class="scenario-btn" onclick="showScenario('completed')">Completed</button>
+  </div>
+
+  <div class="split">
+    <!-- LEFT: Match Card on Matches Page -->
+    <div class="panel">
+      <div class="panel-title">賽事管理 (Matches Page)</div>
+      <div class="panel-subtitle">Match card as it appears on the matches page</div>
+
+      <!-- SCHEDULED — 平盤 (no handicap) -->
+      <div id="card-scheduled" class="match-card">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date">2026-03-09 · 07:00 開始</span>
+          <span class="pencil-icon" title="編輯賽事"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第12組</div>
+        <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <div class="card-footer-right">
+            <span class="action-link action-muted">輸入結果</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDULED — 讓點 -->
+      <div id="card-scheduled-handicap" class="match-card hidden">
+        <div class="card-header">
+          <span class="badge badge-lime">熱身賽</span>
+          <span class="card-date">2026-03-13 · 08:30 開始</span>
+          <span class="pencil-icon" title="編輯賽事"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第5組</div>
+        <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">陳文雄 <span class="dot">·</span> 黃國華</div>
+          </div>
+          <div class="card-handicap-center">
+            <span class="handicap-arrow">◀</span>
+            <span class="handicap-text">讓 2 點</span>
+          </div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">吳明哲 <span class="dot">·</span> 劉家豪</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <div class="card-footer-right">
+            <span class="action-link action-muted">輸入結果</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEDULED — 讓洞 -->
+      <div id="card-scheduled-hole" class="match-card hidden">
+        <div class="card-header">
+          <span class="badge badge-fuchsia">加強版</span>
+          <span class="card-date">2026-03-15 · 07:30 開始</span>
+          <span class="pencil-icon" title="編輯賽事"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">特別賽</div>
+        <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">林正義 <span class="dot">·</span> 許志明</div>
+          </div>
+          <div class="card-handicap-center">
+            <span class="handicap-arrow">▶</span>
+            <span class="handicap-text">讓 1 洞</span>
+          </div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">蔡國強 <span class="dot">·</span> 周俊宏</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <div class="card-footer-right">
+            <span class="action-link action-muted">輸入結果</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BETTING CLOSED -->
+      <div id="card-closed" class="match-card hidden">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date">2026-03-09 · 07:00 開始</span>
+          <span class="pencil-icon" title="編輯賽事"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name">第12組</div>
+        <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <div class="card-footer-right">
+            <a class="action-link action-orange">輸入結果 ›</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- OVERDUE -->
+      <div id="card-overdue" class="match-card overdue hidden">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date" style="color: #94a3b8;">2026-03-02 · 07:00 開始</span>
+          <span class="pencil-icon" title="編輯賽事"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name" style="color: #94a3b8;">第8組</div>
+        <div class="card-teams muted">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a class="action-link action-teal">管理投注</a>
+          <div class="card-footer-right">
+            <a class="action-link action-red" style="font-weight: 700;">輸入結果 ›</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLETED -->
+      <div id="card-completed" class="match-card completed hidden">
+        <div class="card-header">
+          <span class="badge badge-blue">週一例行賽</span>
+          <span class="card-date" style="color: #b0b8c4;">2026-03-02 · 07:00 開始</span>
+          <span class="pencil-icon" title="更正結果"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></span>
+        </div>
+        <div class="card-name" style="color: #94a3b8;">第8組</div>
+        <div class="card-teams muted">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        <div class="card-footer" style="flex-direction: column; gap: 8px;">
+          <div class="result-band" style="width: 100%;"><span>A 隊勝 &#10003;</span></div>
+          <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+            <a class="action-link action-teal">管理投注</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit modal trigger note for betting_closed -->
+      <div id="edit-modal-note" class="hidden" style="margin-top: 16px;">
+        <h2>Edit Modal (click card to edit)</h2>
+        <div class="match-card" style="cursor: pointer;" onclick="showModal()">
+          <p style="font-size: 15px; color: #94a3b8; text-align: center; padding: 8px 0;">Click to see the edit modal with 編輯賽事 / 編輯投注 tabs</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Bets Page -->
+    <div class="panel">
+      <div class="panel-title">投注管理 (Bets Page)</div>
+      <div class="panel-subtitle">What the bookkeeper sees after clicking 管理投注</div>
+
+      <!-- BETS: SCHEDULED (entry mode) -->
+      <div id="bets-scheduled" class="bets-page">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <span class="bets-back" style="margin-bottom: 0;">&#8592; 返回賽事</span>
+          <span style="flex: 1;"></span>
+          <button class="status-bar-action btn-amber" style="font-size: 14px; padding: 5px 14px;" onclick="alert('確定封盤？\n\n封盤後會員將無法自行下注。')">封盤</button>
+        </div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-blue">週一例行賽</span>
+            <span class="card-date">2026-03-09 · 07:00 開始</span>
+          </div>
+          <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">A 隊</span><span class="bet-col-count">5筆 · 9兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">張大明</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">李志強</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小陳</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小林</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小王</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">B 隊</span><span class="bet-col-count">4筆 · 14兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">王建宏</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">林俊傑</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小黃</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小趙</span><span class="bet-row-amount">2兩</span></div>
+          </div>
+        </div>
+        <div class="entry-form">
+          <div class="entry-form-title">新增投注</div>
+          <div class="entry-row">
+            <input class="entry-input" placeholder="搜尋會員..." />
+            <button class="entry-toggle">A 隊</button>
+            <button class="entry-toggle">B 隊</button>
+            <button class="entry-toggle">1兩</button>
+            <button class="entry-toggle">2兩</button>
+            <button class="entry-submit">新增</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BETS: BETTING CLOSED -->
+      <div id="bets-closed" class="bets-page hidden">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <span class="bets-back" style="margin-bottom: 0;">&#8592; 返回賽事</span>
+          <span style="flex: 1;"></span>
+          <a style="font-size: 14px; color: #94a3b8; cursor: pointer; text-decoration: underline; text-underline-offset: 2px;">解除封盤</a>
+        </div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-blue">週一例行賽</span>
+            <span class="card-date">2026-03-09 · 07:00 開始</span>
+          </div>
+          <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <span style="font-size: 14px; color: #94a3b8;">已封盤 · 會員無法自行下注</span>
+          <span style="flex: 1;"></span>
+          <button class="status-bar-action btn-blue">自動派注</button>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">A 隊</span><span class="bet-col-count">8筆 · 12兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">張大明</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">李志強</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小陳</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小林</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小王</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小吳</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小蔡</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小何</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">B 隊</span><span class="bet-col-count">6筆 · 16兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">王建宏</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">林俊傑</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小黃</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小趙</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小周</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小鄭</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+        </div>
+        <div class="entry-form">
+          <div class="entry-form-title">新增投注</div>
+          <div class="entry-row">
+            <input class="entry-input" placeholder="搜尋會員..." />
+            <button class="entry-toggle">A 隊</button>
+            <button class="entry-toggle">B 隊</button>
+            <button class="entry-toggle">1兩</button>
+            <button class="entry-toggle">2兩</button>
+            <button class="entry-submit">新增</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BETS: COMPLETED (report view) -->
+      <div id="bets-completed" class="bets-page hidden">
+        <div class="bets-back">&#8592; 返回賽事</div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-blue">週一例行賽</span>
+            <span class="card-date">2026-03-02 · 07:00 開始</span>
+          </div>
+          <div class="card-teams" style="margin-bottom: 8px;">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+          <div class="result-band"><span>A 隊勝 &#10003;</span></div>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col" style="border-color: #a7f3d0; background: rgba(236,253,245,0.3);">
+            <div class="bet-col-header">
+              <span class="bet-col-title" style="color: #059669;">A 隊</span>
+              <span class="badge" style="background: #d1fae5; color: #059669; font-size: 14px;">勝</span>
+              <span class="bet-col-count" style="margin-left: auto;">5筆</span>
+            </div>
+            <div class="bet-row"><span class="bet-row-name">張大明</span><span class="bet-row-amount" style="color: #059669;">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">李志強</span><span class="bet-row-amount" style="color: #059669;">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小陳</span><span class="bet-row-amount" style="color: #059669;">1兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小林</span><span class="bet-row-amount" style="color: #059669;">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小王</span><span class="bet-row-amount" style="color: #059669;">1兩</span></div>
+          </div>
+          <div class="bet-col" style="border-color: #e2e8f0; background: rgba(248,250,252,0.5);">
+            <div class="bet-col-header">
+              <span class="bet-col-title" style="color: #94a3b8;">B 隊</span>
+              <span class="badge" style="background: #f1f5f9; color: #94a3b8; font-size: 14px;">敗</span>
+              <span class="bet-col-count" style="margin-left: auto;">4筆</span>
+            </div>
+            <div class="bet-row"><span class="bet-row-name">王建宏</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">林俊傑</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小黃</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小趙</span><span class="bet-row-amount">2兩</span></div>
+          </div>
+        </div>
+        <div style="background: #f8fafc; border-radius: 14px; padding: 18px; border: 1px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 10px;">
+            <span style="color: #64748b;">總投注</span>
+            <span><b>23兩</b> <span style="color: #94a3b8;">($23,000)</span></span>
+          </div>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 14px; color: #94a3b8;">
+            結算金額待報表頁計算（1:1 派彩模式）
+            <br><span style="color: #cbd5e1;">Step 5: payout breakdown + rake will plug in here</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BETS: OVERDUE -->
+      <div id="bets-overdue" class="bets-page hidden">
+        <div class="bets-back">&#8592; 返回賽事</div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-blue">週一例行賽</span>
+            <span class="card-date">2026-03-02 · 07:00 開始</span>
+          </div>
+          <div class="card-teams">
+          <div class="card-team">
+            <div class="card-team-label">A 隊</div>
+            <div class="card-team-names">張大明 <span class="dot">·</span> 李志強</div>
+          </div>
+          <div class="card-handicap-center"><span class="vs">vs</span></div>
+          <div class="card-team card-team-right">
+            <div class="card-team-label">B 隊</div>
+            <div class="card-team-names">王建宏 <span class="dot">·</span> 林俊傑</div>
+          </div>
+        </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+          <span style="font-size: 15px; color: #dc2626; font-weight: 500;">尚未輸入結果</span>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">A 隊</span><span class="bet-col-count">8筆 · 12兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">張大明</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">李志強</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小陳</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小王</span><span class="bet-row-amount">1兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小吳</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">B 隊</span><span class="bet-col-count">6筆 · 16兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">王建宏</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">林俊傑</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小黃</span><span class="bet-row-amount">2兩</span></div>
+            <div class="bet-row bet-row-auto"><span class="bet-row-name">小周</span><span class="bet-badge bet-badge-auto">補</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Placeholder for handicap scenarios (reuses scheduled bets) -->
+      <div id="bets-handicap" class="bets-page hidden">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <span class="bets-back" style="margin-bottom: 0;">&#8592; 返回賽事</span>
+          <span style="flex: 1;"></span>
+          <button class="status-bar-action btn-amber" style="font-size: 14px; padding: 5px 14px;">封盤</button>
+        </div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-lime">熱身賽</span>
+            <span class="card-date">2026-03-13 · 08:30 開始</span>
+          </div>
+          <div class="card-teams" style="margin-bottom: 4px;">
+            <div class="card-team">
+              <div class="card-team-label">A 隊</div>
+              <div class="card-team-names">陳文雄 <span class="dot">·</span> 黃國華</div>
+            </div>
+            <div class="card-handicap-center">
+              <span class="handicap-arrow">◀</span>
+              <span class="handicap-text">讓 2 點</span>
+            </div>
+            <div class="card-team card-team-right">
+              <div class="card-team-label">B 隊</div>
+              <div class="card-team-names">吳明哲 <span class="dot">·</span> 劉家豪</div>
+            </div>
+          </div>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">A 隊</span><span class="bet-col-count">3筆 · 8兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">陳文雄</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">黃國華</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">小陳</span><span class="bet-row-amount">1兩</span></div>
+          </div>
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">B 隊</span><span class="bet-col-count">2筆 · 10兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">吳明哲</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">劉家豪</span><span class="bet-row-amount">5兩</span></div>
+          </div>
+        </div>
+        <div class="entry-form">
+          <div class="entry-form-title">新增投注</div>
+          <div class="entry-row">
+            <input class="entry-input" placeholder="搜尋會員..." />
+            <button class="entry-toggle">A 隊</button>
+            <button class="entry-toggle">B 隊</button>
+            <button class="entry-toggle">1兩</button>
+            <button class="entry-toggle">2兩</button>
+            <button class="entry-submit">新增</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="bets-hole" class="bets-page hidden">
+        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+          <span class="bets-back" style="margin-bottom: 0;">&#8592; 返回賽事</span>
+          <span style="flex: 1;"></span>
+          <button class="status-bar-action btn-amber" style="font-size: 14px; padding: 5px 14px;">封盤</button>
+        </div>
+        <div class="bets-match-header">
+          <div class="card-header">
+            <span class="badge badge-fuchsia">加強版</span>
+            <span class="card-date">2026-03-15 · 07:30 開始</span>
+          </div>
+          <div class="card-teams" style="margin-bottom: 4px;">
+            <div class="card-team">
+              <div class="card-team-label">A 隊</div>
+              <div class="card-team-names">林正義 <span class="dot">·</span> 許志明</div>
+            </div>
+            <div class="card-handicap-center">
+              <span class="handicap-arrow">▶</span>
+              <span class="handicap-text">讓 1 洞</span>
+            </div>
+            <div class="card-team card-team-right">
+              <div class="card-team-label">B 隊</div>
+              <div class="card-team-names">蔡國強 <span class="dot">·</span> 周俊宏</div>
+            </div>
+          </div>
+        </div>
+        <div class="bet-columns">
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">A 隊</span><span class="bet-col-count">2筆 · 10兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">林正義</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">許志明</span><span class="bet-row-amount">5兩</span></div>
+          </div>
+          <div class="bet-col">
+            <div class="bet-col-header"><span class="bet-col-title">B 隊</span><span class="bet-col-count">2筆 · 10兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">蔡國強</span><span class="bet-row-amount">5兩</span></div>
+            <div class="bet-row"><span class="bet-row-name">周俊宏</span><span class="bet-row-amount">5兩</span></div>
+          </div>
+        </div>
+        <div class="entry-form">
+          <div class="entry-form-title">新增投注</div>
+          <div class="entry-row">
+            <input class="entry-input" placeholder="搜尋會員..." />
+            <button class="entry-toggle">A 隊</button>
+            <button class="entry-toggle">B 隊</button>
+            <button class="entry-toggle">1兩</button>
+            <button class="entry-toggle">2兩</button>
+            <button class="entry-submit">新增</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="modal-overlay" onclick="if(event.target===this)hideModal()">
+  <div class="modal">
+    <div class="modal-title">第12組 — 週一例行賽</div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchModalTab('match')">編輯賽事</div>
+      <div class="modal-tab" onclick="switchModalTab('bets')">編輯投注</div>
+    </div>
+    <div id="modal-content-match" class="modal-body">
+      <p>Match editing form would be here:</p>
+      <p style="margin-top: 8px;">· 日期、時間</p>
+      <p>· 隊伍 (A隊 / B隊)</p>
+      <p>· 讓分設定</p>
+      <p>· 容量設定</p>
+      <p style="margin-top: 16px; color: #94a3b8; font-size: 14px;">This is the existing edit modal. No changes.</p>
+    </div>
+    <div id="modal-content-bets" class="modal-body hidden">
+      <p>This tab redirects to the Bets page in editing mode.</p>
+      <p style="margin-top: 12px; padding: 12px; background: #fff7ed; border-radius: 8px; border: 1px solid #fed7aa; color: #92400e; font-size: 14px;">
+        <b>封盤後修改</b><br>
+        此功能僅供會計更正錯誤使用。
+      </p>
+      <p style="margin-top: 12px;">
+        <a class="action-link action-orange" style="font-size: 16px;">前往編輯投注 ›</a>
+      </p>
+      <p style="margin-top: 16px; color: #94a3b8; font-size: 14px;">Clicking redirects to /bets?match=id with entry form visible despite betting closed. Hidden capability per R23.3.</p>
+    </div>
+    <button class="modal-close" onclick="hideModal()">關閉</button>
+  </div>
+</div>
+
+<script>
+function showScenario(scenario) {
+  document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  ['card-scheduled','card-scheduled-handicap','card-scheduled-hole','card-closed','card-overdue','card-completed'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  ['bets-scheduled','bets-handicap','bets-hole','bets-closed','bets-completed','bets-overdue'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('edit-modal-note').classList.add('hidden');
+
+  switch(scenario) {
+    case 'scheduled':
+      document.getElementById('card-scheduled').classList.remove('hidden');
+      document.getElementById('bets-scheduled').classList.remove('hidden');
+      break;
+    case 'scheduled_handicap':
+      document.getElementById('card-scheduled-handicap').classList.remove('hidden');
+      document.getElementById('bets-handicap').classList.remove('hidden');
+      break;
+    case 'scheduled_hole':
+      document.getElementById('card-scheduled-hole').classList.remove('hidden');
+      document.getElementById('bets-hole').classList.remove('hidden');
+      break;
+    case 'betting_closed':
+      document.getElementById('card-closed').classList.remove('hidden');
+      document.getElementById('bets-closed').classList.remove('hidden');
+      document.getElementById('edit-modal-note').classList.remove('hidden');
+      break;
+    case 'overdue':
+      document.getElementById('card-overdue').classList.remove('hidden');
+      document.getElementById('bets-overdue').classList.remove('hidden');
+      break;
+    case 'completed':
+      document.getElementById('card-completed').classList.remove('hidden');
+      document.getElementById('bets-completed').classList.remove('hidden');
+      break;
+  }
+}
+
+function showModal() {
+  document.getElementById('edit-modal').classList.add('visible');
+  switchModalTab('match');
+}
+
+function hideModal() {
+  document.getElementById('edit-modal').classList.remove('visible');
+}
+
+function switchModalTab(tab) {
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  if (tab === 'match') {
+    document.querySelectorAll('.modal-tab')[0].classList.add('active');
+    document.getElementById('modal-content-match').classList.remove('hidden');
+    document.getElementById('modal-content-bets').classList.add('hidden');
+  } else {
+    document.querySelectorAll('.modal-tab')[1].classList.add('active');
+    document.getElementById('modal-content-match').classList.add('hidden');
+    document.getElementById('modal-content-bets').classList.remove('hidden');
+  }
+}
+</script>
+
+</body>
+</html>
