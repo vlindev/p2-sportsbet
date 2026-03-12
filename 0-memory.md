@@ -21,6 +21,7 @@ A private golf club betting management tool. Replaces a chaotic group-chat + Exc
 - Next.js 16 + Tailwind + Supabase (PostgreSQL, free tier, auth)
 - No Stripe — tracks payments, doesn't process them
 - Full Traditional Chinese UI (繁體中文), Noto Sans TC font
+- Git + GitHub (private repo: `vlindev/p2-sportsbet`). `wrap` auto-pushes, `commit` for mid-session saves. SSH auth.
 
 ## Auth & Security
 - Login required (2-3 accounts max)
@@ -38,7 +39,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/` folder in project root: presentation strategy, architecture brief, deliverable briefs (presentation-d1/d2/d3), design-member-interface.md, design-bets-report-issues.md, phase3-club-onboarding.md
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of Session 61)
+## What's Built (as of Session 62)
 - Supabase connected, 9 tables created with RLS enabled (members, matches, bets, settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies on all 9 tables — replace with auth.role()='authenticated' when auth is built
 - Sidebar: slate-900, orange-500 active state, hidden on mobile; MobileNav: fixed bottom bar. Overdue badge count via shared `OverdueCountContext` provider (single poll, not duplicated)
@@ -85,15 +86,16 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - Result entry via atomic RPCs: `submit_match_result` / `correct_match_result` (Step 2). Single SQL transaction with `FOR UPDATE` row lock, idempotency guards, per-bet audit log entries, `AND sporadic_pool_id IS NULL` filter (base match bets only — sporadic pool bets settle independently per R5.7). Client calls `.rpc()` directly.
 - **(4A)** Mandatory self-bets: 4 × 5兩 bets auto-inserted at match creation (R7.1–R7.6), `system/rule_engine` attribution
 - **(4B)** Inbox Zero: after result entry, card transforms in-place (greyed text, emerald band, pencil). No fetchAll, no tab switch, no reordering. `justCompleted` Map drives visual overrides. Auto-poll paused during batch. Cleanup on tab switch.
-- **(4C)** 封盤/取消封盤 toggle: `betting_closed` status, optimistic local update, amber badge. Reversible. **S61: 封盤 confirmation modal** — `src/components/CloseBettingModal.tsx` shared across all 3 locations (matches page, BettingActions, MatchListActions). Shows match name, team balance (A/B count + total), unbetted count (Monday). Error state for failed fetch. Confirm disabled on error. Deliberate friction on close only — 取消封盤 stays one-click.
-- **(4D)** 自動派注 button (Monday only, visible after 封盤): runs `autoPlaceMonday()` algorithm, inserts `bet_requests` (accepted) + `bets` with `system/scheduled_job` attribution. Double-click guard.
-- **(4E)** Bookkeeper bet entry — match-first primary (`/bets?match=id`, instant save, remove via DELETE) + member-first secondary (`/bets` default). Teal "投注" button on scheduled/betting_closed match cards → navigates to entry view. `bookkeeper/manual` attribution.
+- **(4C)** 封盤/取消封盤 — **S62: removed from matches page entirely (S38 reversal).** All bet actions (封盤, 取消封盤, 自動派注) now exclusively on bets page. `CloseBettingModal.tsx` shared by BettingActions + MatchListActions (bets page only).
+- **(4D)** 自動派注 — on bets page only (BettingActions + MatchListActions). runs `autoPlaceMonday()` algorithm, inserts `bet_requests` (accepted) + `bets` with `system/scheduled_job` attribution.
+- **(4E)** Bookkeeper bet entry — match-first primary (`/bets?match=id`, instant save, remove via DELETE) + member-first secondary (`/bets` default). Teal "管理投注" on scheduled/betting_closed match cards → navigates to entry view. `bookkeeper/manual` attribution.
 - **Player replacement RPC** (Session 41) — `replace_match_player` Supabase RPC. Atomic: void old self-bet + create new + update player column + transfer shares + audit log. Called from `confirmSave()` when player slots change. R25.4 conflict detection (incoming player has voluntary bet). Allows scheduled + betting_closed.
 - **Multi-match selector** (Session 41→54) — `MatchTabBar.tsx`. Session 54: rewritten from pill buttons to `<select>` dropdown with full match names (no truncation). Same-day match switching on both entry and report views.
 - **封盤 + 自動派注 + 全額降注 on bets page** (Session 41, updated 42) — `BettingActions.tsx` component. Amber banner when betting_closed. 自動派注 (Monday). 全額降注 modal (A隊/B隊/全部, 2兩→1兩) with audit log entry + stronger confirmation text. Matches page actions untouched (both pages have access).
 - **Shared MatchHeader** (Session 42) — `MatchHeader.tsx`. Layout B stacked format used by both `MatchBetEntry` and `MatchBetReport`. Single source of truth for match header layout.
 - **ReportBetColumn** (Session 42) — `ReportBetColumn.tsx`. Extracted from report view. Win/loss styling logic, bet type badges. Isolated for future growth (Step 6 report rewrite).
-- **(#5)** Sporadic pools on matches page (Session 49) — `+ 加強盤` button on scheduled/betting_closed cards. `PoolCreationModal.tsx` (`src/components/Matches/`): creates pool + auto-creates 50/50 share rows per team. Pool child cards with fuchsia left border below parent. Pool count badge (`加強盤 ×N`) on parent card. Pool result entry/correction modal (calls `submit_pool_result` / `correct_pool_result` RPCs). Atomic `cancel_match` RPC replaces old non-atomic two-write cancellation.
+- **S62 match card redesign** — footer: 3-item spread (`管理投注` | `+ 加強盤` | `輸入結果 >`), Option C labels (管理投注 for editable, 查看投注 for completed). Player names horizontal with dot separator. Date/time combined inline (`YYYY-MM-DD · HH:MM`). Pool child cards rebuilt: full match cards with teams/handicap/footer, `bg-fuchsia-50`, pencil → parent edit, correction pencil in emerald band. Parent + pools wrapped in single div (grid fix). Removed parent completed pool section (redundant). **Awaiting visual feedback next session.**
+- **(#5)** Sporadic pools on matches page (Session 49) — `+ 加強盤` button on scheduled/betting_closed cards. `PoolCreationModal.tsx` (`src/components/Matches/`): creates pool + auto-creates 50/50 share rows per team. Pool child cards with fuchsia left border below parent (S62: rebuilt as full match cards). Pool count badge (`加強盤 ×N`) on parent card. Pool result entry/correction modal (calls `submit_pool_result` / `correct_pool_result` RPCs). Atomic `cancel_match` RPC replaces old non-atomic two-write cancellation.
 - **(#5)** Pool RPCs (Session 49) — `submit_pool_result` (lock + fan-out + audit), `correct_pool_result` (flip + audit), `cancel_match` (atomic: void bets + expire requests + cancel pools + audit). SQL archived S56.
 
 ### Auto-Placement Engine — `src/lib/auto-placement.ts`
