@@ -171,6 +171,7 @@ These are NOT part of any execution plan step. They emerged from the S55 page re
 - **Member profile/history view (Step 9b design)** — expand `/members` from roster CRUD to member reference tool. Bet history, settlement history, running balance. Historical member questions route here, not to bets page. **Needs: discussion → mockup → approval.** Implementation can wait until Step 9b in the plan sequence.
 
 #### Execution Plan Steps (remaining)
+- **Step 3b-lite: Capacity Check + Pending Bet UI** — Split from Step 3b (S60). Enforce capacity limits on optional matches, pending/confirmed visual distinction, accept/reject flow. Current code skips capacity entirely — correctness issue, not just scaling. Does NOT need concurrency layer. Needs own session (discussion → plan → build).
 - **Step 6: Weekly Report (每週報表)** — `/reports` page. Per-member weekly summary, screenshot-friendly for LINE sharing, content per R22.5. Separate page, separate scope. Not started.
 - **Step 7: Monthly Settlement (月度結算)** — auto-calculated, double-check audit, rake rounding
 - **Step 9: Auth + Member Read-Only View**
@@ -184,7 +185,6 @@ These are NOT part of any execution plan step. They emerged from the S55 page re
 - **選手 voluntary betting (S54)** — R8.4 allows it ("player or external bettor"). User believes players shouldn't be able to. Needs organizer confirmation.
 - **取消封盤 after 自動派注 (S54)** — currently allowed without cleanup of auto-placed bets. Could create duplicate bets if member then self-bets. Design decision needed.
 - **Export buttons (S54)** — 匯出 Excel + 快速截圖 still placeholders, need implementation.
-- **Capacity check + pending bet UI (S60)** — Split from Step 3b. Capacity check + pending/confirmed visual distinction + accept/reject flow can be built without concurrency layer. Current code skips capacity entirely (writes as accepted). User leaning toward building now. Needs its own session.
 - **Full canonical rules audit (S60)** — Systematic check of all R1–R29 rules against implementation code. Not yet started.
 
 ### End of Phase 1
