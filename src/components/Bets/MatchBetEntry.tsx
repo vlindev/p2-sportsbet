@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { openBetting, runAutoPlacementAction } from "@/lib/betting-actions";
 import MemberSelect from "@/components/MemberSelect";
-import { ArrowLeft, ChevronDown, X, Pencil } from "lucide-react";
+import { ArrowLeft, ArrowLeftRight, Pencil } from "lucide-react";
 import MatchTabBar from "./MatchTabBar";
 import MatchHeader from "./MatchHeader";
 import BettingActions from "./BettingActions";
@@ -34,11 +34,12 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
   const [entryAmount, setEntryAmount] = useState<1 | 2 | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [removing, setRemoving] = useState<string | null>(null);
   const [editSide, setEditSide] = useState<"A" | "B" | null>(null);
-  const [editChanges, setEditChanges] = useState<{ name: string; action: "adjust" | "remove" | "swap"; from?: number | string; to?: number | string }[]>([]);
+  const [editChanges, setEditChanges] = useState<{ name: string; action: "adjust" | "swap"; from?: number | string; to?: number | string }[]>([]);
   const [editToast, setEditToast] = useState<string | null>(null);
-  const [expandedBetId, setExpandedBetId] = useState<string | null>(null);
+  const [highlightBetIds, setHighlightBetIds] = useState<Set<string>>(new Set());
+  const [editSortSnapshot, setEditSortSnapshot] = useState<string[]>([]);
+  const adjustedBetIds = useRef<Set<string>>(new Set());
 
   // Modal state (controlled, passed to BettingActions)
   const [showCloseModal, setShowCloseModal] = useState(false);
@@ -160,29 +161,25 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
     refreshBets();
   }
 
-  async function removeBet(bet: Bet) {
-    setRemoving(bet.id);
-    const { error } = await supabase.from("bets").delete().eq("id", bet.id);
-    if (error) { console.error("delete bet:", error); setRemoving(null); return; }
-    await supabase.from("bet_requests").delete()
-      .eq("match_id", matchId).eq("member_id", bet.member_id)
-      .eq("bet_type", bet.bet_type).eq("status", "accepted")
-      .is("sporadic_pool_id", null);
-    setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "remove" }]);
-    setRemoving(null);
-    refreshBets();
-  }
 
   async function adjustAmount(bet: Bet) {
     const newAmount = bet.amount_liang === 1 ? 2 : 1;
-    const { error } = await supabase.from("bets").update({ amount_liang: newAmount }).eq("id", bet.id);
+    // Convert to voluntary on any edit — removes 補 badge
+    const { error } = await supabase.from("bets").update({
+      amount_liang: newAmount, bet_type: "voluntary",
+      created_by_role: "bookkeeper", created_via: "manual",
+    }).eq("id", bet.id);
     if (error) { console.error("adjust bet:", error); return; }
     await supabase.from("bet_requests").update({ accepted_amount: newAmount })
       .eq("match_id", matchId).eq("member_id", bet.member_id)
-      .eq("bet_type", "voluntary").eq("status", "accepted")
+      .eq("bet_type", bet.bet_type).eq("status", "accepted")
       .is("sporadic_pool_id", null);
     setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "adjust", from: bet.amount_liang, to: newAmount }]);
-    refreshBets();
+    adjustedBetIds.current.add(bet.id);
+    // Local state update — no refetch during edit mode (prevents re-sort)
+    setBets(prev => prev.map(b => b.id === bet.id
+      ? { ...b, amount_liang: newAmount, bet_type: "voluntary", created_by_role: "bookkeeper", created_via: "manual" } as Bet
+      : b));
   }
 
   async function swapTeam(bet: Bet) {
@@ -194,7 +191,12 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
     }).eq("id", bet.id);
     if (error) { console.error("swap team:", error); return; }
     setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "swap", from: bet.team_bet_on, to: newTeam }]);
-    refreshBets();
+    setHighlightBetIds(new Set([bet.id]));
+    setTimeout(() => setHighlightBetIds(new Set()), 2500);
+    // Local state update — bet moves to other column immediately
+    setBets(prev => prev.map(b => b.id === bet.id
+      ? { ...b, team_bet_on: newTeam, bet_type: "voluntary", created_by_role: "bookkeeper", created_via: "manual" } as Bet
+      : b));
   }
 
   function toggleEditSide(side: "A" | "B") {
@@ -202,21 +204,35 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
       // Exiting edit mode — show summary if changes were made
       if (editChanges.length > 0) {
         const parts = editChanges.map(c =>
-          c.action === "remove" ? `${c.name} 已刪除`
-          : c.action === "swap" ? `${c.name} ${c.from}隊→${c.to}隊`
+          c.action === "swap" ? `${c.name} ${c.from}隊→${c.to}隊`
           : `${c.name} ${c.from}兩→${c.to}兩`
         );
         setEditToast(`已修改：${parts.join("、")}`);
         setTimeout(() => setEditToast(null), 5000);
       }
+      // Highlight adjusted bets after re-sort
+      if (adjustedBetIds.current.size > 0) {
+        setHighlightBetIds(new Set(adjustedBetIds.current));
+        setTimeout(() => setHighlightBetIds(new Set()), 2500);
+        adjustedBetIds.current.clear();
+      }
       setEditSide(null);
       setEditChanges([]);
-      setExpandedBetId(null);
+      setEditSortSnapshot([]);
+      // Sync local state with DB after edit session
+      refreshBets();
     } else {
-      // Entering edit mode
+      // Entering edit mode — snapshot current display order
+      const sideBets = bets.filter(b => b.team_bet_on === side);
+      const currentSorted = [...sideBets].sort((a, b) => {
+        const t = (TYPE_ORDER[a.bet_type] ?? 1) - (TYPE_ORDER[b.bet_type] ?? 1);
+        if (t !== 0) return t;
+        return b.amount_liang - a.amount_liang;
+      });
+      setEditSortSnapshot(currentSorted.map(b => b.id));
       setEditSide(side);
       setEditChanges([]);
-      setExpandedBetId(null);
+      adjustedBetIds.current.clear();
     }
   }
 
@@ -380,6 +396,13 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
           const sb = side === "A" ? teamABets : teamBBets;
           const st = side === "A" ? teamATotal : teamBTotal;
           const sorted = [...sb].sort((a, b) => {
+            // During edit: use snapshot order (exact position from when pencil was clicked)
+            if (editSide === side && editSortSnapshot.length > 0) {
+              const aIdx = editSortSnapshot.indexOf(a.id);
+              const bIdx = editSortSnapshot.indexOf(b.id);
+              return (aIdx === -1 ? Infinity : aIdx) - (bIdx === -1 ? Infinity : bIdx);
+            }
+            // Normal: type then amount desc
             const t = (TYPE_ORDER[a.bet_type] ?? 1) - (TYPE_ORDER[b.bet_type] ?? 1);
             if (t !== 0) return t;
             return b.amount_liang - a.amount_liang;
@@ -410,59 +433,43 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
                   {sorted.map((bet) => {
                     const isAuto = bet.bet_type === "mandatory_monday";
                     const isSelf = bet.bet_type === "mandatory_self";
-                    const isEditable = !isSelf;
-                    const isExpanded = expandedBetId === bet.id;
+                    const isEditing = editSide === side && !isSelf;
                     const rowBg = isSelf
                       ? "bg-teal-50/50"
                       : altIndex++ % 2 === 0 ? "bg-white" : "bg-slate-50";
-                    const canClick = editSide === side && isEditable;
+                    const isHighlighted = highlightBetIds.has(bet.id);
                     return (
-                      <div key={bet.id}>
-                        <div
-                          className={`flex items-center gap-2 text-sm py-2 px-2 rounded transition-colors ${rowBg} ${
-                            isExpanded ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-blue-50"
-                          } ${canClick ? "cursor-pointer" : ""}`}
-                          onClick={() => canClick && setExpandedBetId(isExpanded ? null : bet.id)}
-                        >
-                          <span className={`flex-1 min-w-0 truncate ${isSelf ? "font-medium text-slate-700" : isAuto ? "text-slate-400" : "text-slate-700"}`}>
-                            {memberMap[bet.member_id] || "—"}
-                          </span>
-                          {isAuto && (
-                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
-                          )}
-                          <span className={`font-medium tabular-nums ${isAuto ? "text-slate-400" : "text-slate-700"}`}>{bet.amount_liang}兩</span>
-                          {canClick && (
-                            <ChevronDown size={14} className={`text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                          )}
-                        </div>
-                        {isExpanded && (
-                          <div className="flex items-center gap-2 px-2 py-2 ml-2 border-l-2 border-blue-200">
+                      <div key={bet.id}
+                        className={`flex items-center gap-2 text-base py-2.5 px-2 rounded transition-colors duration-700 ${
+                          isHighlighted ? "bg-orange-100 ring-1 ring-orange-300" : `${rowBg} hover:bg-blue-100`
+                        }`}
+                      >
+                        <span className={`flex-1 min-w-0 truncate ${isSelf ? "font-medium text-slate-700" : isAuto ? "text-slate-400" : "text-slate-700"}`}>
+                          {memberMap[bet.member_id] || "—"}
+                        </span>
+                        {isAuto && (
+                          <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+                        )}
+                        {isEditing ? (
+                          <>
                             <div className="flex gap-1">
-                              {(["A", "B"] as const).map((t) => (
-                                <button key={t} onClick={() => { if (t !== bet.team_bet_on) swapTeam(bet); }}
-                                  className={`px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
-                                    bet.team_bet_on === t ? "bg-blue-500 text-white border-blue-500" : "bg-white text-slate-500 border-gray-200 hover:border-blue-300"
-                                  }`}>{t} 隊</button>
+                              {([1, 2] as const).map((a) => (
+                                <button key={a} onClick={() => { if (a !== bet.amount_liang) adjustAmount(bet); }}
+                                  className={`px-2.5 py-1 text-xs font-medium rounded cursor-pointer transition-colors ${
+                                    bet.amount_liang === a ? "bg-orange-500 text-white" : "text-slate-400 hover:text-slate-600"
+                                  }`}>{a}兩</button>
                               ))}
                             </div>
-                            {!isAuto && (
-                              <div className="flex gap-1">
-                                {([1, 2] as const).map((a) => (
-                                  <button key={a} onClick={() => { if (a !== bet.amount_liang) adjustAmount(bet); }}
-                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
-                                      bet.amount_liang === a ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-500 border-gray-200 hover:border-orange-300"
-                                    }`}>{a}兩</button>
-                                ))}
-                              </div>
-                            )}
-                            {!isAuto && (
-                              <button onClick={() => removeBet(bet)} disabled={removing === bet.id}
-                                className="ml-auto p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors disabled:opacity-50"
-                                title="刪除投注">
-                                <X size={16} />
-                              </button>
-                            )}
-                          </div>
+                            <button onClick={() => swapTeam(bet)}
+                              className="relative group p-2 rounded text-blue-400 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors">
+                              <ArrowLeftRight size={14} />
+                              <span className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 text-xs text-white bg-slate-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap">
+                                換隊
+                              </span>
+                            </button>
+                          </>
+                        ) : (
+                          <span className={`font-medium tabular-nums ${isAuto ? "text-slate-400" : "text-slate-700"}`}>{bet.amount_liang}兩</span>
                         )}
                       </div>
                     );
@@ -481,7 +488,7 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
 
       {/* Edit summary toast */}
       {editToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium z-50 max-w-md text-center">
+        <div className="fixed bottom-24 inset-x-0 mx-auto w-fit bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium z-50 max-w-md text-center">
           {editToast}
         </div>
       )}

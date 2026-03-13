@@ -134,12 +134,12 @@ Load the relevant cluster file(s) BEFORE proceeding whenever ANY of the followin
 
 ## ⚠️ Next Session — Discuss Before Building
 
-These items were flagged at the end of Sessions 67–68. Must discuss before any further implementation on the bets entry page.
+These items were flagged at the end of Sessions 67–69. Must discuss before any further implementation on the bets entry page.
 
-1. **Edit mode UX redesign** — Current Option B (inline row expansion) was implemented but NOT approved. User disliked it. Discuss: what should show on screen when pencil icon is clicked?
-2. **uieval on bets entry page** — User will share two screenshots (entry view + edit mode). Run uieval on both.
-3. **Post-自動派注 workflow** — When a member calls to change their bet after auto-placement, how can the bookkeeper quickly confirm all members still have bets? Need a verification/count mechanism.
-4. **Sporadic pool edit mode** — Pool bets have no edit capability (delete + re-create only). Inconsistent with base match pencil edit mode. Needs design discussion.
+1. ~~**Edit mode UX redesign**~~ ✓ (S69) — Option A (inline controls) implemented. No delete — swap + amount only. Sort frozen via snapshot during edit. Details in MEMORY.md.
+2. **uieval on bets entry page** — User will share 5 screenshots. Run uieval on all.
+3. **Post-自動派注 workflow** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism — discuss.
+4. **Sporadic pool edit mode** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
 
 ---
 
