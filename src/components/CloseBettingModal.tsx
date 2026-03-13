@@ -24,7 +24,8 @@ export default function CloseBettingModal({
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onCancel}>
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-slate-800 mb-1">確認封盤</h3>
-        <p className="text-sm text-slate-500 mb-4">{matchName}</p>
+        <p className="text-sm text-slate-500 mb-1">{matchName}</p>
+        <p className="text-xs text-slate-400 mb-4">封盤後會員無法自行下注，管理人員仍可新增或修改。</p>
 
         {fetchError ? (
           <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { openBetting, runAutoPlacementAction } from "@/lib/betting-actions";
 import MemberSelect from "@/components/MemberSelect";
-import { ArrowLeft, X, Pencil } from "lucide-react";
+import { ArrowLeft, ChevronDown, X, Pencil } from "lucide-react";
 import MatchTabBar from "./MatchTabBar";
 import MatchHeader from "./MatchHeader";
 import BettingActions from "./BettingActions";
@@ -36,10 +36,14 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
   const [editSide, setEditSide] = useState<"A" | "B" | null>(null);
+  const [editChanges, setEditChanges] = useState<{ name: string; action: "adjust" | "remove" | "swap"; from?: number | string; to?: number | string }[]>([]);
+  const [editToast, setEditToast] = useState<string | null>(null);
+  const [expandedBetId, setExpandedBetId] = useState<string | null>(null);
 
   // Modal state (controlled, passed to BettingActions)
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [showBulkReduceModal, setShowBulkReduceModal] = useState(false);
+  const [showAutoPlaceModal, setShowAutoPlaceModal] = useState(false);
 
   // Auto-placement state (absorbed from BettingActions)
   const [autoPlacing, setAutoPlacing] = useState(false);
@@ -164,6 +168,7 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
       .eq("match_id", matchId).eq("member_id", bet.member_id)
       .eq("bet_type", bet.bet_type).eq("status", "accepted")
       .is("sporadic_pool_id", null);
+    setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "remove" }]);
     setRemoving(null);
     refreshBets();
   }
@@ -176,7 +181,43 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
       .eq("match_id", matchId).eq("member_id", bet.member_id)
       .eq("bet_type", "voluntary").eq("status", "accepted")
       .is("sporadic_pool_id", null);
+    setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "adjust", from: bet.amount_liang, to: newAmount }]);
     refreshBets();
+  }
+
+  async function swapTeam(bet: Bet) {
+    const newTeam = bet.team_bet_on === "A" ? "B" : "A";
+    // Convert to voluntary — no longer auto-placed after bookkeeper intervention
+    const { error } = await supabase.from("bets").update({
+      team_bet_on: newTeam, bet_type: "voluntary",
+      created_by_role: "bookkeeper", created_via: "manual",
+    }).eq("id", bet.id);
+    if (error) { console.error("swap team:", error); return; }
+    setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "swap", from: bet.team_bet_on, to: newTeam }]);
+    refreshBets();
+  }
+
+  function toggleEditSide(side: "A" | "B") {
+    if (editSide === side) {
+      // Exiting edit mode — show summary if changes were made
+      if (editChanges.length > 0) {
+        const parts = editChanges.map(c =>
+          c.action === "remove" ? `${c.name} 已刪除`
+          : c.action === "swap" ? `${c.name} ${c.from}隊→${c.to}隊`
+          : `${c.name} ${c.from}兩→${c.to}兩`
+        );
+        setEditToast(`已修改：${parts.join("、")}`);
+        setTimeout(() => setEditToast(null), 5000);
+      }
+      setEditSide(null);
+      setEditChanges([]);
+      setExpandedBetId(null);
+    } else {
+      // Entering edit mode
+      setEditSide(side);
+      setEditChanges([]);
+      setExpandedBetId(null);
+    }
   }
 
   if (loading) return <div className="p-6 pt-10 text-slate-400 text-sm">載入中...</div>;
@@ -247,7 +288,8 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
               <span className="text-sm text-amber-700">會員無法自行下注</span>
               <div className="flex items-center gap-3">
                 {match.match_type === "monday" && (
-                  <button onClick={runAutoPlacement} disabled={autoPlacing || autoPlaceResult !== null}
+                  <button onClick={() => autoPlaceResult === null && !autoPlacing ? setShowAutoPlaceModal(true) : undefined}
+                    disabled={autoPlacing || autoPlaceResult !== null}
                     className="text-base font-medium text-blue-500 hover:text-blue-700 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                     {autoPlacing ? "派注中..." : autoPlaceResult !== null ? `已派 ${autoPlaceResult} 注` : "自動派注"}
                   </button>
@@ -278,16 +320,14 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
                 }`}>{t} 隊</button>
             ))}
           </div>
-          {entryTeam && (
-            <div className="flex gap-1.5">
-              {([1, 2] as const).map((a) => (
-                <button key={a} onClick={() => setEntryAmount(entryAmount === a ? null : a)}
-                  className={`px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer transition-colors ${
-                    entryAmount === a ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-600 border-gray-200 hover:border-orange-300"
-                  }`}>{a}兩</button>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-1.5">
+            {([1, 2] as const).map((a) => (
+              <button key={a} onClick={() => setEntryAmount(entryAmount === a ? null : a)}
+                className={`px-3 py-2.5 text-base font-medium rounded-lg border cursor-pointer transition-colors ${
+                  entryAmount === a ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-600 border-gray-200 hover:border-orange-300"
+                }`}>{a}兩</button>
+            ))}
+          </div>
           <button onClick={addBet} disabled={!entryMemberId || !entryTeam || !entryAmount || saving}
             className="px-5 py-2.5 bg-orange-500 text-white text-base font-semibold rounded-lg hover:bg-orange-600 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
             {saving ? "..." : "新增"}
@@ -306,6 +346,33 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
         onBulkReduceModalClose={() => setShowBulkReduceModal(false)}
       />
 
+      {/* Auto-placement confirmation modal */}
+      {showAutoPlaceModal && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAutoPlaceModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">確認自動派注</h3>
+            <p className="text-sm text-slate-500 mb-1">{match.name || "此賽事"}</p>
+            <p className="text-xs text-slate-400 mb-4">系統將為未投注會員自動下注 1兩，依平衡機制分配隊伍。</p>
+            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">未投注會員</span>
+                <span className="font-medium text-slate-700">{unbettedCount} 人</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowAutoPlaceModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                取消
+              </button>
+              <button onClick={() => { setShowAutoPlaceModal(false); runAutoPlacement(); }}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 cursor-pointer transition-colors">
+                確認派注
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bet columns */}
       <p className="text-base font-bold text-slate-600 mb-3">投注明細</p>
       <div className="grid grid-cols-2 gap-4 mb-5">
@@ -319,14 +386,19 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
           });
           let altIndex = 0;
           return (
-            <div key={side} className="bg-slate-50/70 rounded-xl border border-gray-100 shadow-sm p-4">
+            <div key={side} className={`rounded-xl shadow-sm p-4 transition-colors ${editSide === side ? "bg-orange-50 border-2 border-orange-300" : "bg-slate-50/70 border border-gray-100"}`}>
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
-                <span className="text-base font-bold text-slate-700">{side} 隊</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-bold text-slate-700">{side} 隊</span>
+                  {editSide === side && (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-500 text-white">編輯中</span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-500 tabular-nums">{sb.length}筆 · {st}兩</span>
-                  {bets.some(b => b.bet_type === "voluntary") && (
-                    <button onClick={() => setEditSide(editSide === side ? null : side)}
-                      className={`p-1.5 rounded transition-colors cursor-pointer ${editSide === side ? "bg-orange-100 text-orange-600" : "text-slate-300 hover:text-slate-500 hover:bg-slate-100"}`}
+                  {bets.some(b => b.bet_type === "voluntary" || b.bet_type === "mandatory_monday") && (
+                    <button onClick={() => toggleEditSide(side)}
+                      className={`p-1.5 rounded transition-colors cursor-pointer ${editSide === side ? "bg-orange-500 text-white" : "text-slate-300 hover:text-slate-500 hover:bg-slate-100"}`}
                       title={editSide === side ? "完成編輯" : "編輯投注"}>
                       <Pencil size={14} />
                     </button>
@@ -338,31 +410,59 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
                   {sorted.map((bet) => {
                     const isAuto = bet.bet_type === "mandatory_monday";
                     const isSelf = bet.bet_type === "mandatory_self";
-                    const isVoluntary = bet.bet_type === "voluntary";
+                    const isEditable = !isSelf;
+                    const isExpanded = expandedBetId === bet.id;
                     const rowBg = isSelf
                       ? "bg-teal-50/50"
                       : altIndex++ % 2 === 0 ? "bg-white" : "bg-slate-50";
+                    const canClick = editSide === side && isEditable;
                     return (
-                      <div key={bet.id} className={`flex items-center gap-2 text-sm py-2 px-2 rounded ${rowBg} hover:bg-slate-100/60 transition-colors`}>
-                        <span className={`flex-1 min-w-0 truncate ${isSelf ? "font-medium text-slate-700" : isAuto ? "text-slate-400" : "text-slate-700"}`}>
-                          {memberMap[bet.member_id] || "—"}
-                        </span>
-                        {isAuto && (
-                          <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
-                        )}
-                        {editSide === side && isVoluntary ? (
-                          <button onClick={() => adjustAmount(bet)}
-                            className="font-medium tabular-nums text-orange-600 hover:text-orange-700 cursor-pointer transition-colors">
-                            {bet.amount_liang}兩
-                          </button>
-                        ) : (
+                      <div key={bet.id}>
+                        <div
+                          className={`flex items-center gap-2 text-sm py-2 px-2 rounded transition-colors ${rowBg} ${
+                            isExpanded ? "bg-blue-50 ring-1 ring-blue-200" : "hover:bg-blue-50"
+                          } ${canClick ? "cursor-pointer" : ""}`}
+                          onClick={() => canClick && setExpandedBetId(isExpanded ? null : bet.id)}
+                        >
+                          <span className={`flex-1 min-w-0 truncate ${isSelf ? "font-medium text-slate-700" : isAuto ? "text-slate-400" : "text-slate-700"}`}>
+                            {memberMap[bet.member_id] || "—"}
+                          </span>
+                          {isAuto && (
+                            <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">補</span>
+                          )}
                           <span className={`font-medium tabular-nums ${isAuto ? "text-slate-400" : "text-slate-700"}`}>{bet.amount_liang}兩</span>
-                        )}
-                        {editSide === side && isVoluntary && (
-                          <button onClick={() => removeBet(bet)} disabled={removing === bet.id}
-                            className="text-red-400 hover:text-red-500 cursor-pointer transition-colors disabled:opacity-50">
-                            <X size={14} />
-                          </button>
+                          {canClick && (
+                            <ChevronDown size={14} className={`text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          )}
+                        </div>
+                        {isExpanded && (
+                          <div className="flex items-center gap-2 px-2 py-2 ml-2 border-l-2 border-blue-200">
+                            <div className="flex gap-1">
+                              {(["A", "B"] as const).map((t) => (
+                                <button key={t} onClick={() => { if (t !== bet.team_bet_on) swapTeam(bet); }}
+                                  className={`px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
+                                    bet.team_bet_on === t ? "bg-blue-500 text-white border-blue-500" : "bg-white text-slate-500 border-gray-200 hover:border-blue-300"
+                                  }`}>{t} 隊</button>
+                              ))}
+                            </div>
+                            {!isAuto && (
+                              <div className="flex gap-1">
+                                {([1, 2] as const).map((a) => (
+                                  <button key={a} onClick={() => { if (a !== bet.amount_liang) adjustAmount(bet); }}
+                                    className={`px-2.5 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
+                                      bet.amount_liang === a ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-500 border-gray-200 hover:border-orange-300"
+                                    }`}>{a}兩</button>
+                                ))}
+                              </div>
+                            )}
+                            {!isAuto && (
+                              <button onClick={() => removeBet(bet)} disabled={removing === bet.id}
+                                className="ml-auto p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50 cursor-pointer transition-colors disabled:opacity-50"
+                                title="刪除投注">
+                                <X size={16} />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     );
@@ -378,6 +478,13 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
       {pools.map((pool, i) => (
         <PoolBetSection key={pool.id} pool={pool} match={match} members={members} memberMap={memberMap} poolIndex={i} />
       ))}
+
+      {/* Edit summary toast */}
+      {editToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium z-50 max-w-md text-center">
+          {editToast}
+        </div>
+      )}
     </div>
   );
 }

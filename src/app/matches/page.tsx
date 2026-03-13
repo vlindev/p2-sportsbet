@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Plus, Pencil, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import MemberSelect from "@/components/MemberSelect";
@@ -80,8 +80,9 @@ function defaultForm(): MatchForm {
   };
 }
 
-export default function MatchesPage() {
+function MatchesContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [matches, setMatches] = useState<Match[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +92,13 @@ export default function MatchesPage() {
     if (tab === "cancelled") return "cancelled";
     return "current";
   });
+
+  // Sync activeTab from URL when navigating back (e.g. from bets page)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "completed") setActiveTab("completed");
+    else if (tab === "cancelled") setActiveTab("cancelled");
+  }, [searchParams]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
@@ -1774,5 +1782,13 @@ export default function MatchesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MatchesPage() {
+  return (
+    <Suspense fallback={<div className="p-6 pt-10 min-h-screen"><div className="text-slate-400 text-sm">載入中...</div></div>}>
+      <MatchesContent />
+    </Suspense>
   );
 }

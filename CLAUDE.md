@@ -132,6 +132,27 @@ Load the relevant cluster file(s) BEFORE proceeding whenever ANY of the followin
 
 ---
 
+## ⚠️ Next Session — Discuss Before Building
+
+These items were flagged at the end of Session 67. Must discuss before any further implementation on the bets entry page.
+
+1. **Edit mode UX redesign** — Current Option B (inline row expansion) was implemented but NOT approved. User disliked it. Discuss: what should show on screen when pencil icon is clicked?
+2. **uieval on bets entry page** — User will share two screenshots (entry view + edit mode). Run uieval on both.
+3. **Post-自動派注 workflow** — When a member calls to change their bet after auto-placement, how can the bookkeeper quickly confirm all members still have bets? Need a verification/count mechanism.
+4. **Sporadic pool section review** — Review the sporadic pool UI on the bets entry page. Flag issues.
+
+---
+
+## Data Migration Rule
+
+When adding code that auto-populates companion data at creation time (e.g., share rows at match creation, self-bets at match creation), check whether existing records lack that data. If they do:
+1. Write a backfill SQL and open it immediately
+2. Update test-data.sql to include the new rows
+
+Existing records created before the code was added won't fix themselves.
+
+---
+
 ## Standard Implementation Procedure (Mandatory)
 
 Every implementation task follows this sequence. No exceptions. Skipping steps causes rework.

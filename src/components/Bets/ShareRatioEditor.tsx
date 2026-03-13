@@ -191,9 +191,7 @@ export default function ShareRatioEditor({
       <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 ${locked ? "opacity-85" : ""}`}>
         <div className="flex items-center justify-between mb-4">
           <span className={`text-sm font-semibold ${locked ? "text-slate-400" : "text-slate-500"}`}>選手佔成</span>
-          {locked ? (
-            <span className="text-sm text-slate-400">已鎖定</span>
-          ) : (
+          {!locked && (
             <button onClick={() => startEdit("A")} className="p-1.5 rounded text-slate-400 hover:text-orange-500 hover:bg-slate-100 cursor-pointer transition-colors">
               <Pencil size={16} />
             </button>
