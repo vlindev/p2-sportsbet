@@ -42,6 +42,7 @@ export default function SettlementSummary({ sections }: Props) {
   });
 
   const hasMultiple = sections.length > 1;
+  const hasCalcError = sections.some(s => !s.settlements);
   const grandTotalRakeLiang = ntdToLiang(grandTotalRakeNtd);
 
   return (
@@ -55,20 +56,17 @@ export default function SettlementSummary({ sections }: Props) {
             <MetricCard label="A 隊" value={fmtLiang(sectionData[0].teamATotal)} detail={`${sectionData[0].teamABets.length} 筆`} />
             <MetricCard label="B 隊" value={fmtLiang(sectionData[0].teamBTotal)} detail={`${sectionData[0].teamBBets.length} 筆`} />
           </div>
-          {sectionData[0].settlements && (
-            <div className="flex items-center justify-between px-1 py-2 border-t border-gray-100">
-              <span className="text-sm text-slate-500">抽水</span>
+          <div className="flex items-center justify-between px-1 py-2 border-t border-gray-100">
+            <span className="text-sm text-slate-500">抽水</span>
+            {sectionData[0].settlements ? (
               <span className="text-sm font-semibold text-slate-800 tabular-nums">
                 {fmtLiang(sectionData[0].totalRakeLiang)}
                 <span className="text-slate-400 font-normal ml-1.5">({fmtNtd(sectionData[0].totalRakeNtd)})</span>
               </span>
-            </div>
-          )}
-          {!sectionData[0].settlements && (
-            <p className="text-xs text-slate-400 mt-2 pt-2 border-t border-gray-100">
-              結算金額待比賽結果輸入後計算
-            </p>
-          )}
+            ) : (
+              <span className="text-sm font-semibold text-slate-400">--</span>
+            )}
+          </div>
         </>
       ) : (
         <>
@@ -85,13 +83,21 @@ export default function SettlementSummary({ sections }: Props) {
                 <Row label="A 隊" value={`${fmtLiang(sec.teamATotal)}${sec.isPool ? ` (${teamAZhi}支)` : ""}`} />
                 <Row label={sec.isPool && sec.openedByTeam === "B" ? "B 隊（開盤方）" : "B 隊"}
                   value={`${fmtLiang(sec.teamBTotal)}${sec.isPool ? ` (${teamBZhi}支)` : ""}`} />
-                {sec.settlements && <Row label="抽水" value={fmtLiang(sec.totalRakeLiang)} ntd={fmtNtd(sec.totalRakeNtd)} />}
+                {sec.settlements ? (
+                  <Row label="抽水" value={fmtLiang(sec.totalRakeLiang)} ntd={fmtNtd(sec.totalRakeNtd)} />
+                ) : (
+                  <Row label="抽水" value="--" />
+                )}
               </div>
             );
           })}
           <div className="border-t-2 border-slate-200 my-3" />
           <Row label="合計投注" value={fmtLiang(grandTotalBetsLiang)} ntd={fmtNtd(grandTotalBetsLiang * 1000)} bold />
-          <Row label="合計抽水" value={fmtLiang(grandTotalRakeLiang)} ntd={fmtNtd(grandTotalRakeNtd)} bold />
+          {hasCalcError ? (
+            <Row label="合計抽水" value="--" bold />
+          ) : (
+            <Row label="合計抽水" value={fmtLiang(grandTotalRakeLiang)} ntd={fmtNtd(grandTotalRakeNtd)} bold />
+          )}
         </>
       )}
 

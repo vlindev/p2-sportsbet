@@ -109,10 +109,11 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
     const { error } = await supabase.from("bets").delete().eq("id", bet.id);
     if (error) { console.error("delete pool bet:", error); setRemoving(null); return; }
     // 🟡-1: Clean up matching bet_request
-    await supabase.from("bet_requests").delete()
+    const { error: reqErr } = await supabase.from("bet_requests").delete()
       .eq("match_id", match.id).eq("member_id", bet.member_id)
       .eq("bet_type", bet.bet_type).eq("status", "accepted")
       .eq("sporadic_pool_id", pool.id);
+    if (reqErr) console.error("cleanup pool bet_request:", reqErr);
     setRemoving(null);
     fetchBets();
   }
@@ -125,7 +126,7 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
         <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
           <span className="text-base font-bold text-slate-700">{side} 隊</span>
           {isRestricted ? (
-            <span className="text-xs font-semibold text-fuchsia-600">開盤方</span>
+            <span className="text-xs font-semibold text-fuchsia-600">開盤方 · {sb.length}筆 · {Math.round(sb.reduce((s, b) => s + b.amount_liang, 0) / 3)}支</span>
           ) : (
             <span className="text-xs text-slate-400">{sb.length}筆 · {Math.round(sb.reduce((s, b) => s + b.amount_liang, 0) / 3)}支</span>
           )}
@@ -138,7 +139,7 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
                 <span className="font-medium tabular-nums text-slate-700">{bet.amount_liang}兩</span>
                 <span className="text-xs text-slate-400">({Math.round(bet.amount_liang / 3)}支)</span>
                 <button onClick={() => removeBet(bet)} disabled={removing === bet.id}
-                  className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-400 cursor-pointer transition-opacity disabled:opacity-50">
+                  className="text-slate-300 hover:text-red-400 cursor-pointer transition-colors disabled:opacity-50">
                   <X size={14} />
                 </button>
               </div>

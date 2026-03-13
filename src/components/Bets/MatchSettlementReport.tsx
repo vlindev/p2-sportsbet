@@ -162,13 +162,13 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
       />
 
       {hasResult && billingError && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4">
-          無法載入費率設定，結算無法計算
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4 flex items-start gap-2">
+          <span>⚠</span><span>無法載入費率設定，結算無法計算。請聯繫系統管理員</span>
         </div>
       )}
       {hasResult && !billingError && !baseSharesOk && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4">
-          分潤資料異常，結算無法計算
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4 flex items-start gap-2">
+          <span>⚠</span><span>分潤資料異常，結算無法計算。請聯繫系統管理員</span>
         </div>
       )}
 

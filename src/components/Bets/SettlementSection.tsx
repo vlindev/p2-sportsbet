@@ -118,7 +118,7 @@ export default function SettlementSection({ label, bets, settlements, memberMap,
 
   return (
     <>
-      {!hasResult && (
+      {(!hasResult || !settlements) && (
         <>
           <p className="text-base font-bold text-slate-600 mb-3 mt-2">{label} — 投注明細</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
