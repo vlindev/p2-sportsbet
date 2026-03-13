@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { closeBetting, openBetting, runAutoPlacementAction } from "@/lib/betting-actions";
+import { closeBetting } from "@/lib/betting-actions";
 import CloseBettingModal from "@/components/CloseBettingModal";
 import type { Match, Bet } from "@/types";
 
@@ -15,55 +15,35 @@ type Props = {
   members: Member[];
   onMatchStatusChange: (newStatus: Match["status"]) => void;
   onBetsChange: () => void;
+  // Controlled modal state (owned by MatchBetEntry)
+  showCloseModal: boolean;
+  onCloseModalClose: () => void;
+  showBulkReduceModal: boolean;
+  onBulkReduceModalClose: () => void;
 };
 
-export default function BettingActions({ match, bets, matchId, members, onMatchStatusChange, onBetsChange }: Props) {
-  const [autoPlacing, setAutoPlacing] = useState(false);
-  const [autoPlaceResult, setAutoPlaceResult] = useState<number | null>(null);
-  const [bulkReducing, setBulkReducing] = useState(false);
-  const [showBulkReduceModal, setShowBulkReduceModal] = useState(false);
-  const [bulkReduceSide, setBulkReduceSide] = useState<"A" | "B" | "all">("all");
-  const [showCloseModal, setShowCloseModal] = useState(false);
+export default function BettingActions({
+  match, bets, matchId, members,
+  onMatchStatusChange, onBetsChange,
+  showCloseModal, onCloseModalClose,
+  showBulkReduceModal, onBulkReduceModalClose,
+}: Props) {
   const [closeConfirming, setCloseConfirming] = useState(false);
-
+  const [bulkReducing, setBulkReducing] = useState(false);
+  const [bulkReduceSide, setBulkReduceSide] = useState<"A" | "B" | "all">("all");
   const [r1711Toast, setR1711Toast] = useState<string | null>(null);
 
   async function confirmClose() {
     setCloseConfirming(true);
     const result = await closeBetting(matchId, bets);
     setCloseConfirming(false);
-    setShowCloseModal(false);
+    onCloseModalClose();
     if (!result.success) { console.error(result.error); return; }
     onMatchStatusChange("betting_closed");
     if (result.adjusted) {
       setR1711Toast(`${match.name || "此賽事"} 分潤比例已自動調整`);
       setTimeout(() => setR1711Toast(null), 4000);
     }
-  }
-
-  async function handleOpenBetting() {
-    const result = await openBetting(matchId);
-    if (!result.success) { console.error(result.error); return; }
-    onMatchStatusChange("scheduled");
-  }
-
-  async function runAutoPlacement() {
-    if (autoPlacing) return;
-    setAutoPlacing(true); setAutoPlaceResult(null);
-
-    // Refetch fresh bets for accurate auto-placement
-    const { data: freshBets, error: betsErr } = await supabase
-      .from("bets").select("member_id, team_bet_on, amount_liang")
-      .eq("match_id", matchId).eq("status", "active").is("sporadic_pool_id", null);
-    if (betsErr) { console.error("Fetch bets for auto-placement:", betsErr); setAutoPlacing(false); return; }
-
-    const matchBets = (freshBets || []) as { member_id: string; team_bet_on: "A" | "B"; amount_liang: number }[];
-    const result = await runAutoPlacementAction(matchId, members, matchBets);
-    if (!result.success) { console.error(result.error); setAutoPlacing(false); return; }
-
-    setAutoPlaceResult(result.count);
-    setAutoPlacing(false);
-    onBetsChange();
   }
 
   const twoLiangBets = bets.filter((b) => b.amount_liang === 2 && b.bet_type === "voluntary" && b.status === "active");
@@ -76,7 +56,7 @@ export default function BettingActions({ match, bets, matchId, members, onMatchS
       ? twoLiangBets
       : twoLiangBets.filter((b) => b.team_bet_on === bulkReduceSide);
     const ids = targetBets.map((b) => b.id);
-    if (ids.length === 0) { setBulkReducing(false); setShowBulkReduceModal(false); return; }
+    if (ids.length === 0) { setBulkReducing(false); onBulkReduceModalClose(); return; }
 
     const { error } = await supabase.from("bets").update({ amount_liang: 1 }).in("id", ids);
     if (error) { console.error("Bulk reduce:", error); setBulkReducing(false); return; }
@@ -103,48 +83,14 @@ export default function BettingActions({ match, bets, matchId, members, onMatchS
     if (auditErr) console.error("Audit log:", auditErr);
 
     setBulkReducing(false);
-    setShowBulkReduceModal(false);
+    onBulkReduceModalClose();
     onBetsChange();
   }
 
   return (
     <>
-      {match.status === "betting_closed" && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="text-sm text-amber-700">已封盤 · 會員無法自行下注</span>
-            <div className="flex items-center gap-3">
-              <button onClick={handleOpenBetting}
-                className="text-sm text-slate-500 hover:text-slate-700 cursor-pointer transition-colors">
-                取消封盤
-              </button>
-              {match.match_type === "monday" && (
-                <button onClick={runAutoPlacement} disabled={autoPlacing || autoPlaceResult !== null}
-                  className="text-sm font-medium text-blue-500 hover:text-blue-700 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                  {autoPlacing ? "派注中..." : autoPlaceResult !== null ? `已派 ${autoPlaceResult} 注` : "自動派注"}
-                </button>
-              )}
-              {twoLiangBets.length > 0 && (
-                <button onClick={() => { setBulkReduceSide("all"); setShowBulkReduceModal(true); }}
-                  className="text-sm font-medium text-orange-500 hover:text-orange-700 cursor-pointer transition-colors">
-                  全額降注
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {match.status === "scheduled" && (
-        <div className="flex justify-end mb-3">
-          <button onClick={() => setShowCloseModal(true)}
-            className="text-sm font-medium text-amber-600 hover:text-amber-700 cursor-pointer transition-colors">
-            封盤
-          </button>
-        </div>
-      )}
-
       {showBulkReduceModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowBulkReduceModal(false)}>
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onBulkReduceModalClose}>
           <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-slate-800 mb-4">全額降注</h3>
             <p className="text-sm text-slate-500 mb-1">確認將「{match.name || "此賽事"}」所有 2兩投注改為 1兩？</p>
@@ -166,7 +112,7 @@ export default function BettingActions({ match, bets, matchId, members, onMatchS
               })}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setShowBulkReduceModal(false)}
+              <button onClick={onBulkReduceModalClose}
                 className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 取消
               </button>
@@ -188,7 +134,7 @@ export default function BettingActions({ match, bets, matchId, members, onMatchS
           teamBTotal={bets.filter((b) => b.team_bet_on === "B").reduce((s, b) => s + b.amount_liang, 0)}
           unbettedCount={members.filter((m) => m.active).length - new Set(bets.map((b) => b.member_id)).size}
           onConfirm={confirmClose}
-          onCancel={() => setShowCloseModal(false)}
+          onCancel={onCloseModalClose}
           confirming={closeConfirming}
         />
       )}

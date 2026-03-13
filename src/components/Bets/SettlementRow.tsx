@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 export type DetailLine =
   | { type: "item"; label: string; amountLiang: number }
@@ -29,9 +30,14 @@ export default function SettlementRow({ name, isPlayer, sharePercent, finalNetLi
   return (
     <div>
       <div
-        className={`flex items-center gap-2 text-sm py-1.5 px-1 rounded-md transition-colors ${canExpand ? "cursor-pointer hover:bg-slate-200/50" : ""}`}
+        className={`flex items-center gap-2 text-sm py-2 px-1 rounded-md transition-colors hover:bg-slate-100/60 ${canExpand ? "cursor-pointer" : ""} ${open ? "bg-slate-100/60" : ""}`}
         onClick={canExpand ? () => setOpen(!open) : undefined}
       >
+        {canExpand ? (
+          <ChevronRight size={12} className={`text-slate-400 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
+        ) : (
+          <span className="w-3 shrink-0" />
+        )}
         <span className="flex-1 min-w-0 truncate font-medium text-slate-700">
           {name}
           {isPlayer && <span className="text-xs text-slate-400 font-normal ml-0.5">（選手）</span>}
@@ -44,12 +50,12 @@ export default function SettlementRow({ name, isPlayer, sharePercent, finalNetLi
         }`}>
           {fmtLiang(finalNetLiang)}
         </span>
-        <span className="text-xs text-slate-400 tabular-nums whitespace-nowrap ml-1">
+        <span className="text-sm text-slate-400 tabular-nums whitespace-nowrap ml-1">
           ({finalNetNtd < 0 ? "-" : ""}${Math.abs(finalNetNtd).toLocaleString()})
         </span>
       </div>
       {open && expandDetail && (
-        <div className="bg-slate-50 rounded-lg px-3 py-2.5 mt-0.5 mb-1.5 text-[13px] text-slate-500 leading-7">
+        <div className="bg-white/80 rounded-lg px-3 py-2.5 mt-0.5 mb-1.5 ml-5 text-sm text-slate-500 leading-7">
           {expandDetail.map((line, i) => {
             if (line.type === "divider") return <div key={i} className="border-t border-slate-200 my-1" />;
             const isTot = line.type === "total";

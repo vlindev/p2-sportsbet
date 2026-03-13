@@ -120,7 +120,7 @@ export default function SettlementSection({ label, bets, settlements, memberMap,
     <>
       {!hasResult && (
         <>
-          <p className="text-[15px] font-bold text-slate-500 mb-3 mt-2">{label} — 投注明細</p>
+          <p className="text-base font-bold text-slate-600 mb-3 mt-2">{label} — 投注明細</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <ReportBetColumn side="A" sideBets={teamABets} sideTotal={teamATotal} winningTeam={winningTeam}
               hasResult={hasResult} memberMap={memberMap} isPool={isPool} isOpeningTeam={isPool && openedByTeam === "A"} openedByTeam={openedByTeam} />
@@ -132,17 +132,17 @@ export default function SettlementSection({ label, bets, settlements, memberMap,
 
       {hasResult && settlements && (
         <>
-          <p className="text-[15px] font-bold text-slate-500 mb-3">{label} — 結算明細</p>
+          <p className="text-base font-bold text-slate-600 mb-3">{label} — 結算明細</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {(["A", "B"] as const).map(side => {
               const isWinner = winningTeam === side;
               const colClass = isPool
-                ? isWinner ? "border-purple-200 bg-fuchsia-50/30" : "border-gray-200 bg-gray-50/30"
-                : isWinner ? "border-emerald-200 bg-emerald-50/30" : "border-gray-200 bg-gray-50/30";
+                ? isWinner ? "border-purple-200 bg-fuchsia-50/30" : "border-gray-200 bg-gray-50/50"
+                : isWinner ? "border-emerald-200 bg-emerald-50/60" : "border-gray-200 bg-gray-50/50";
               return (
                 <div key={side} className={`rounded-xl border p-4 ${colClass}`}>
                   <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                    <span className={`text-[15px] font-bold ${isWinner ? "text-emerald-700" : "text-slate-400"}`}>{side} 隊</span>
+                    <span className={`text-base font-bold ${isWinner ? "text-emerald-700" : "text-slate-400"}`}>{side} 隊</span>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${isWinner ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-slate-400"}`}>
                       {isWinner ? "勝" : "敗"}
                     </span>

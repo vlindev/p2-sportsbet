@@ -80,7 +80,6 @@ export default function ShareRatioEditor({
     const p1Bps = editPct * 100;
     const p2Bps = 10_000 - p1Bps;
 
-    // Save user's chosen ratio (clears pre_adjustment_bps unconditionally)
     const { error: e1 } = await supabase.from("match_team_player_shares")
       .update({ share_bps: p1Bps, pre_adjustment_bps: null }).eq("id", ss[0].id);
     if (e1) { console.error("Save share:", e1); setSaving(false); return; }
@@ -89,13 +88,11 @@ export default function ShareRatioEditor({
       .update({ share_bps: p2Bps, pre_adjustment_bps: null }).eq("id", ss[1].id);
     if (e2) { console.error("Save share:", e2); setSaving(false); return; }
 
-    // 🟠-1: Verify share invariant (sum = 10,000) after both writes
     const { data: verify } = await supabase.from("match_team_player_shares")
       .select("share_bps").eq("match_id", matchId).eq("match_side", editingSide)
       .eq("context", context);
     const shareSum = (verify || []).reduce((s, r: { share_bps: number }) => s + r.share_bps, 0);
     if (shareSum !== 10_000) {
-      // Rollback: restore original values
       await supabase.from("match_team_player_shares")
         .update({ share_bps: ss[0].share_bps, pre_adjustment_bps: null }).eq("id", ss[0].id);
       await supabase.from("match_team_player_shares")
@@ -105,7 +102,6 @@ export default function ShareRatioEditor({
       return;
     }
 
-    // R17.11: if betting_closed + base context, run min exposure check
     if (matchStatus === "betting_closed" && context === "base") {
       const opposingTotal = editingSide === "A" ? teamBTotalBetsLiang : teamATotalBetsLiang;
       const savedShares = [
@@ -133,23 +129,24 @@ export default function ShareRatioEditor({
     return (opp * pct / 100).toFixed(1);
   }
 
-  // R17.11 auto-adjustment warning
   const adjusted = context === "base" ? shares.find(s => s.pre_adjustment_bps !== null) : null;
   const all5050 = is5050("A") && is5050("B");
 
-  function renderSide(side: "A" | "B") {
-    const ss = sideShares(side);
+  if (shares.length === 0) return null;
+
+  // Edit mode for a side
+  if (editingSide) {
+    const ss = sideShares(editingSide);
     if (ss.length !== 2) return null;
     const p1Name = playerName(ss[0].player_id);
     const p2Name = playerName(ss[1].player_id);
-    const p1Pct = Math.round(ss[0].share_bps / 100);
-    const p2Pct = Math.round(ss[1].share_bps / 100);
+    const p2Edit = 100 - editPct;
 
-    if (editingSide === side) {
-      const p2Edit = 100 - editPct;
-      return (
-        <div key={side} className="bg-slate-50 rounded-lg p-3 space-y-2">
-          <div className="text-xs font-medium text-slate-500">{side}隊 分潤</div>
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+        <p className="text-sm font-semibold text-slate-500 mb-4">選手佔成</p>
+        <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+          <div className="text-sm font-medium text-slate-500">{editingSide}隊 選手佔成</div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-700 truncate max-w-[140px]">{p1Name}</span>
             <input type="number" min={0} max={100} value={editPct}
@@ -172,7 +169,7 @@ export default function ShareRatioEditor({
             ))}
           </div>
           <div className="text-xs text-slate-400">
-            估算 {p1Name} {estimate(side, editPct)}兩 · {p2Name} {estimate(side, p2Edit)}兩
+            估算 {p1Name} {estimate(editingSide, editPct)}兩 · {p2Name} {estimate(editingSide, p2Edit)}兩
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={saveEdit} disabled={saving || editPct < 0 || editPct > 100}
@@ -182,52 +179,76 @@ export default function ShareRatioEditor({
               className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700 cursor-pointer">取消</button>
           </div>
         </div>
-      );
-    }
-
-    return (
-      <div key={side} className="flex items-center gap-2 text-sm">
-        <span className="text-slate-500">{side}隊</span>
-        <span className="text-slate-700">{p1Name} {p1Pct}%</span>
-        <span className="text-slate-300">·</span>
-        <span className="text-slate-700">{p2Name} {p2Pct}%</span>
-        {!locked && (
-          <button onClick={() => startEdit(side)} className="p-0.5 text-slate-300 hover:text-slate-500 cursor-pointer">
-            <Pencil size={12} />
-          </button>
-        )}
+        {/* Show the other side as read-only below the edit form */}
+        {renderSideCard(editingSide === "A" ? "B" : "A")}
       </div>
     );
   }
 
-  if (shares.length === 0) return null;
-
+  // Display mode — metric card style
   return (
-    <div className="mb-4">
-      {all5050 && !editingSide ? (
-        <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
-          <span>分潤 50/50</span>
-          {!locked && (
-            <button onClick={() => startEdit("A")} className="p-0.5 text-slate-300 hover:text-slate-500 cursor-pointer">
-              <Pencil size={12} />
+    <>
+      <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 ${locked ? "opacity-85" : ""}`}>
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-sm font-semibold ${locked ? "text-slate-400" : "text-slate-500"}`}>選手佔成</span>
+          {locked ? (
+            <span className="text-sm text-slate-400">已鎖定</span>
+          ) : (
+            <button onClick={() => startEdit("A")} className="p-1.5 rounded text-slate-400 hover:text-orange-500 hover:bg-slate-100 cursor-pointer transition-colors">
+              <Pencil size={16} />
             </button>
           )}
         </div>
-      ) : (
-        <div className="space-y-2 py-2">
-          {renderSide("A")}
-          {renderSide("B")}
+        <div className="grid grid-cols-2 gap-3">
+          {renderSideCard("A")}
+          {renderSideCard("B")}
         </div>
-      )}
+      </div>
       {adjusted && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
           <p className="text-xs text-amber-700">
-            分潤已調整：原 {Math.round(adjusted.pre_adjustment_bps! / 100)}% / {100 - Math.round(adjusted.pre_adjustment_bps! / 100)}%
+            佔成已調整：原 {Math.round(adjusted.pre_adjustment_bps! / 100)}% / {100 - Math.round(adjusted.pre_adjustment_bps! / 100)}%
             → 現 {Math.round(adjusted.share_bps / 100)}% / {100 - Math.round(adjusted.share_bps / 100)}%
             （最低曝險 20兩）
           </p>
         </div>
       )}
-    </div>
+    </>
   );
+
+  function renderSideCard(side: "A" | "B") {
+    const ss = sideShares(side);
+    if (ss.length !== 2) return null;
+    const p1Name = playerName(ss[0].player_id);
+    const p2Name = playerName(ss[1].player_id);
+    const p1Pct = Math.round(ss[0].share_bps / 100);
+    const p2Pct = Math.round(ss[1].share_bps / 100);
+    const isSide5050 = ss[0].share_bps === 5000 && ss[1].share_bps === 5000;
+    const pctColor = locked ? "text-slate-600" : "text-slate-800";
+    const labelColor = locked ? "text-slate-400" : "text-slate-500";
+    const nameColor = locked ? "text-slate-400" : "text-slate-400";
+
+    return (
+      <div className="bg-slate-50 rounded-xl p-4 text-center">
+        <p className={`text-sm font-medium ${labelColor} mb-2`}>{side} 隊</p>
+        {isSide5050 ? (
+          <>
+            <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>50%</p>
+            <p className={`text-sm ${nameColor} mt-1`}>{p1Name} · {p2Name}</p>
+          </>
+        ) : (
+          <div className="flex justify-center gap-6">
+            <div>
+              <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>{p1Pct}%</p>
+              <p className={`text-sm ${nameColor} mt-1`}>{p1Name}</p>
+            </div>
+            <div>
+              <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>{p2Pct}%</p>
+              <p className={`text-sm ${nameColor} mt-1`}>{p2Name}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 }

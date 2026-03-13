@@ -12,14 +12,15 @@ type Props = {
 
 export default function MatchHeader({ match, memberMap, extraBadges, children }: Props) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-5">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${MATCH_TYPE_STYLE[match.match_type]}`}>
           {MATCH_TYPE_LABEL[match.match_type]}
         </span>
         {extraBadges}
-        <span className="text-sm text-slate-500">{match.date}</span>
-        {match.start_time && <span className="text-sm text-slate-500">{match.start_time} 開始</span>}
+        <span className="text-sm text-slate-500">
+          {match.date}{match.start_time ? ` · ${match.start_time}` : ""}
+        </span>
       </div>
       {match.name && <p className="text-lg font-bold text-slate-800 mb-3">{match.name}</p>}
       <div className="flex items-center gap-3">

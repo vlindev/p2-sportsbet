@@ -67,7 +67,7 @@ export default function ReportBetColumn({ side, sideBets, sideTotal, winningTeam
             const nameColor = isAuto ? "text-slate-400" : isLoser ? "text-slate-400" : "text-slate-700";
             const amountColor = isAuto ? "text-slate-400" : isWinner ? "text-emerald-600" : isLoser ? "text-slate-400" : "text-slate-700";
             return (
-              <div key={bet.id} className="flex items-center gap-2 text-sm">
+              <div key={bet.id} className="flex items-center gap-2 text-sm px-1 -mx-1 py-0.5 rounded hover:bg-slate-100/60 transition-colors">
                 <span className={`flex-1 min-w-0 truncate ${nameColor}`}>
                   {memberMap[bet.member_id] || "—"}
                 </span>
