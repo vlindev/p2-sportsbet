@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(open:*)",
+      "Bash(npx create-next-app@latest:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(npm run:*)",
+      "Bash(pkill:*)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(npx tsc:*)",
+      "Bash(test:*)",
+      "Bash(npx next:*)",
+      "Bash(echo NOT_INSTALLED:*)",
+      "Bash(sleep 3:*)",
+      "Bash(claude config:*)",
+      "Bash(echo:*)",
+      "Bash(textutil:*)",
+      "Bash(osascript:*)"
+    ]
+  }
+}

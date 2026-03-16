@@ -36,8 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
-# claude code
-.claude/
+# claude code (track settings, ignore session data)
+.claude/*
+!.claude/settings.json
+!.claude/settings.local.json
 
 # typescript
 *.tsbuildinfo
