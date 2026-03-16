@@ -71,6 +71,8 @@ All UI mockups live in `3-mockup-HTML/`. Prefix: `Mockup-`. New mockups go here 
 | 7 | `Mockup-Betting-In-Action.html` | Multi-match tab bar + 封盤 on bets page |
 | 8 | `Mockup-Betting-Completed.html` | Per-match settlement report v2 (3 examples) |
 | 9 | `Mockup-Betting-Multi-Scenario.html` | Share editing + sporadic pools + report rewrite (finalized) |
+| 10 | `Mockup-Bets-Landing.html` | Bets landing page v7 — match list tab + member lookup tab |
+| 11 | `Mockup-Bets-Entry-Report-Redesign.html` | Bets entry/report page redesign v5 |
 
 ### Archive (`archive/` in project root)
 Historical files — executed plans, completed audits, resolved items. No active purpose. 14 files archived Session 56.
