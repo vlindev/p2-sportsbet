@@ -143,13 +143,26 @@ Load the relevant cluster file(s) BEFORE proceeding whenever ANY of the followin
 
 ## ⚠️ Next Session — Discuss Before Building
 
-These items were flagged at the end of Sessions 67–72. Must discuss before any further implementation.
+### S73 Revert: Sporadic Pool Fixes Need Holistic Redesign
+
+S73 ran blastcheck on sporadic pool drift, found 8 issues, attempted fixes, and reverted all code. The critical problem: the matches page grouping logic (overdue/today/thisWeek/etc.) uses separate source arrays per section. Adding new match categories (e.g., completed-with-pending-pools) creates invisible matches because they don't fit any existing group.
+
+**Before writing any sporadic pool code, design the grouping logic first:**
+- Single source (`currentMatches`) for all groups — every match appears in exactly one group
+- Overdue = all past-date matches needing action (not just active)
+- Today = `date === today` (strict)
+- Future = by week range
+- Status determines card appearance, date determines card placement
+
+**Then reapply the verified fixes (1–6) as a unit.** Full details + reference code at `archive/s73-reverted/README-s73-revert.md`.
+
+### Previous Items (S67–72)
 
 1. ~~**Edit mode UX redesign**~~ ✓ (S69)
-2. ~~**uieval on bets entry page**~~ ✓ (S72) — UIEval + mockup + implementation complete. MatchHeader redesigned (hero layout), 選手佔成 merged into footer, all 5 modal/component fixes applied.
+2. ~~**uieval on bets entry page**~~ ✓ (S72)
 3. **Post-自動派注 workflow** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism — discuss.
 4. **Sporadic pool edit mode** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
-5. **PoolBetSection + ShareRatioEditor visual check** — S72 rewrote ShareRatioEditor as a footer element (border-t separator). PoolBetSection renders it standalone without a parent card. Likely broken visually. Must verify + fix on a match with sporadic pools.
+5. ~~**PoolBetSection + ShareRatioEditor visual check**~~ — S73 blastcheck assessed. User said it looks fine. Other pool issues supersede.
 
 ---
 
