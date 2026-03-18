@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-import { Pencil, ArrowLeftRight } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { checkMinExposure } from "@/lib/share-validation";
 import type { Match, MatchTeamPlayerShare } from "@/types";
 
@@ -18,21 +18,16 @@ type Props = {
   onSharesChanged?: () => void;
 };
 
-const PRESETS = [
-  { label: "50/50", v: 50 },
-  { label: "60/40", v: 60 },
-  { label: "70/30", v: 70 },
-  { label: "80/20", v: 80 },
-];
-
 export default function ShareRatioEditor({
   matchId, matchStatus, teamAPlayers, teamBPlayers, context,
   sporadicPoolId, teamATotalBetsLiang, teamBTotalBetsLiang, onSharesChanged,
 }: Props) {
   const [shares, setShares] = useState<MatchTeamPlayerShare[]>([]);
-  const [editingSide, setEditingSide] = useState<"A" | "B" | null>(null);
-  const [editPct, setEditPct] = useState(50);
+  const [editing, setEditing] = useState(false);
+  const [editA, setEditA] = useState(50);
+  const [editB, setEditB] = useState(50);
   const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const locked = matchStatus === "active" || matchStatus === "completed" || matchStatus === "cancelled";
 
@@ -51,202 +46,185 @@ export default function ShareRatioEditor({
 
   useEffect(() => { fetchShares(); }, [fetchShares]);
 
+  // Sort shares to match the player order passed from the match (player1 first)
   function sideShares(side: "A" | "B"): MatchTeamPlayerShare[] {
-    return shares.filter(s => s.match_side === side)
-      .sort((a, b) => a.player_id.localeCompare(b.player_id));
+    const players = side === "A" ? teamAPlayers : teamBPlayers;
+    const ss = shares.filter(s => s.match_side === side);
+    return ss.sort((a, b) => {
+      const aIdx = players.findIndex(p => p.id === a.player_id);
+      const bIdx = players.findIndex(p => p.id === b.player_id);
+      return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+    });
   }
 
-  function playerName(id: string): string {
-    return [...teamAPlayers, ...teamBPlayers].find(p => p.id === id)?.name || "—";
+  function playerName(id: string, side: "A" | "B"): string {
+    const players = side === "A" ? teamAPlayers : teamBPlayers;
+    return players.find(p => p.id === id)?.name || "—";
   }
 
-  function is5050(side: "A" | "B"): boolean {
-    const ss = sideShares(side);
-    return ss.length === 2 && ss[0].share_bps === 5000 && ss[1].share_bps === 5000;
+  const ssA = sideShares("A");
+  const ssB = sideShares("B");
+  if (ssA.length !== 2 || ssB.length !== 2) return null;
+
+  const aPct1 = Math.round(ssA[0].share_bps / 100);
+  const aPct2 = Math.round(ssA[1].share_bps / 100);
+  const bPct1 = Math.round(ssB[0].share_bps / 100);
+  const bPct2 = Math.round(ssB[1].share_bps / 100);
+  const all5050 = aPct1 === 50 && aPct2 === 50 && bPct1 === 50 && bPct2 === 50;
+
+  function startEdit() {
+    setEditA(aPct1);
+    setEditB(bPct1);
+    setEditing(true);
   }
 
-  function startEdit(side: "A" | "B") {
-    const ss = sideShares(side);
-    setEditingSide(side);
-    setEditPct(ss.length === 2 ? Math.round(ss[0].share_bps / 100) : 50);
+  function cancelEdit() {
+    setEditing(false);
   }
+
+  const hasChanges = editing && (editA !== aPct1 || editB !== bPct1);
 
   async function saveEdit() {
-    if (!editingSide) return;
-    const ss = sideShares(editingSide);
-    if (ss.length !== 2) return;
+    if (!hasChanges) return;
     setSaving(true);
+    let r1711Fired = false;
 
-    const p1Bps = editPct * 100;
-    const p2Bps = 10_000 - p1Bps;
+    // Save A side
+    if (editA !== aPct1) {
+      const p1Bps = editA * 100;
+      const p2Bps = 10_000 - p1Bps;
+      const { error: e1 } = await supabase.from("match_team_player_shares")
+        .update({ share_bps: p1Bps, pre_adjustment_bps: null }).eq("id", ssA[0].id);
+      if (e1) { console.error("Save share:", e1); setSaving(false); return; }
+      const { error: e2 } = await supabase.from("match_team_player_shares")
+        .update({ share_bps: p2Bps, pre_adjustment_bps: null }).eq("id", ssA[1].id);
+      if (e2) { console.error("Save share:", e2); setSaving(false); return; }
 
-    const { error: e1 } = await supabase.from("match_team_player_shares")
-      .update({ share_bps: p1Bps, pre_adjustment_bps: null }).eq("id", ss[0].id);
-    if (e1) { console.error("Save share:", e1); setSaving(false); return; }
-
-    const { error: e2 } = await supabase.from("match_team_player_shares")
-      .update({ share_bps: p2Bps, pre_adjustment_bps: null }).eq("id", ss[1].id);
-    if (e2) { console.error("Save share:", e2); setSaving(false); return; }
-
-    const { data: verify } = await supabase.from("match_team_player_shares")
-      .select("share_bps").eq("match_id", matchId).eq("match_side", editingSide)
-      .eq("context", context);
-    const shareSum = (verify || []).reduce((s, r: { share_bps: number }) => s + r.share_bps, 0);
-    if (shareSum !== 10_000) {
-      await supabase.from("match_team_player_shares")
-        .update({ share_bps: ss[0].share_bps, pre_adjustment_bps: null }).eq("id", ss[0].id);
-      await supabase.from("match_team_player_shares")
-        .update({ share_bps: ss[1].share_bps, pre_adjustment_bps: null }).eq("id", ss[1].id);
-      console.error("Share invariant violated: sum =", shareSum);
-      setSaving(false);
-      return;
+      // R17.11 check for A side
+      if (matchStatus === "betting_closed" && context === "base") {
+        const adjustments = checkMinExposure(
+          [{ id: ssA[0].id, share_bps: p1Bps }, { id: ssA[1].id, share_bps: p2Bps }],
+          teamBTotalBetsLiang, 20
+        );
+        if (adjustments) {
+          for (const [id, { originalBps, newBps }] of adjustments) {
+            await supabase.from("match_team_player_shares")
+              .update({ share_bps: newBps, pre_adjustment_bps: originalBps }).eq("id", id);
+          }
+          r1711Fired = true;
+        }
+      }
     }
 
-    if (matchStatus === "betting_closed" && context === "base") {
-      const opposingTotal = editingSide === "A" ? teamBTotalBetsLiang : teamATotalBetsLiang;
-      const savedShares = [
-        { id: ss[0].id, share_bps: p1Bps },
-        { id: ss[1].id, share_bps: p2Bps },
-      ];
-      const adjustments = checkMinExposure(savedShares, opposingTotal, 20);
-      if (adjustments) {
-        for (const [id, { originalBps, newBps }] of adjustments) {
-          const { error } = await supabase.from("match_team_player_shares")
-            .update({ share_bps: newBps, pre_adjustment_bps: originalBps }).eq("id", id);
-          if (error) console.error("R17.11 adjust:", error);
+    // Save B side
+    if (editB !== bPct1) {
+      const p1Bps = editB * 100;
+      const p2Bps = 10_000 - p1Bps;
+      const { error: e1 } = await supabase.from("match_team_player_shares")
+        .update({ share_bps: p1Bps, pre_adjustment_bps: null }).eq("id", ssB[0].id);
+      if (e1) { console.error("Save share:", e1); setSaving(false); return; }
+      const { error: e2 } = await supabase.from("match_team_player_shares")
+        .update({ share_bps: p2Bps, pre_adjustment_bps: null }).eq("id", ssB[1].id);
+      if (e2) { console.error("Save share:", e2); setSaving(false); return; }
+
+      // R17.11 check for B side
+      if (matchStatus === "betting_closed" && context === "base") {
+        const adjustments = checkMinExposure(
+          [{ id: ssB[0].id, share_bps: p1Bps }, { id: ssB[1].id, share_bps: p2Bps }],
+          teamATotalBetsLiang, 20
+        );
+        if (adjustments) {
+          for (const [id, { originalBps, newBps }] of adjustments) {
+            await supabase.from("match_team_player_shares")
+              .update({ share_bps: newBps, pre_adjustment_bps: originalBps }).eq("id", id);
+          }
+          r1711Fired = true;
         }
       }
     }
 
     setSaving(false);
-    setEditingSide(null);
+    setEditing(false);
     fetchShares();
     onSharesChanged?.();
+
+    if (r1711Fired) {
+      setToast("選手曝險不得低於20兩，佔成已調整至最近整數");
+      setTimeout(() => setToast(null), 8000);
+    }
   }
 
-  function estimate(side: "A" | "B", pct: number): string {
-    const opp = side === "A" ? teamBTotalBetsLiang : teamATotalBetsLiang;
-    return (opp * pct / 100).toFixed(1);
-  }
-
-  const adjusted = context === "base" ? shares.find(s => s.pre_adjustment_bps !== null) : null;
-  const all5050 = is5050("A") && is5050("B");
-
-  if (shares.length === 0) return null;
-
-  // Edit mode for a side
-  if (editingSide) {
-    const ss = sideShares(editingSide);
-    if (ss.length !== 2) return null;
-    const p1Name = playerName(ss[0].player_id);
-    const p2Name = playerName(ss[1].player_id);
-    const p2Edit = 100 - editPct;
-
+  // ── Edit mode ──
+  if (editing) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
-        <p className="text-sm font-semibold text-slate-500 mb-4">選手佔成</p>
-        <div className="bg-slate-50 rounded-lg p-3 space-y-2">
-          <div className="text-sm font-medium text-slate-500">{editingSide}隊 選手佔成</div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-slate-700 truncate max-w-[140px]">{p1Name}</span>
-            <input type="number" min={0} max={100} value={editPct}
-              onChange={e => setEditPct(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
-              className="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm" />
-            <span className="text-slate-400 text-xs">%</span>
-            <button onClick={() => setEditPct(100 - editPct)}
-              className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer" title="對調">
-              <ArrowLeftRight size={14} />
+      <div className="border-t border-gray-100 px-6 py-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-slate-500">選手佔成</span>
+          <div className="flex items-center gap-2">
+            <button onClick={saveEdit} disabled={saving || !hasChanges}
+              className="px-4 py-1.5 text-sm font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+              {saving ? "..." : "儲存"}
             </button>
-            <span className="text-slate-700 truncate max-w-[140px]">{p2Name}</span>
-            <span className="text-sm text-slate-500 tabular-nums">{p2Edit}%</span>
-          </div>
-          <div className="flex gap-1.5">
-            {PRESETS.map(p => (
-              <button key={p.v} onClick={() => setEditPct(p.v)}
-                className={`px-2 py-1 text-xs rounded border cursor-pointer transition-colors ${
-                  editPct === p.v ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
-                }`}>{p.label}</button>
-            ))}
-          </div>
-          <div className="text-xs text-slate-400">
-            估算 {p1Name} {estimate(editingSide, editPct)}兩 · {p2Name} {estimate(editingSide, p2Edit)}兩
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button onClick={saveEdit} disabled={saving || editPct < 0 || editPct > 100}
-              className="px-3 py-1 text-xs font-medium bg-orange-500 text-white rounded hover:bg-orange-600 cursor-pointer disabled:opacity-40">
-              {saving ? "..." : "儲存"}</button>
-            <button onClick={() => setEditingSide(null)}
-              className="px-3 py-1 text-xs text-slate-500 hover:text-slate-700 cursor-pointer">取消</button>
+            <button onClick={cancelEdit}
+              className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
+              取消
+            </button>
           </div>
         </div>
-        {/* Show the other side as read-only below the edit form */}
-        {renderSideCard(editingSide === "A" ? "B" : "A")}
+        {/* A team row */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-semibold text-slate-500 w-8">A隊</span>
+          <span className="text-sm font-medium text-slate-600 min-w-[56px]">{playerName(ssA[0].player_id, "A")}</span>
+          <div className={`flex items-center border-[1.5px] rounded-lg overflow-hidden transition-colors ${editA !== aPct1 ? "border-orange-400" : "border-slate-200"}`}>
+            <input type="number" min={0} max={100} value={editA}
+              onChange={e => setEditA(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+              className="w-11 py-1.5 text-sm font-semibold text-center border-none outline-none text-slate-800" />
+            <span className="text-xs text-slate-400 pr-2">%</span>
+          </div>
+          <span className="text-sm text-slate-300 font-semibold">/</span>
+          <span className="text-sm font-semibold text-slate-500">{100 - editA}%</span>
+          <span className="text-sm text-slate-400">{playerName(ssA[1].player_id, "A")}</span>
+        </div>
+        {/* B team row */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-slate-500 w-8">B隊</span>
+          <span className="text-sm font-medium text-slate-600 min-w-[56px]">{playerName(ssB[0].player_id, "B")}</span>
+          <div className={`flex items-center border-[1.5px] rounded-lg overflow-hidden transition-colors ${editB !== bPct1 ? "border-orange-400" : "border-slate-200"}`}>
+            <input type="number" min={0} max={100} value={editB}
+              onChange={e => setEditB(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+              className="w-11 py-1.5 text-sm font-semibold text-center border-none outline-none text-slate-800" />
+            <span className="text-xs text-slate-400 pr-2">%</span>
+          </div>
+          <span className="text-sm text-slate-300 font-semibold">/</span>
+          <span className="text-sm font-semibold text-slate-500">{100 - editB}%</span>
+          <span className="text-sm text-slate-400">{playerName(ssB[1].player_id, "B")}</span>
+        </div>
       </div>
     );
   }
 
-  // Display mode — metric card style
+  // ── Display mode — one-line footer ──
   return (
     <>
-      <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4 ${locked ? "opacity-85" : ""}`}>
-        <div className="flex items-center justify-between mb-4">
-          <span className={`text-sm font-semibold ${locked ? "text-slate-400" : "text-slate-500"}`}>選手佔成</span>
-          {!locked && (
-            <button onClick={() => startEdit("A")} className="p-1.5 rounded text-slate-400 hover:text-orange-500 hover:bg-slate-100 cursor-pointer transition-colors">
-              <Pencil size={16} />
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {renderSideCard("A")}
-          {renderSideCard("B")}
-        </div>
+      <div className={`border-t border-gray-100 px-6 py-3.5 flex items-center justify-between ${locked ? "opacity-75" : ""}`}>
+        <span className="text-sm">
+          <span className="font-semibold text-slate-500">選手佔成</span>
+          <span className={`ml-3 ${all5050 ? "text-slate-400" : "text-slate-800 font-semibold"}`}>{aPct1}/{aPct2} · {bPct1}/{bPct2}</span>
+        </span>
+        {!locked && (
+          <button onClick={startEdit}
+            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-orange-500 px-3 py-1.5 rounded-lg border border-transparent hover:border-gray-200 hover:bg-slate-50 cursor-pointer transition-colors">
+            <Pencil size={14} /> 編輯
+          </button>
+        )}
       </div>
-      {adjusted && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-          <p className="text-xs text-amber-700">
-            佔成已調整：原 {Math.round(adjusted.pre_adjustment_bps! / 100)}% / {100 - Math.round(adjusted.pre_adjustment_bps! / 100)}%
-            → 現 {Math.round(adjusted.share_bps / 100)}% / {100 - Math.round(adjusted.share_bps / 100)}%
-            （最低曝險 20兩）
-          </p>
+      {toast && (
+        <div className="px-6 pb-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="text-sm font-medium text-amber-700">{toast}</p>
+          </div>
         </div>
       )}
     </>
   );
-
-  function renderSideCard(side: "A" | "B") {
-    const ss = sideShares(side);
-    if (ss.length !== 2) return null;
-    const p1Name = playerName(ss[0].player_id);
-    const p2Name = playerName(ss[1].player_id);
-    const p1Pct = Math.round(ss[0].share_bps / 100);
-    const p2Pct = Math.round(ss[1].share_bps / 100);
-    const isSide5050 = ss[0].share_bps === 5000 && ss[1].share_bps === 5000;
-    const pctColor = locked ? "text-slate-600" : "text-slate-800";
-    const labelColor = locked ? "text-slate-400" : "text-slate-500";
-    const nameColor = locked ? "text-slate-400" : "text-slate-400";
-
-    return (
-      <div className="bg-slate-50 rounded-xl p-4 text-center">
-        <p className={`text-sm font-medium ${labelColor} mb-2`}>{side} 隊</p>
-        {isSide5050 ? (
-          <>
-            <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>50%</p>
-            <p className={`text-sm ${nameColor} mt-1`}>{p1Name} · {p2Name}</p>
-          </>
-        ) : (
-          <div className="flex justify-center gap-6">
-            <div>
-              <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>{p1Pct}%</p>
-              <p className={`text-sm ${nameColor} mt-1`}>{p1Name}</p>
-            </div>
-            <div>
-              <p className={`text-2xl font-bold ${pctColor} tabular-nums`}>{p2Pct}%</p>
-              <p className={`text-sm ${nameColor} mt-1`}>{p2Name}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 }

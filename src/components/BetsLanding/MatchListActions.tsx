@@ -39,7 +39,7 @@ export default function MatchListActions({ match, matchBets, members, isAutoPlac
     if (!result.success) return;
     onMatchStatusChange(match.id, "betting_closed");
     if (result.adjusted) {
-      setR1711Toast("分潤已自動調整");
+      setR1711Toast("選手佔成已自動調整");
       setTimeout(() => setR1711Toast(null), 3000);
     }
   }

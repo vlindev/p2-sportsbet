@@ -20,12 +20,13 @@ export default function CloseBettingModal({
 }: Props) {
   const isMonday = matchType === "monday";
 
+  const delta = Math.abs(teamATotal - teamBTotal);
+
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onCancel}>
       <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-slate-800 mb-1">確認封盤</h3>
-        <p className="text-sm text-slate-500 mb-1">{matchName}</p>
-        <p className="text-xs text-slate-400 mb-4">封盤後會員無法自行下注，管理人員仍可新增或修改。</p>
+        <p className="text-sm text-slate-400 mb-4">封盤後會員無法自行下注，管理人員仍可新增或修改。</p>
 
         {fetchError ? (
           <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
@@ -33,14 +34,22 @@ export default function CloseBettingModal({
           </div>
         ) : (
           <>
-            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4 space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">A 隊</span>
-                <span className="font-medium text-slate-700">{teamACount} 人 · {teamATotal} 兩</span>
+            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
+              <p className="text-sm font-semibold text-slate-500 mb-2 pb-2 border-b border-gray-200">{matchName}</p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">A 隊</span>
+                  <span className="font-medium text-slate-700">{teamACount}人 · {teamATotal}兩</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">B 隊</span>
+                  <span className="font-medium text-slate-700">{teamBCount}人 · {teamBTotal}兩</span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">B 隊</span>
-                <span className="font-medium text-slate-700">{teamBCount} 人 · {teamBTotal} 兩</span>
+              <div className="border-t border-gray-200 mt-2 pt-2 flex justify-end">
+                <span className={`text-sm font-semibold px-2.5 py-0.5 rounded-md ${delta <= 5 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"}`}>
+                  差距 {delta}兩
+                </span>
               </div>
             </div>
 
@@ -54,11 +63,11 @@ export default function CloseBettingModal({
 
         <div className="flex gap-3">
           <button onClick={onCancel}
-            className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+            className="flex-1 px-4 py-2.5 text-base font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
             取消
           </button>
           <button onClick={onConfirm} disabled={confirming || !!fetchError}
-            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            className="flex-1 px-4 py-2.5 text-base font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
             {confirming ? "封盤中..." : "確認封盤"}
           </button>
         </div>

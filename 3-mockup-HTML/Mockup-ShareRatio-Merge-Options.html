@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>選手佔成 — Merge Options</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; padding: 40px 20px; }
+
+  .page-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+  .page-sub { font-size: 14px; color: #94a3b8; text-align: center; margin-bottom: 48px; }
+
+  .option-section { max-width: 680px; margin: 0 auto 56px; }
+  .opt-label { font-size: 13px; font-weight: 600; color: #f97316; letter-spacing: 1px; margin-bottom: 4px; }
+  .opt-title { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+  .opt-desc { font-size: 13px; color: #94a3b8; margin-bottom: 16px; line-height: 1.5; }
+  .state-label { font-size: 12px; font-weight: 600; color: #3b82f6; background: #eff6ff; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
+
+  .divider { border: none; border-top: 1px solid #e2e8f0; margin: 56px auto; max-width: 680px; }
+  .divider-thick { border: none; border-top: 3px solid #f97316; margin: 64px auto; max-width: 680px; }
+
+  /* ── Card base ── */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Match header content ── */
+  .mh-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .badge { font-size: 13px; font-weight: 600; padding: 3px 12px; border-radius: 20px; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .mh-date { font-size: 14px; color: #64748b; }
+  .mh-name { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+
+  .mh-teams { display: flex; align-items: center; gap: 8px; }
+  .mh-side { flex: 1; }
+  .mh-side-label { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .mh-side-label.right { text-align: right; }
+  .mh-players { font-size: 14px; color: #64748b; }
+  .mh-players.right { text-align: right; }
+  .mh-center { text-align: center; flex-shrink: 0; width: 80px; }
+  .mh-center .arrow { font-size: 18px; color: #1e293b; }
+  .mh-center .handicap { font-size: 14px; font-weight: 600; color: #f97316; }
+
+  /* ── Share line (compact) ── */
+  .share-line {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; margin-top: 12px; border-top: 1px solid #f1f5f9;
+  }
+  .share-text { font-size: 14px; color: #94a3b8; }
+  .share-text b { color: #64748b; font-weight: 600; }
+  .edit-btn {
+    display: flex; align-items: center; gap: 4px; font-size: 14px; color: #94a3b8;
+    cursor: pointer; padding: 4px 10px; border-radius: 6px; border: 1px solid transparent;
+  }
+  .edit-btn:hover { background: #f8fafc; border-color: #e2e8f0; }
+  .pencil-icon { width: 14px; height: 14px; }
+
+  /* ── Inline badges ── */
+  .pct-badge {
+    font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 4px; margin-left: 4px;
+  }
+  .pct-badge-teal { background: #ccfbf1; color: #0f766e; }
+  .pct-badge-blue { background: #dbeafe; color: #1e40af; }
+  .pct-badge-amber { background: #fef3c7; color: #b45309; }
+
+  /* ── Butterfly bars ── */
+  .butterfly { margin-top: 10px; }
+  .bf-labels { display: flex; margin-bottom: 6px; }
+  .bf-label-left { flex: 1; text-align: right; padding-right: 10px; font-size: 14px; font-weight: 600; color: #0d9488; }
+  .bf-label-right { flex: 1; text-align: left; padding-left: 10px; font-size: 14px; font-weight: 600; color: #3b82f6; }
+  .bf-row { display: flex; align-items: center; margin-bottom: 8px; }
+  .bf-row:last-child { margin-bottom: 0; }
+  .bf-left { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-right: 10px; }
+  .bf-right { flex: 1; display: flex; align-items: center; gap: 8px; padding-left: 10px; }
+  .bf-divider { width: 1px; background: #e2e8f0; align-self: stretch; flex-shrink: 0; }
+  .bf-name { font-size: 14px; font-weight: 500; color: #475569; white-space: nowrap; }
+  .bf-bar { height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; min-width: 40px; }
+  .bf-bar-sm { height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; min-width: 36px; }
+  .bf-bar-teal { background: #0d9488; color: #fff; }
+  .bf-bar-blue { background: #3b82f6; color: #fff; }
+  .bf-pct { font-size: 13px; font-weight: 700; }
+  .bf-pct-sm { font-size: 11px; font-weight: 700; }
+
+  /* ── Adjusted badge ── */
+  .adj-badge { font-size: 12px; font-weight: 600; color: #d97706; background: #fef3c7; padding: 2px 8px; border-radius: 6px; }
+
+  /* ── Slim row card ── */
+  .slim-card {
+    background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 12px 20px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .slim-left { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Edit modes ── */
+  .edit-card {
+    background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 20px 24px; margin-bottom: 12px;
+  }
+  .edit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .edit-title { font-size: 15px; font-weight: 600; color: #475569; }
+  .edit-cancel { font-size: 14px; color: #94a3b8; cursor: pointer; }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .slider-name { font-size: 15px; font-weight: 600; color: #1e293b; white-space: nowrap; min-width: 70px; }
+  .slider-name.right { text-align: right; }
+  .slider-bar-wrap { flex: 1; display: flex; height: 36px; border-radius: 8px; overflow: hidden; }
+  .slider-seg { display: flex; align-items: center; justify-content: center; }
+  .slider-seg-teal { background: #0d9488; color: #fff; }
+  .slider-seg-teal-light { background: #99f6e4; color: #0f766e; }
+  .slider-seg-pct { font-size: 14px; font-weight: 700; }
+
+  .presets { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+  .preset-btn { padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; }
+  .preset-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+  .swap-btn { padding: 6px 10px; font-size: 13px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; }
+
+  .estimate { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+  .edit-actions { display: flex; gap: 8px; }
+  .btn-save { padding: 8px 20px; font-size: 14px; font-weight: 600; background: #f97316; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+  .btn-edit-cancel { padding: 8px 16px; font-size: 14px; color: #64748b; border: none; background: none; cursor: pointer; }
+
+  /* ── Mini cards ── */
+  .mini-cards { display: flex; gap: 10px; margin-bottom: 12px; }
+  .mini-card { flex: 1; background: #f8fafc; border-radius: 12px; padding: 14px; text-align: center; border: 1px solid #e2e8f0; }
+  .mini-name { font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+  .mini-pct { font-size: 28px; font-weight: 700; color: #0d9488; margin-bottom: 2px; }
+  .mini-est { font-size: 13px; color: #94a3b8; }
+
+  /* ── Other side read-only ── */
+  .other-side { background: #f8fafc; border-radius: 10px; padding: 10px 16px; font-size: 14px; color: #64748b; margin-top: 12px; }
+
+  /* Inline edit within header */
+  .inline-edit { border-top: 1px solid #f1f5f9; margin-top: 12px; padding-top: 12px; }
+  .inline-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .ie-name { font-size: 14px; font-weight: 600; color: #1e293b; min-width: 65px; }
+  .ie-input { width: 52px; padding: 4px 8px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-size: 14px; text-align: center; font-weight: 600; }
+  .ie-pct { font-size: 13px; color: #94a3b8; }
+  .ie-swap { font-size: 16px; color: #94a3b8; cursor: pointer; padding: 2px 4px; }
+  .ie-name-r { font-size: 14px; color: #64748b; }
+  .ie-pct-r { font-size: 14px; font-weight: 600; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="page-title">選手佔成 — Display & Edit Options</div>
+<div class="page-sub">5 display options + 3 edit options. Each shown in default (50/50) and adjusted (60/40) states.</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DISPLAY OPTION 1: Inline badges -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">DISPLAY OPTION 1</div>
+  <div class="opt-title">Inline Badges in MatchHeader</div>
+  <div class="opt-desc">Percentage badges next to player names. No second card. Edit pencil on header.</div>
+
+  <span class="state-label">Default 50/50</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏<span class="pct-badge pct-badge-teal">50%</span> · 劉雅婷<span class="pct-badge pct-badge-teal">50%</span></div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國<span class="pct-badge pct-badge-blue">50%</span> · 林小花<span class="pct-badge pct-badge-blue">50%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <span class="state-label">Adjusted 60/40</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊 <span class="adj-badge">已調整</span></div>
+        <div class="mh-players">吳俊宏<span class="pct-badge pct-badge-amber">60%</span> · 劉雅婷<span class="pct-badge pct-badge-amber">40%</span></div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國<span class="pct-badge pct-badge-blue">50%</span> · 林小花<span class="pct-badge pct-badge-blue">50%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DISPLAY OPTION 2: Sub-section footer -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">DISPLAY OPTION 2</div>
+  <div class="opt-title">Sub-Section Inside MatchHeader</div>
+  <div class="opt-desc">Same card, thin divider, 選手佔成 as a footer row. One card, clear hierarchy.</div>
+
+  <span class="state-label">Default 50/50</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-line">
+      <span class="share-text"><b>選手佔成</b>　50/50 · 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+
+  <span class="state-label">Adjusted 60/40</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-line">
+      <span class="share-text"><b>選手佔成</b>　<span class="adj-badge">已調整</span>　A隊 60/40 · B隊 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DISPLAY OPTION 3: Slim separate row -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">DISPLAY OPTION 3</div>
+  <div class="opt-title">Slim Collapsible Row (Separate)</div>
+  <div class="opt-desc">Separate element, but just one line at default. Butterfly only appears when non-default.</div>
+
+  <span class="state-label">Default 50/50 — header + slim row</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+  </div>
+  <div class="slim-card">
+    <div class="slim-left">
+      <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+      <span style="font-size: 14px; color: #94a3b8;">50/50 · 50/50</span>
+    </div>
+    <div class="edit-btn">
+      <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+      編輯
+    </div>
+  </div>
+
+  <span class="state-label">Adjusted 60/40 — expands with butterfly</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+        <span class="adj-badge">已調整</span>
+      </div>
+      <div class="edit-btn">
+        <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+    <div class="butterfly">
+      <div class="bf-labels">
+        <div class="bf-label-left">A 隊</div>
+        <div class="bf-label-right">B 隊</div>
+      </div>
+      <div class="bf-row">
+        <div class="bf-left">
+          <span class="bf-name">劉雅婷</span>
+          <div class="bf-bar bf-bar-teal" style="width: 60%;"><span class="bf-pct">60%</span></div>
+        </div>
+        <div class="bf-divider"></div>
+        <div class="bf-right">
+          <div class="bf-bar bf-bar-blue" style="width: 50%;"><span class="bf-pct">50%</span></div>
+          <span class="bf-name">林小花</span>
+        </div>
+      </div>
+      <div class="bf-row">
+        <div class="bf-left">
+          <span class="bf-name">吳俊宏</span>
+          <div class="bf-bar bf-bar-teal" style="width: 40%;"><span class="bf-pct">40%</span></div>
+        </div>
+        <div class="bf-divider"></div>
+        <div class="bf-right">
+          <div class="bf-bar bf-bar-blue" style="width: 50%;"><span class="bf-pct">50%</span></div>
+          <span class="bf-name">張建國</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DISPLAY OPTION 4: Merged + conditional -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">DISPLAY OPTION 4</div>
+  <div class="opt-title">Merged Card + Conditional Butterfly</div>
+  <div class="opt-desc">One card always. Compact text line at 50/50. Butterfly bars only appear when non-default.</div>
+
+  <span class="state-label">Default 50/50</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-line">
+      <span class="share-text"><b>選手佔成</b>　50/50 · 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+
+  <span class="state-label">Adjusted 60/40 — butterfly appears</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div style="border-top: 1px solid #f1f5f9; margin-top: 12px; padding-top: 12px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+          <span class="adj-badge">已調整</span>
+        </div>
+        <div class="edit-btn">
+          <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+          編輯
+        </div>
+      </div>
+      <div class="butterfly">
+        <div class="bf-labels">
+          <div class="bf-label-left">A 隊</div>
+          <div class="bf-label-right">B 隊</div>
+        </div>
+        <div class="bf-row">
+          <div class="bf-left">
+            <span class="bf-name">劉雅婷</span>
+            <div class="bf-bar bf-bar-teal" style="width: 60%;"><span class="bf-pct">60%</span></div>
+          </div>
+          <div class="bf-divider"></div>
+          <div class="bf-right">
+            <div class="bf-bar bf-bar-blue" style="width: 50%;"><span class="bf-pct">50%</span></div>
+            <span class="bf-name">林小花</span>
+          </div>
+        </div>
+        <div class="bf-row">
+          <div class="bf-left">
+            <span class="bf-name">吳俊宏</span>
+            <div class="bf-bar bf-bar-teal" style="width: 40%;"><span class="bf-pct">40%</span></div>
+          </div>
+          <div class="bf-divider"></div>
+          <div class="bf-right">
+            <div class="bf-bar bf-bar-blue" style="width: 50%;"><span class="bf-pct">50%</span></div>
+            <span class="bf-name">張建國</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- DISPLAY OPTION 5: Shrink butterfly -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">DISPLAY OPTION 5</div>
+  <div class="opt-title">Keep Two Cards, Shrink Butterfly</div>
+  <div class="opt-desc">No structural change. Just make the butterfly much slimmer (24px bars, tighter spacing).</div>
+
+  <span class="state-label">Default 50/50</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding: 14px 20px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+      <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+      <div class="edit-btn">
+        <svg class="pencil-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+    <div class="butterfly">
+      <div class="bf-row" style="margin-bottom: 5px;">
+        <div class="bf-left" style="gap: 6px;">
+          <span class="bf-name" style="font-size: 13px;">劉雅婷</span>
+          <div class="bf-bar-sm bf-bar-teal" style="width: 50%;"><span class="bf-pct-sm">50%</span></div>
+        </div>
+        <div class="bf-divider"></div>
+        <div class="bf-right" style="gap: 6px;">
+          <div class="bf-bar-sm bf-bar-blue" style="width: 50%;"><span class="bf-pct-sm">50%</span></div>
+          <span class="bf-name" style="font-size: 13px;">林小花</span>
+        </div>
+      </div>
+      <div class="bf-row" style="margin-bottom: 0;">
+        <div class="bf-left" style="gap: 6px;">
+          <span class="bf-name" style="font-size: 13px;">吳俊宏</span>
+          <div class="bf-bar-sm bf-bar-teal" style="width: 50%;"><span class="bf-pct-sm">50%</span></div>
+        </div>
+        <div class="bf-divider"></div>
+        <div class="bf-right" style="gap: 6px;">
+          <div class="bf-bar-sm bf-bar-blue" style="width: 50%;"><span class="bf-pct-sm">50%</span></div>
+          <span class="bf-name" style="font-size: 13px;">張建國</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider-thick">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- EDIT OPTION A: Stacked slider -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">EDIT OPTION A</div>
+  <div class="opt-title">Stacked with Split Bar</div>
+  <div class="opt-desc">Player names on each end, split bar in center. Presets below. Clean two-tier layout.</div>
+
+  <div class="edit-card">
+    <div class="edit-header">
+      <div class="edit-title">A隊 選手佔成</div>
+      <span class="edit-cancel">✕ 取消</span>
+    </div>
+    <div class="slider-row">
+      <span class="slider-name">劉雅婷</span>
+      <div class="slider-bar-wrap">
+        <div class="slider-seg slider-seg-teal" style="flex: 60;"><span class="slider-seg-pct">60%</span></div>
+        <div style="width: 2px; background: #fff; flex-shrink: 0;"></div>
+        <div class="slider-seg slider-seg-teal-light" style="flex: 40;"><span class="slider-seg-pct" style="color: #0f766e;">40%</span></div>
+      </div>
+      <span class="slider-name right">吳俊宏</span>
+    </div>
+    <div class="presets">
+      <span class="preset-btn">50/50</span>
+      <span class="preset-btn active">60/40</span>
+      <span class="preset-btn">70/30</span>
+      <span class="preset-btn">80/20</span>
+      <span class="swap-btn">↔ 對調</span>
+    </div>
+    <div class="estimate">估算　劉雅婷 32.4兩 · 吳俊宏 21.6兩</div>
+    <div class="edit-actions">
+      <button class="btn-save">儲存</button>
+      <button class="btn-edit-cancel">取消</button>
+    </div>
+    <div class="other-side">B 隊　林小花 50% · 張建國 50%</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- EDIT OPTION B: Mini cards -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">EDIT OPTION B</div>
+  <div class="opt-title">Two Mini Cards Side-by-Side</div>
+  <div class="opt-desc">Each player gets their own card. Big percentage, estimate below. Presets + buttons shared.</div>
+
+  <div class="edit-card">
+    <div class="edit-header">
+      <div class="edit-title">A隊 選手佔成</div>
+      <span class="edit-cancel">✕ 取消</span>
+    </div>
+    <div class="mini-cards">
+      <div class="mini-card" style="border-color: #0d9488;">
+        <div class="mini-name">劉雅婷</div>
+        <div class="mini-pct">60%</div>
+        <div class="mini-est">~32.4兩</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-name">吳俊宏</div>
+        <div class="mini-pct" style="color: #64748b;">40%</div>
+        <div class="mini-est">~21.6兩</div>
+      </div>
+    </div>
+    <div class="presets">
+      <span class="preset-btn">50/50</span>
+      <span class="preset-btn active">60/40</span>
+      <span class="preset-btn">70/30</span>
+      <span class="preset-btn">80/20</span>
+      <span class="swap-btn">↔ 對調</span>
+    </div>
+    <div class="edit-actions" style="margin-top: 14px;">
+      <button class="btn-save">儲存</button>
+      <button class="btn-edit-cancel">取消</button>
+    </div>
+    <div class="other-side">B 隊　林小花 50% · 張建國 50%</div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- EDIT OPTION C: Inline in header -->
+<!-- ═══════════════════════════════════════ -->
+<div class="option-section">
+  <div class="opt-label">EDIT OPTION C</div>
+  <div class="opt-title">Inline Within Merged Header</div>
+  <div class="opt-desc">Edit appears in-place where the share line was. Header card expands. Best paired with Display 2 or 4.</div>
+
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="inline-edit">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 14px; font-weight: 600; color: #475569;">A隊 選手佔成</span>
+        <span class="edit-cancel">✕ 取消</span>
+      </div>
+      <div class="inline-edit-row">
+        <span class="ie-name">劉雅婷</span>
+        <input type="text" value="60" class="ie-input">
+        <span class="ie-pct">%</span>
+        <span class="ie-swap">↔</span>
+        <span class="ie-name-r">吳俊宏</span>
+        <span class="ie-pct-r">40%</span>
+      </div>
+      <div class="presets" style="margin-bottom: 6px;">
+        <span class="preset-btn">50/50</span>
+        <span class="preset-btn active">60/40</span>
+        <span class="preset-btn">70/30</span>
+        <span class="preset-btn">80/20</span>
+      </div>
+      <div class="estimate">估算　劉雅婷 32.4兩 · 吳俊宏 21.6兩</div>
+      <div class="edit-actions">
+        <button class="btn-save">儲存</button>
+        <button class="btn-edit-cancel">取消</button>
+      </div>
+      <div class="other-side" style="margin-top: 10px;">B 隊　林小花 50% · 張建國 50%</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

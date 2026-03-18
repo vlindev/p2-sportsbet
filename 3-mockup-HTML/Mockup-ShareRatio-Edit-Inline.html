@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>選手佔成 — Inline Edit (Approach 1)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: #f1f5f9; color: #1e293b; padding: 40px 20px; }
+
+  .page-title { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .page-sub { font-size: 14px; color: #94a3b8; text-align: center; margin-bottom: 48px; }
+
+  .section { max-width: 680px; margin: 0 auto 48px; }
+  .state-label { font-size: 12px; font-weight: 600; color: #3b82f6; background: #eff6ff; display: inline-block; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
+  .note { font-size: 13px; color: #94a3b8; margin-bottom: 10px; line-height: 1.5; }
+
+  .divider { border: none; border-top: 1px solid #e2e8f0; margin: 48px auto; max-width: 680px; }
+
+  /* ── Card ── */
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+
+  /* ── Match header ── */
+  .mh-badges { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .badge { font-size: 13px; font-weight: 600; padding: 3px 12px; border-radius: 20px; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-amber { background: #fef3c7; color: #b45309; }
+  .mh-date { font-size: 14px; color: #64748b; }
+  .mh-name { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+
+  .mh-teams { display: flex; align-items: center; gap: 8px; }
+  .mh-side { flex: 1; }
+  .mh-side-label { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .mh-side-label.right { text-align: right; }
+  .mh-players { font-size: 14px; color: #64748b; }
+  .mh-players.right { text-align: right; }
+  .mh-center { text-align: center; flex-shrink: 0; width: 80px; }
+  .mh-center .arrow { font-size: 18px; color: #1e293b; }
+  .mh-center .handicap { font-size: 14px; font-weight: 600; color: #f97316; }
+
+  /* ── Share footer — display mode ── */
+  .share-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 12px; margin-top: 12px; border-top: 1px solid #f1f5f9;
+  }
+  .share-text { font-size: 14px; color: #94a3b8; }
+  .share-text b { color: #64748b; font-weight: 600; }
+  .edit-btn {
+    display: flex; align-items: center; gap: 5px; font-size: 14px; color: #94a3b8;
+    cursor: pointer; padding: 5px 12px; border-radius: 8px; border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .edit-btn:hover { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
+  .pencil-svg { width: 14px; height: 14px; }
+  .adj-badge { font-size: 12px; font-weight: 600; color: #d97706; background: #fef3c7; padding: 2px 8px; border-radius: 6px; }
+
+  /* ── Share footer — edit mode ── */
+  .share-edit-footer {
+    padding-top: 12px; margin-top: 12px; border-top: 1px solid #f1f5f9;
+  }
+  .edit-row {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .edit-label { font-size: 14px; font-weight: 600; color: #64748b; }
+  .edit-team-label { font-size: 14px; font-weight: 600; color: #475569; min-width: 32px; }
+
+  .pct-input-wrap {
+    display: flex; align-items: center; gap: 0; background: #fff;
+    border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .pct-input-wrap:focus-within { border-color: #f97316; }
+  .pct-input {
+    width: 44px; padding: 6px 4px; font-size: 15px; font-weight: 600;
+    text-align: center; border: none; outline: none;
+    font-family: 'Noto Sans TC', sans-serif; color: #1e293b;
+  }
+  .pct-input::placeholder { color: #cbd5e1; }
+  .pct-unit {
+    font-size: 13px; color: #94a3b8; padding-right: 8px; user-select: none;
+  }
+
+  .slash { font-size: 15px; color: #cbd5e1; font-weight: 600; padding: 0 2px; }
+  .pct-auto { font-size: 15px; font-weight: 600; color: #64748b; min-width: 28px; }
+  .pct-names { font-size: 13px; color: #94a3b8; }
+  .dot-sep { color: #e2e8f0; margin: 0 6px; }
+
+  .edit-actions {
+    display: flex; align-items: center; gap: 6px; margin-left: auto;
+  }
+  .btn-save {
+    padding: 6px 16px; font-size: 14px; font-weight: 600;
+    background: #f97316; color: #fff; border: none; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-save:hover { background: #ea580c; }
+  .btn-cancel-sm {
+    padding: 6px 12px; font-size: 14px; color: #94a3b8;
+    border: none; background: none; cursor: pointer;
+  }
+
+  /* ── Toast ── */
+  .toast {
+    max-width: 680px; margin: 0 auto 12px;
+    background: #1e293b; color: #fff; font-size: 14px; font-weight: 500;
+    padding: 10px 16px; border-radius: 10px; text-align: center;
+  }
+  .toast-amber {
+    background: #f59e0b; color: #fff;
+  }
+
+  /* Read-only other team line */
+  .other-team-line {
+    font-size: 13px; color: #b0b8c4; margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Display Option 2 + Edit Approach 1</div>
+<div class="page-sub">Inline input edit — type the number, second player auto-calculates.</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 1: Display — default 50/50 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">Display — 50/50 default</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-footer">
+      <span class="share-text"><b>選手佔成</b>　50/50 · 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 2: Display — adjusted 60/40 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">Display — adjusted 60/40 on A隊</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-footer">
+      <span class="share-text"><b>選手佔成</b>　<span class="adj-badge">已調整</span>　A隊 60/40 · B隊 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 3: Edit mode — typing A隊 value -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">Edit mode — both teams editable, typing 60 for A隊</span>
+  <div class="note">Click 編輯 → both teams become editable inline. Type the first player's %, second auto-calculates. 儲存 saves both.</div>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-edit-footer">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+        <div class="edit-actions">
+          <button class="btn-save">儲存</button>
+          <button class="btn-cancel-sm">取消</button>
+        </div>
+      </div>
+      <!-- A team row -->
+      <div class="edit-row">
+        <span class="edit-team-label">A隊</span>
+        <span class="pct-names">吳俊宏</span>
+        <div class="pct-input-wrap" style="border-color: #f97316;">
+          <input type="text" class="pct-input" value="60">
+          <span class="pct-unit">%</span>
+        </div>
+        <span class="slash">/</span>
+        <span class="pct-auto">40%</span>
+        <span class="pct-names">劉雅婷</span>
+      </div>
+      <!-- B team row -->
+      <div class="edit-row">
+        <span class="edit-team-label">B隊</span>
+        <span class="pct-names">張建國</span>
+        <div class="pct-input-wrap">
+          <input type="text" class="pct-input" value="50">
+          <span class="pct-unit">%</span>
+        </div>
+        <span class="slash">/</span>
+        <span class="pct-auto">50%</span>
+        <span class="pct-names">林小花</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 4: Edit — unchanged (both 50/50) -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">Edit mode — both at 50/50, nothing changed yet</span>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-edit-footer">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <span style="font-size: 14px; font-weight: 600; color: #64748b;">選手佔成</span>
+        <div class="edit-actions">
+          <button class="btn-save" style="opacity: 0.4; cursor: not-allowed;">儲存</button>
+          <button class="btn-cancel-sm">取消</button>
+        </div>
+      </div>
+      <div class="edit-row">
+        <span class="edit-team-label">A隊</span>
+        <span class="pct-names">吳俊宏</span>
+        <div class="pct-input-wrap">
+          <input type="text" class="pct-input" value="50">
+          <span class="pct-unit">%</span>
+        </div>
+        <span class="slash">/</span>
+        <span class="pct-auto">50%</span>
+        <span class="pct-names">劉雅婷</span>
+      </div>
+      <div class="edit-row">
+        <span class="edit-team-label">B隊</span>
+        <span class="pct-names">張建國</span>
+        <div class="pct-input-wrap">
+          <input type="text" class="pct-input" value="50">
+          <span class="pct-unit">%</span>
+        </div>
+        <span class="slash">/</span>
+        <span class="pct-auto">50%</span>
+        <span class="pct-names">林小花</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 5: Validation toast -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">After save — R17.11 auto-adjustment toast</span>
+  <div class="note">Bookkeeper entered 90/10, but min exposure (20兩) requires max 80/20. System auto-corrected + toast.</div>
+  <div class="toast toast-amber">已調整為 80/20（最低曝險 20兩）</div>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-footer">
+      <span class="share-text"><b>選手佔成</b>　<span class="adj-badge">已調整</span>　A隊 80/20 · B隊 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- STATE 6: Successful save toast -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section">
+  <span class="state-label">After save — success, no adjustment needed</span>
+  <div class="toast">選手佔成已更新　A隊 60/40</div>
+  <div class="card">
+    <div class="mh-badges">
+      <span class="badge badge-blue">週一例行賽</span>
+      <span class="badge badge-amber">封盤</span>
+      <span class="mh-date">2026-03-28 · 08:00</span>
+    </div>
+    <div class="mh-name">test</div>
+    <div class="mh-teams">
+      <div class="mh-side">
+        <div class="mh-side-label">A 隊</div>
+        <div class="mh-players">吳俊宏 · 劉雅婷</div>
+      </div>
+      <div class="mh-center">
+        <div class="arrow">▶</div>
+        <div class="handicap">讓 1 點</div>
+      </div>
+      <div class="mh-side">
+        <div class="mh-side-label right">B 隊</div>
+        <div class="mh-players right">張建國 · 林小花</div>
+      </div>
+    </div>
+    <div class="share-footer">
+      <span class="share-text"><b>選手佔成</b>　<span class="adj-badge">已調整</span>　A隊 60/40 · B隊 50/50</span>
+      <div class="edit-btn">
+        <svg class="pencil-svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+        編輯
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

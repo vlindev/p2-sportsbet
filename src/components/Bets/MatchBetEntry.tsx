@@ -192,7 +192,7 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
     if (error) { console.error("swap team:", error); return; }
     setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "swap", from: bet.team_bet_on, to: newTeam }]);
     setHighlightBetIds(new Set([bet.id]));
-    setTimeout(() => setHighlightBetIds(new Set()), 2500);
+    setTimeout(() => setHighlightBetIds(new Set()), 5000);
     // Local state update — bet moves to other column immediately
     setBets(prev => prev.map(b => b.id === bet.id
       ? { ...b, team_bet_on: newTeam, bet_type: "voluntary", created_by_role: "bookkeeper", created_via: "manual" } as Bet
@@ -203,17 +203,18 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
     if (editSide === side) {
       // Exiting edit mode — show summary if changes were made
       if (editChanges.length > 0) {
-        const parts = editChanges.map(c =>
-          c.action === "swap" ? `${c.name} ${c.from}隊→${c.to}隊`
-          : `${c.name} ${c.from}兩→${c.to}兩`
-        );
-        setEditToast(`已修改：${parts.join("、")}`);
+        const adjustCount = editChanges.filter(c => c.action === "adjust").length;
+        const swapCount = editChanges.filter(c => c.action === "swap").length;
+        const parts: string[] = [];
+        if (adjustCount > 0) parts.push(`已調整金額 ${adjustCount} 筆`);
+        if (swapCount > 0) parts.push(`已換隊 ${swapCount} 筆`);
+        setEditToast(parts.join(" · "));
         setTimeout(() => setEditToast(null), 5000);
       }
       // Highlight adjusted bets after re-sort
       if (adjustedBetIds.current.size > 0) {
         setHighlightBetIds(new Set(adjustedBetIds.current));
-        setTimeout(() => setHighlightBetIds(new Set()), 2500);
+        setTimeout(() => setHighlightBetIds(new Set()), 5000);
         adjustedBetIds.current.clear();
       }
       setEditSide(null);
@@ -254,21 +255,20 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
 
       <MatchHeader match={match} memberMap={memberMap}
         extraBadges={isClosed ? <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">封盤</span> : undefined}
-      />
-
-      {/* Share ratio editing */}
-      <ShareRatioEditor
-        matchId={matchId} matchStatus={match.status} context="base"
-        teamAPlayers={[
-          { id: match.team_a_player1_id, name: memberMap[match.team_a_player1_id] || "—" },
-          { id: match.team_a_player2_id, name: memberMap[match.team_a_player2_id] || "—" },
-        ]}
-        teamBPlayers={[
-          { id: match.team_b_player1_id, name: memberMap[match.team_b_player1_id] || "—" },
-          { id: match.team_b_player2_id, name: memberMap[match.team_b_player2_id] || "—" },
-        ]}
-        teamATotalBetsLiang={teamATotal} teamBTotalBetsLiang={teamBTotal}
-      />
+      >
+        <ShareRatioEditor
+          matchId={matchId} matchStatus={match.status} context="base"
+          teamAPlayers={[
+            { id: match.team_a_player1_id, name: memberMap[match.team_a_player1_id] || "—" },
+            { id: match.team_a_player2_id, name: memberMap[match.team_a_player2_id] || "—" },
+          ]}
+          teamBPlayers={[
+            { id: match.team_b_player1_id, name: memberMap[match.team_b_player1_id] || "—" },
+            { id: match.team_b_player2_id, name: memberMap[match.team_b_player2_id] || "—" },
+          ]}
+          teamATotalBetsLiang={teamATotal} teamBTotalBetsLiang={teamBTotal}
+        />
+      </MatchHeader>
 
       {/* Entry form card */}
       <div className={`bg-white rounded-2xl shadow-sm p-5 mb-4 border ${isClosed ? "border-amber-200" : "border-gray-100"}`}>
@@ -353,7 +353,7 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
 
       {/* BettingActions — modals + toast only */}
       <BettingActions
-        match={match} bets={bets} matchId={matchId} members={members}
+        match={match} bets={bets} matchId={matchId} members={members} memberMap={memberMap}
         onMatchStatusChange={handleMatchStatusChange}
         onBetsChange={refreshBets}
         showCloseModal={showCloseModal}
@@ -363,29 +363,98 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
       />
 
       {/* Auto-placement confirmation modal */}
-      {showAutoPlaceModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAutoPlaceModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-slate-800 mb-1">確認自動派注</h3>
-            <p className="text-sm text-slate-500 mb-1">{match.name || "此賽事"}</p>
-            <p className="text-xs text-slate-400 mb-4">系統將為未投注會員自動下注 1兩，依平衡機制分配隊伍。</p>
-            <div className="bg-slate-50 rounded-lg px-4 py-3 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500">未投注會員</span>
-                <span className="font-medium text-slate-700">{unbettedCount} 人</span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowAutoPlaceModal(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                取消
-              </button>
-              <button onClick={() => { setShowAutoPlaceModal(false); runAutoPlacement(); }}
-                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 cursor-pointer transition-colors">
-                確認派注
-              </button>
+      {showAutoPlaceModal && (() => {
+        const unbettedMembers = members.filter(m => m.active && !bets.some(b => b.member_id === m.id));
+        const autoDelta = Math.abs(teamATotal - teamBTotal);
+        return (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={() => setShowAutoPlaceModal(false)}>
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-slate-800 mb-1">確認自動派注</h3>
+              <p className="text-sm text-slate-400 mb-4">未投注會員自動派注1兩（系統分配）</p>
+
+              {unbettedCount === 0 ? (
+                <>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4 text-center">
+                    <p className="text-sm font-medium text-emerald-700">所有會員皆已投注，無需自動派注</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl px-4 py-3 mb-4">
+                    <p className="text-sm font-semibold text-slate-500 mb-2 pb-2 border-b border-gray-200">{match.name || "此賽事"}</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">A 隊</span>
+                        <span className="font-medium text-slate-700">{teamABets.length}人 · {teamATotal}兩</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">B 隊</span>
+                        <span className="font-medium text-slate-700">{teamBBets.length}人 · {teamBTotal}兩</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-200 mt-2 pt-2 flex justify-end">
+                      <span className={`text-sm font-semibold px-2.5 py-0.5 rounded-md ${autoDelta <= 5 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"}`}>
+                        差距 {autoDelta}兩
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowAutoPlaceModal(false)}
+                    className="w-full px-4 py-2.5 text-base font-medium text-slate-600 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                    關閉
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="bg-slate-50 rounded-xl px-4 py-3 mb-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 font-medium">未投注會員</span>
+                      <span className="text-lg font-bold text-slate-800">{unbettedCount} 人</span>
+                    </div>
+                  </div>
+                  <details className="mb-3">
+                    <summary className="text-sm text-blue-500 font-medium cursor-pointer px-4 py-1.5">查看名單 ▾</summary>
+                    <div className="bg-slate-50 rounded-b-xl px-4 pb-3 -mt-0.5">
+                      {unbettedMembers.map(m => (
+                        <p key={m.id} className="text-sm text-slate-500 py-0.5">{m.name}</p>
+                      ))}
+                    </div>
+                  </details>
+                  <div className="bg-slate-50 rounded-xl px-4 py-3 mb-4">
+                    <p className="text-sm font-semibold text-slate-500 mb-2 pb-2 border-b border-gray-200">{match.name || "此賽事"}</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">A 隊（目前）</span>
+                        <span className="font-medium text-slate-700">{teamABets.length}人 · {teamATotal}兩</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">B 隊（目前）</span>
+                        <span className="font-medium text-slate-700">{teamBBets.length}人 · {teamBTotal}兩</span>
+                      </div>
+                    </div>
+                    <div className="border-t border-gray-200 mt-2 pt-2 flex justify-end">
+                      <span className={`text-sm font-semibold px-2.5 py-0.5 rounded-md ${autoDelta <= 5 ? "text-emerald-600 bg-emerald-50" : "text-amber-600 bg-amber-50"}`}>
+                        差距 {autoDelta}兩
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowAutoPlaceModal(false)}
+                      className="flex-1 px-4 py-2.5 text-base font-medium text-slate-600 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
+                      取消
+                    </button>
+                    <button onClick={() => { setShowAutoPlaceModal(false); runAutoPlacement(); }}
+                      className="flex-1 px-4 py-2.5 text-base font-semibold text-white bg-blue-500 rounded-xl hover:bg-blue-600 cursor-pointer transition-colors">
+                      確認派注 {unbettedCount} 人
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+        );
+      })()}
+
+      {/* Edit summary toast — top banner */}
+      {editToast && (
+        <div className="bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium mb-3 text-center">
+          {editToast}
         </div>
       )}
 
@@ -430,16 +499,26 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
               </div>
               {sb.length === 0 ? <p className="text-sm text-slate-400 py-2">尚無投注</p> : (
                 <div>
-                  {sorted.map((bet) => {
+                  {sorted.map((bet, idx) => {
                     const isAuto = bet.bet_type === "mandatory_monday";
                     const isSelf = bet.bet_type === "mandatory_self";
                     const isEditing = editSide === side && !isSelf;
+                    const prevBet = idx > 0 ? sorted[idx - 1] : null;
+                    const showDivider = prevBet?.bet_type === "mandatory_self" && bet.bet_type !== "mandatory_self";
                     const rowBg = isSelf
                       ? "bg-teal-50/50"
                       : altIndex++ % 2 === 0 ? "bg-white" : "bg-slate-50";
                     const isHighlighted = highlightBetIds.has(bet.id);
                     return (
-                      <div key={bet.id}
+                      <div key={bet.id}>
+                      {showDivider && (
+                        <div className="flex items-center gap-2 px-2 py-0.5">
+                          <div className="flex-1 border-t border-dashed border-slate-300" />
+                          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">選手 ↑ · 投注 ↓</span>
+                          <div className="flex-1 border-t border-dashed border-slate-300" />
+                        </div>
+                      )}
+                      <div
                         className={`flex items-center gap-2 text-base py-2.5 px-2 rounded transition-colors duration-700 ${
                           isHighlighted ? "bg-orange-100 ring-1 ring-orange-300" : `${rowBg} hover:bg-blue-100`
                         }`}
@@ -472,6 +551,7 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
                           <span className={`font-medium tabular-nums ${isAuto ? "text-slate-400" : "text-slate-700"}`}>{bet.amount_liang}兩</span>
                         )}
                       </div>
+                      </div>
                     );
                   })}
                 </div>
@@ -486,12 +566,6 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
         <PoolBetSection key={pool.id} pool={pool} match={match} members={members} memberMap={memberMap} poolIndex={i} />
       ))}
 
-      {/* Edit summary toast */}
-      {editToast && (
-        <div className="fixed bottom-24 inset-x-0 mx-auto w-fit bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg text-sm font-medium z-50 max-w-md text-center">
-          {editToast}
-        </div>
-      )}
     </div>
   );
 }

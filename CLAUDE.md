@@ -73,6 +73,13 @@ All UI mockups live in `3-mockup-HTML/`. Prefix: `Mockup-`. New mockups go here 
 | 9 | `Mockup-Betting-Multi-Scenario.html` | Share editing + sporadic pools + report rewrite (finalized) |
 | 10 | `Mockup-Bets-Landing.html` | Bets landing page v7 — match list tab + member lookup tab |
 | 11 | `Mockup-Bets-Entry-Report-Redesign.html` | Bets entry/report page redesign v5 |
+| 12 | `Mockup-Bets-Entry-UIEval-Fixes.html` | UIEval fixes v3 — modal headers, toast, typoaudit (S72 working) |
+| 13 | `Mockup-ShareRatio-Merge-Options.html` | 5 display + 3 edit options for 選手佔成 merge (S72 exploration) |
+| 14 | `Mockup-ShareRatio-Edit-Inline.html` | Inline input edit for 選手佔成 — Approach 1 approved (S72) |
+| 15 | `Mockup-MatchHeader-Layout-Options.html` | 4 MatchHeader layout options A/B/C/D (S72 exploration) |
+| 16 | `Mockup-MatchHeader-OptionC-Refined.html` | Option C refined — Position A vs B comparison (S72) |
+| 17 | `Mockup-MatchHeader-Final.html` | **Final approved** — hero layout + inline share edit + all states (S72) |
+| 18 | `Mockup-ShareRatio-InlineRow.html` | Share % as row under teams — explored, rejected (S72) |
 
 ### Archive (`archive/` in project root)
 Historical files — executed plans, completed audits, resolved items. No active purpose. 14 files archived Session 56.
@@ -136,12 +143,13 @@ Load the relevant cluster file(s) BEFORE proceeding whenever ANY of the followin
 
 ## ⚠️ Next Session — Discuss Before Building
 
-These items were flagged at the end of Sessions 67–69. Must discuss before any further implementation on the bets entry page.
+These items were flagged at the end of Sessions 67–72. Must discuss before any further implementation.
 
-1. ~~**Edit mode UX redesign**~~ ✓ (S69) — Option A (inline controls) implemented. No delete — swap + amount only. Sort frozen via snapshot during edit. Details in MEMORY.md.
-2. **uieval on bets entry page** — User will share 5 screenshots. Run uieval on all.
+1. ~~**Edit mode UX redesign**~~ ✓ (S69)
+2. ~~**uieval on bets entry page**~~ ✓ (S72) — UIEval + mockup + implementation complete. MatchHeader redesigned (hero layout), 選手佔成 merged into footer, all 5 modal/component fixes applied.
 3. **Post-自動派注 workflow** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism — discuss.
 4. **Sporadic pool edit mode** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
+5. **PoolBetSection + ShareRatioEditor visual check** — S72 rewrote ShareRatioEditor as a footer element (border-t separator). PoolBetSection renders it standalone without a parent card. Likely broken visually. Must verify + fix on a match with sporadic pools.
 
 ---
 

@@ -39,7 +39,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/` folder in project root: presentation strategy, architecture brief, deliverable briefs (presentation-d1/d2/d3), design-member-interface.md, design-bets-report-issues.md, phase3-club-onboarding.md
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of Session 68)
+## What's Built (as of Session 72)
 - Supabase connected, 9 tables with RLS (members, matches, bets, settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies — replace with auth.role()='authenticated' when auth is built
 - Sidebar + MobileNav + OverdueCountContext: see `src/components/`. `src/types.ts`: all shared types/constants. `Record<Match["match_type"], string>` pattern enforces exhaustiveness.
@@ -53,12 +53,13 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - Full CRUD, search, active/inactive toggle, 介紹人 click-to-jump, 本月結餘 link. All details in `src/app/members/page.tsx`.
 - **Planned (Step 9b):** Member profile/history view — bet history, settlement history, running balance. Historical member lookup lives here, not on bets page.
 
-### `/bets` page — entry + report + landing (Sessions 34–68)
-- **Match-first entry** (`/bets?match=id&from=bets`) — `MatchBetEntry.tsx`. Two-column bets, entry form, pencil edit mode, share ratios, pool bet entry.
+### `/bets` page — entry + report + landing (Sessions 34–72)
+- **Match-first entry** (`/bets?match=id&from=bets`) — `MatchBetEntry.tsx`. Two-column bets, entry form, pencil edit mode, 選手佔成 inline edit, pool bet entry.
 - **Landing page** (`/bets` default) — `src/components/BetsLanding/` (9 files). Match list tab + member lookup tab. Shared actions in `src/lib/betting-actions.ts`.
 - **Per-match report** (`/bets?match=id&from=completed`) — `MatchSettlementReport.tsx` + settlement components. Pool sections inline.
 - **Status-based routing**: scheduled/betting_closed → entry, completed/active/cancelled → report.
 - Components: `src/components/Bets/` (16 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
+- **S72: MatchHeader redesigned** — hero matchup layout (player names biggest, directional handicap →/←, 3-zone card). 選手佔成 merged into MatchHeader footer (one-line display, inline input edit). All confirmation modals redesigned (match name in summary card, imbalance badge, member preview, zero-state handling). Edit toast → grouped summary. Player divider between self-bets and regular bets.
 
 ### `/matches` page — complete
 - 3 tabs (當前/已完成/已取消). 當前: collapsible time sections (overdue always open, localStorage persist). 已完成: month picker + weekly grouping. 已取消: date-grouped.
@@ -69,7 +70,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - (4D) 自動派注 on bets page (BettingActions + MatchListActions). (4E) Bookkeeper bet entry — `管理投注` navigates to `/bets?match=id`.
 - Player replacement: `replace_match_player` RPC (atomic void + create + transfer shares + audit). Allows scheduled + betting_closed.
 - Sporadic pools: `PoolCreationModal.tsx`, pool RPCs (`submit_pool_result`, `correct_pool_result`, `cancel_match`).
-- Shared: `MatchHeader.tsx`, `MatchTabBar.tsx` (select dropdown), `ReportBetColumn.tsx`, `BettingActions.tsx` (封盤 + 自動派注 + 全額降注).
+- Shared: `MatchHeader.tsx` (hero matchup layout, S72 rewrite), `MatchTabBar.tsx` (select dropdown), `ReportBetColumn.tsx`, `BettingActions.tsx` (封盤 + 全額降注 with member preview).
 - Form: match type selection, handicap (不讓分→平盤), cross-match same-day player blocking, duplicate name auto-suffix. Error handling: fetchError retry + saveError banner.
 
 ### Auto-Placement Engine — `src/lib/auto-placement.ts`
@@ -141,7 +142,7 @@ Transform the internal tool into a sellable product for other golf clubs. Introd
 These are NOT part of any execution plan step. They emerged from the S55 page responsibilities discussion as work the plan didn't originally account for. Must be completed before Step 6.
 - **Bets page default landing** ✓ — match list tab + member lookup tab. Architecture locked (S55), information requirements confirmed (S57), **mockup v7 approved (S59)** at `3-mockup-HTML/Mockup-Bets-Landing.html`. **S60: Implementation complete (SIP Step 6). S61: SIP Step 7 complete (user confirmed visual match). 9 files in `src/components/BetsLanding/`, shared `src/lib/betting-actions.ts`. Back navigation fixed (from=bets → 返回投注).**
 - **Match card redesign** ✓ (S62–63) — footer 3-item spread, Option C labels, horizontal player names, date/time combined, pool child cards (fuchsia outline, collapsible via tag, hover stack animation), 封盤 removed from matches page, 輸入結果 hidden on scheduled/betting_closed, B隊開盤 prominent badge, bigger tap targets, card-wide click removed. `items-start` on grids.
-- **Bets entry/report UI optimization** 🔄 (S63–69) — Full UX/UI evaluation → mockup v5 (S65) → implementation (S66) → visual/functional fixes (S67–68) → edit mode redesign (S69). Full decision log: `memory/design-bets-entry-report-redesign.md`. **S69: Edit mode redesigned as Option A (inline controls). No delete. Sort frozen via snapshot. Row height/text bumped. 3 remaining discussion items in project CLAUDE.md "Next Session" — uieval (5 screenshots), post-自動派注 verification, sporadic pool edit.**
+- **Bets entry/report UI optimization** 🔄 (S63–72) — Full UX/UI evaluation → mockup v5 (S65) → implementation (S66) → visual/functional fixes (S67–68) → edit mode redesign (S69) → **S72: UIEval on 5 screenshots → MatchHeader hero rewrite (Option C) + 選手佔成 merged into footer + all modal fixes + typoaudit. Full decision log: `memory/design-bets-entry-report-redesign.md`. Remaining: PoolBetSection visual check (ShareRatioEditor standalone), post-自動派注 verification, sporadic pool edit.**
 - **Member profile/history view (Step 9b design)** — expand `/members` from roster CRUD to member reference tool. Bet history, settlement history, running balance. Historical member questions route here, not to bets page. **Needs: discussion → mockup → approval.** Implementation can wait until Step 9b in the plan sequence.
 
 #### Execution Plan Steps (remaining)

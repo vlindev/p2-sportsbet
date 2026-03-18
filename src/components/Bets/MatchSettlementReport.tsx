@@ -148,18 +148,17 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
         extraBadges={hasPools ? <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700">加強盤 ×{pools.length}</span> : undefined}
       >
         {hasResult && (
-          <div className="w-full bg-emerald-50 rounded-lg py-2.5 text-center mt-2">
+          <div className="mx-6 mb-2 bg-emerald-50 rounded-lg py-2.5 text-center">
             <span className="text-base font-semibold text-emerald-600">{winningTeam === "A" ? "A 隊勝" : "B 隊勝"}</span>
           </div>
         )}
+        <ShareRatioEditor matchId={matchId} matchStatus={match.status} context="base"
+          teamAPlayers={[{ id: pIds.a1, name: memberMap[pIds.a1] || "—" }, { id: pIds.a2, name: memberMap[pIds.a2] || "—" }]}
+          teamBPlayers={[{ id: pIds.b1, name: memberMap[pIds.b1] || "—" }, { id: pIds.b2, name: memberMap[pIds.b2] || "—" }]}
+          teamATotalBetsLiang={baseBets.filter(b => b.team_bet_on === "A").reduce((s, b) => s + b.amount_liang, 0)}
+          teamBTotalBetsLiang={baseBets.filter(b => b.team_bet_on === "B").reduce((s, b) => s + b.amount_liang, 0)}
+        />
       </MatchHeader>
-
-      <ShareRatioEditor matchId={matchId} matchStatus={match.status} context="base"
-        teamAPlayers={[{ id: pIds.a1, name: memberMap[pIds.a1] || "—" }, { id: pIds.a2, name: memberMap[pIds.a2] || "—" }]}
-        teamBPlayers={[{ id: pIds.b1, name: memberMap[pIds.b1] || "—" }, { id: pIds.b2, name: memberMap[pIds.b2] || "—" }]}
-        teamATotalBetsLiang={baseBets.filter(b => b.team_bet_on === "A").reduce((s, b) => s + b.amount_liang, 0)}
-        teamBTotalBetsLiang={baseBets.filter(b => b.team_bet_on === "B").reduce((s, b) => s + b.amount_liang, 0)}
-      />
 
       {hasResult && billingError && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4 flex items-start gap-2">
@@ -168,7 +167,7 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
       )}
       {hasResult && !billingError && !baseSharesOk && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4 flex items-start gap-2">
-          <span>⚠</span><span>分潤資料異常，結算無法計算。請聯繫系統管理員</span>
+          <span>⚠</span><span>佔成資料異常，結算無法計算。請聯繫系統管理員</span>
         </div>
       )}
 
