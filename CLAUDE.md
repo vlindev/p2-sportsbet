@@ -175,9 +175,11 @@ Every implementation task follows this sequence. No exceptions. Skipping steps c
 4. **Mockup** — if UI is involved, create and approve mockup before any code is written
 5. **Context loading** — in a new session, load all relevant context before writing code. Prefer comprehensiveness over efficiency — read too much rather than too little
 6. **Implementation** — pure code-writing. Follow the plan, do not redesign mid-implementation
+6b. **Blast radius check** — Claude automatically runs `blastcheck` at Step 6 completion. Detects cross-context drift: other locations sharing the same assumptions as the change that may now be inconsistent. Runs to completion, produces report. Findings become additional scope before proceeding. Read `~/.claude/codewords/blastcheck.md` for the full procedure.
 7. **Visual sanity check** — user sends screenshots of rendered page + approved mockup. Compare and fix obvious visual differences (layout, missing elements, wrong colors, broken spacing) until ~90% matching. Not final polish — just visually tolerable for functional testing
 8. **Functional testing** — verify all logic: click handlers, data loading, state transitions, error handling. Run through a complete real-world bookkeeper workflow end to end. Batch all issues into a numbered list. Do not fix until user reviews.
 9. **Fix pass (functional)** — fix all approved functional issues. Re-test until clean.
+9b. **Blast radius check (conditional)** — if any file was touched in Step 9 that was NOT touched in Step 6, run `blastcheck` again. If the fix pass only touched files already covered by the Step 6 check, skip. Mechanical trigger — no judgment call.
 10. **UI polish** — detailed comparison of rendered page against mockup. List every remaining visual difference. Check all interactive states: loading, empty, error, single item, many items, overflow. Check mobile viewport. Present as a numbered list. Do not fix until user reviews.
 11. **Fix pass (UI)** — fix all approved UI issues in one batch. Re-screenshot for verification.
 12. **Complete** — page/phase/task is done.
@@ -226,9 +228,11 @@ Display the Standard Implementation Procedure with integrated codewords and curr
  4  Mockup                      mgp → uieval → typoaudit
  5  Context loading             —
  6  Implementation              —
+6b  Blast radius check          blastcheck (auto)
  7  Visual + code check         implaudit (full: Steps 0+1+2)
  8  Functional testing          testplan
  9  Fix pass (functional)       —
+9b  Blast radius check          blastcheck (conditional)
 10  UI polish                   implaudit + screenshots, typoaudit
 11  Fix pass (UI)               —
 12  Complete                    audit → deepcheck

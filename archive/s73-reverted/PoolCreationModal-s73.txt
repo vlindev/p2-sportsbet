@@ -1,0 +1,146 @@
+"use client";
+
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { generateDefaultShares } from "@/lib/settlement";
+import type { Match, SporadicPool } from "@/types";
+
+type Props = {
+  match: Match;
+  editPool?: SporadicPool;
+  onClose: () => void;
+  onCreated: () => void;
+};
+
+export default function PoolCreationModal({ match, editPool, onClose, onCreated }: Props) {
+  const isEdit = !!editPool;
+  const [openedByTeam, setOpenedByTeam] = useState<"A" | "B">(editPool?.opened_by_team || "A");
+  const [handicapType, setHandicapType] = useState<"讓點" | "讓洞" | "不讓分">(editPool?.handicap_type || "讓點");
+  const [handicapValue, setHandicapValue] = useState(editPool ? String(editPool.handicap_value) : "");
+  const [handicapTeam, setHandicapTeam] = useState<"A" | "B">(editPool?.handicap_team || "A");
+  const [capacityZhi, setCapacityZhi] = useState(editPool ? String(editPool.capacity_zhi) : "30");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSave() {
+    const capVal = Number(capacityZhi);
+    if (!capacityZhi || capVal < 20) { setError("容量至少 20 支"); return; }
+    const hVal = handicapType === "不讓分" ? 0 : Number(handicapValue);
+    if (handicapType !== "不讓分" && (!handicapValue || hVal <= 0)) { setError(`請輸入${handicapType === "讓點" ? "讓點數" : "讓洞數"}`); return; }
+
+    setSaving(true);
+    setError(null);
+
+    const poolData = {
+      opened_by_team: openedByTeam,
+      handicap_type: handicapType,
+      handicap_value: hVal,
+      handicap_team: handicapType === "不讓分" ? openedByTeam : handicapTeam,
+      capacity_zhi: capVal,
+    };
+
+    if (isEdit) {
+      const { error: updateErr } = await supabase.from("sporadic_pools")
+        .update(poolData).eq("id", editPool.id);
+      if (updateErr) { setError("儲存失敗"); console.error("Pool update:", updateErr); setSaving(false); return; }
+    } else {
+      const { data: pool, error: poolErr } = await supabase.from("sporadic_pools").insert({
+        match_id: match.id,
+        ...poolData,
+      }).select().single();
+
+      if (poolErr || !pool) { setError("建立失敗"); console.error("Pool create:", poolErr); setSaving(false); return; }
+
+      // Auto-create pool share rows (50/50 default per team side) — only on creation
+      const poolShares = [
+        ...generateDefaultShares(match.id, "A", [match.team_a_player1_id, match.team_a_player2_id]),
+        ...generateDefaultShares(match.id, "B", [match.team_b_player1_id, match.team_b_player2_id]),
+      ];
+      const shareRows = poolShares.map(s => ({
+        match_id: match.id,
+        match_side: s.matchSide,
+        player_id: s.playerId,
+        share_bps: s.shareBps,
+        context: "sporadic_pool" as const,
+        sporadic_pool_id: pool.id,
+      }));
+      const { error: shareErr } = await supabase.from("match_team_player_shares").insert(shareRows);
+      if (shareErr) { console.error("Pool shares:", shareErr); }
+    }
+
+    setSaving(false);
+    onCreated();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-slate-800 mb-1">{isEdit ? "編輯加強盤" : "新增加強盤"}</h3>
+        <p className="text-sm text-slate-400 mb-5">{match.name || "此賽事"}</p>
+
+        {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
+
+        {/* Opened by team */}
+        <label className="block text-sm font-medium text-slate-600 mb-1.5">開盤方</label>
+        <div className="flex gap-2 mb-4">
+          {(["A", "B"] as const).map(t => (
+            <button key={t} onClick={() => setOpenedByTeam(t)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg border cursor-pointer transition-colors ${
+                openedByTeam === t ? "bg-fuchsia-500 text-white border-fuchsia-500" : "bg-white text-slate-600 border-gray-200 hover:border-fuchsia-300"
+              }`}>{t} 隊</button>
+          ))}
+        </div>
+
+        {/* Handicap type */}
+        <label className="block text-sm font-medium text-slate-600 mb-1.5">讓分方式</label>
+        <div className="flex gap-2 mb-4">
+          {(["讓點", "讓洞", "不讓分"] as const).map(t => (
+            <button key={t} onClick={() => setHandicapType(t)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-lg border cursor-pointer transition-colors ${
+                handicapType === t ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-600 border-gray-200 hover:border-slate-400"
+              }`}>{t === "不讓分" ? "平盤" : t}</button>
+          ))}
+        </div>
+
+        {/* Handicap value + team (hidden when 不讓分) */}
+        {handicapType !== "不讓分" && (
+          <div className="flex gap-3 mb-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-600 mb-1.5">{handicapType === "讓點" ? "讓點數" : "讓洞數"}</label>
+              <input type="number" min={1} value={handicapValue} onChange={e => setHandicapValue(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder="例：3" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-slate-600 mb-1.5">讓分方</label>
+              <div className="flex gap-2">
+                {(["A", "B"] as const).map(t => (
+                  <button key={t} onClick={() => setHandicapTeam(t)}
+                    className={`flex-1 py-2 text-sm font-semibold rounded-lg border cursor-pointer transition-colors ${
+                      handicapTeam === t ? "bg-orange-500 text-white border-orange-500" : "bg-white text-slate-600 border-gray-200 hover:border-orange-300"
+                    }`}>{t} 隊</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Capacity */}
+        <label className="block text-sm font-medium text-slate-600 mb-1.5">容量（支）</label>
+        <input type="number" min={20} value={capacityZhi} onChange={e => setCapacityZhi(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-5" placeholder="最低 20" />
+
+        <div className="flex gap-3">
+          <button onClick={onClose}
+            className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+            取消
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-fuchsia-500 rounded-lg hover:bg-fuchsia-600 cursor-pointer transition-colors disabled:opacity-40">
+            {saving ? (isEdit ? "儲存中..." : "建立中...") : (isEdit ? "儲存" : "建立加強盤")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
