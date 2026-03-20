@@ -1,0 +1,95 @@
+table_name,constraint_name,check_clause
+audit_log,2200_22070_5_not_null,old_value IS NOT NULL
+audit_log,2200_22070_4_not_null,action_type IS NOT NULL
+audit_log,2200_22070_3_not_null,entity_id IS NOT NULL
+audit_log,2200_22070_2_not_null,entity_type IS NOT NULL
+audit_log,2200_22070_1_not_null,id IS NOT NULL
+audit_log,2200_22070_8_not_null,performed_at IS NOT NULL
+audit_log,2200_22070_7_not_null,performed_by IS NOT NULL
+audit_log,2200_22070_6_not_null,new_value IS NOT NULL
+bet_requests,2200_22110_1_not_null,id IS NOT NULL
+bet_requests,2200_22110_2_not_null,match_id IS NOT NULL
+bet_requests,2200_22110_3_not_null,member_id IS NOT NULL
+bet_requests,2200_22110_5_not_null,team_bet_on IS NOT NULL
+bet_requests,bet_requests_accepted_amount_check,((accepted_amount >= 0) AND (accepted_amount <= requested_amount))
+bet_requests,2200_22110_13_not_null,created_via IS NOT NULL
+bet_requests,bet_requests_bet_type_check,"(bet_type = ANY (ARRAY['mandatory_self'::text, 'mandatory_monday'::text, 'voluntary'::text]))"
+bet_requests,bet_requests_created_by_role_check,"(created_by_role = ANY (ARRAY['member'::text, 'bookkeeper'::text, 'system'::text]))"
+bet_requests,bet_requests_created_via_check,"(created_via = ANY (ARRAY['manual'::text, 'rule_engine'::text, 'scheduled_job'::text, 'import'::text, 'api'::text]))"
+bet_requests,bet_requests_reason_required,"(((status = ANY (ARRAY['rejected'::text, 'expired'::text])) AND (status_reason IS NOT NULL)) OR (status <> ALL (ARRAY['rejected'::text, 'expired'::text])))"
+bet_requests,bet_requests_requested_amount_check,(requested_amount > 0)
+bet_requests,bet_requests_role_via_combination,"(((created_by_role = 'member'::text) AND (created_via = ANY (ARRAY['manual'::text, 'api'::text]))) OR ((created_by_role = 'bookkeeper'::text) AND (created_via = ANY (ARRAY['manual'::text, 'import'::text, 'api'::text]))) OR ((created_by_role = 'system'::text) AND (created_via = ANY (ARRAY['rule_engine'::text, 'scheduled_job'::text]))))"
+bet_requests,bet_requests_service_api_only,((created_via = 'api'::text) OR (created_by_service IS NULL))
+bet_requests,bet_requests_status_check,"(status = ANY (ARRAY['pending'::text, 'partially_accepted'::text, 'accepted'::text, 'rejected'::text, 'expired'::text]))"
+bet_requests,bet_requests_system_no_user,((created_by_role <> 'system'::text) OR (created_by_user_id IS NULL))
+bet_requests,bet_requests_status_reason_check,"((status_reason IS NULL) OR (status_reason = ANY (ARRAY['capacity_overflow_lifo'::text, 'manual_reject'::text, 'deadline_passed'::text, 'match_cancelled'::text])))"
+bet_requests,bet_requests_team_bet_on_check,"(team_bet_on = ANY (ARRAY['A'::text, 'B'::text]))"
+bet_requests,2200_22110_12_not_null,created_by_role IS NOT NULL
+bet_requests,2200_22110_11_not_null,created_at IS NOT NULL
+bet_requests,2200_22110_9_not_null,status IS NOT NULL
+bet_requests,2200_22110_8_not_null,accepted_amount IS NOT NULL
+bet_requests,2200_22110_7_not_null,requested_amount IS NOT NULL
+bet_requests,2200_22110_6_not_null,bet_type IS NOT NULL
+bets,2200_17315_14_not_null,created_via IS NOT NULL
+bets,bets_amount_liang_check,(amount_liang > 0)
+bets,bets_bet_type_check,"(bet_type = ANY (ARRAY['mandatory_self'::text, 'mandatory_monday'::text, 'voluntary'::text]))"
+bets,bets_created_by_role_check,"(created_by_role = ANY (ARRAY['member'::text, 'bookkeeper'::text, 'system'::text]))"
+bets,bets_created_via_check,"(created_via = ANY (ARRAY['manual'::text, 'rule_engine'::text, 'scheduled_job'::text, 'import'::text, 'api'::text]))"
+bets,bets_result_check,"(result = ANY (ARRAY['win'::text, 'loss'::text, 'pending'::text]))"
+bets,bets_role_via_combination,"(((created_by_role = 'member'::text) AND (created_via = ANY (ARRAY['manual'::text, 'api'::text]))) OR ((created_by_role = 'bookkeeper'::text) AND (created_via = ANY (ARRAY['manual'::text, 'import'::text, 'api'::text]))) OR ((created_by_role = 'system'::text) AND (created_via = ANY (ARRAY['rule_engine'::text, 'scheduled_job'::text]))))"
+bets,bets_service_api_only,((created_via = 'api'::text) OR (created_by_service IS NULL))
+bets,bets_status_check,"(status = ANY (ARRAY['active'::text, 'voided'::text]))"
+bets,bets_system_no_user,((created_by_role <> 'system'::text) OR (created_by_user_id IS NULL))
+bets,bets_team_bet_on_check,"(team_bet_on = ANY (ARRAY['A'::text, 'B'::text]))"
+bets,bets_void_reason_check,"(void_reason = ANY (ARRAY['player_changed'::text, 'match_cancelled'::text, 'legacy_invalidated'::text]))"
+bets,bets_void_reason_consistency,(((status = 'active'::text) AND (void_reason IS NULL)) OR ((status = 'voided'::text) AND (void_reason IS NOT NULL)))
+bets,2200_17315_1_not_null,id IS NOT NULL
+bets,2200_17315_4_not_null,team_bet_on IS NOT NULL
+bets,2200_17315_5_not_null,amount_liang IS NOT NULL
+bets,2200_17315_6_not_null,bet_type IS NOT NULL
+bets,2200_17315_10_not_null,status IS NOT NULL
+bets,2200_17315_13_not_null,created_by_role IS NOT NULL
+club_billing_config,2200_22060_1_not_null,club_id IS NOT NULL
+club_billing_config,2200_22060_5_not_null,billing_enabled IS NOT NULL
+club_billing_config,2200_22060_4_not_null,contract_start_date IS NOT NULL
+club_billing_config,2200_22060_3_not_null,free_period_months IS NOT NULL
+club_billing_config,2200_22060_2_not_null,provider_rate_bps IS NOT NULL
+match_team_player_shares,match_team_player_shares_match_side_check,"(match_side = ANY (ARRAY['A'::text, 'B'::text]))"
+match_team_player_shares,match_team_player_shares_share_bps_check,((share_bps >= 0) AND (share_bps <= 10000))
+match_team_player_shares,2200_22035_1_not_null,id IS NOT NULL
+match_team_player_shares,2200_22035_3_not_null,match_side IS NOT NULL
+match_team_player_shares,2200_22035_2_not_null,match_id IS NOT NULL
+match_team_player_shares,2200_22035_4_not_null,player_id IS NOT NULL
+match_team_player_shares,2200_22035_5_not_null,share_bps IS NOT NULL
+match_team_player_shares,2200_22035_6_not_null,context IS NOT NULL
+match_team_player_shares,match_team_player_shares_context_check,"(context = ANY (ARRAY['base'::text, 'sporadic_pool'::text]))"
+matches,matches_status_check,"(status = ANY (ARRAY['scheduled'::text, 'betting_closed'::text, 'active'::text, 'completed'::text, 'cancelled'::text]))"
+matches,2200_17279_1_not_null,id IS NOT NULL
+matches,2200_17279_2_not_null,date IS NOT NULL
+matches,2200_17279_3_not_null,match_type IS NOT NULL
+matches,matches_result_check,"(result = ANY (ARRAY['team_a'::text, 'team_b'::text, 'pending'::text]))"
+matches,matches_match_type_check,"(match_type = ANY (ARRAY['monday'::text, 'optional'::text]))"
+matches,matches_handicap_type_check,"(handicap_type = ANY (ARRAY['讓點'::text, '讓洞'::text, '不讓分'::text]))"
+matches,matches_handicap_team_check,"(handicap_team = ANY (ARRAY['A'::text, 'B'::text]))"
+members,2200_17269_1_not_null,id IS NOT NULL
+members,2200_17269_2_not_null,name IS NOT NULL
+settlements,2200_17340_4_not_null,month IS NOT NULL
+settlements,settlements_status_check,"(status = ANY (ARRAY['pending'::text, 'settled'::text]))"
+settlements,2200_17340_1_not_null,id IS NOT NULL
+settlements,2200_17340_3_not_null,year IS NOT NULL
+settlements,settlements_month_check,((month >= 1) AND (month <= 12))
+sporadic_pools,2200_22085_2_not_null,match_id IS NOT NULL
+sporadic_pools,2200_22085_3_not_null,opened_by_team IS NOT NULL
+sporadic_pools,sporadic_pools_result_check,"(result = ANY (ARRAY['team_a'::text, 'team_b'::text, 'pending'::text, 'cancelled'::text, 'voided'::text]))"
+sporadic_pools,sporadic_pools_opened_by_team_check,"(opened_by_team = ANY (ARRAY['A'::text, 'B'::text]))"
+sporadic_pools,2200_22085_7_not_null,capacity_zhi IS NOT NULL
+sporadic_pools,2200_22085_8_not_null,result IS NOT NULL
+sporadic_pools,2200_22085_9_not_null,created_at IS NOT NULL
+sporadic_pools,2200_22085_6_not_null,handicap_team IS NOT NULL
+sporadic_pools,sporadic_pools_handicap_value_min,(handicap_value >= 0)
+sporadic_pools,2200_22085_5_not_null,handicap_value IS NOT NULL
+sporadic_pools,2200_22085_4_not_null,handicap_type IS NOT NULL
+sporadic_pools,sporadic_pools_handicap_type_check,"(handicap_type = ANY (ARRAY['讓點'::text, '讓洞'::text, '不讓分'::text]))"
+sporadic_pools,sporadic_pools_handicap_team_check,"(handicap_team = ANY (ARRAY['A'::text, 'B'::text]))"
+sporadic_pools,sporadic_pools_capacity_zhi_check,(capacity_zhi >= 20)
+sporadic_pools,2200_22085_1_not_null,id IS NOT NULL

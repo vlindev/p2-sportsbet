@@ -1,0 +1,16 @@
+table_name,column_name,foreign_table_name,foreign_column_name
+bet_requests,match_id,matches,id
+bet_requests,sporadic_pool_id,sporadic_pools,id
+bet_requests,member_id,members,id
+bets,sporadic_pool_id,sporadic_pools,id
+bets,match_id,matches,id
+bets,member_id,members,id
+match_team_player_shares,player_id,members,id
+match_team_player_shares,match_id,matches,id
+matches,team_b_player2_id,members,id
+matches,team_a_player2_id,members,id
+matches,team_a_player1_id,members,id
+matches,team_b_player1_id,members,id
+members,referrer_id,members,id
+settlements,member_id,members,id
+sporadic_pools,match_id,matches,id
