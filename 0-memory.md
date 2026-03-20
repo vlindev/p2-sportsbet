@@ -37,9 +37,12 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/canonical-rules-index.md` — flat lookup table (one line per sub-rule, Chinese descriptions). Read first to find relevant rules.
 - `memory/rules/*.md` — 7 topic cluster files (verbatim extracts from canonical, each fits one read). See CLAUDE.md for list + loading protocol.
 - `memory/` folder in project root: presentation strategy, architecture brief, deliverable briefs (presentation-d1/d2/d3), design-member-interface.md, design-bets-report-issues.md, phase3-club-onboarding.md
+- `memory/rpcs/` — local reference copies of all 7 Supabase RPCs (submit/correct_match_result, submit/correct_pool_result, cancel_match, replace_match_player, rls_auto_enable). Created S75.
+- `memory/schema/` — Supabase schema exports (schema-columns.csv, schema-check-constraints.csv, schema-foreign-keys.csv). Created S75.
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of Session 72)
+## What's Built (as of Session 75)
+⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 verified (sporadic_pool_id filter). `BetEntryView.tsx` confirmed dead code (not imported anywhere).
 - Supabase connected, 9 tables with RLS (members, matches, bets, settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies — replace with auth.role()='authenticated' when auth is built
 - Sidebar + MobileNav + OverdueCountContext: see `src/components/`. `src/types.ts`: all shared types/constants. `Record<Match["match_type"], string>` pattern enforces exhaustiveness.
@@ -160,7 +163,7 @@ These are NOT part of any execution plan step. They emerged from the S55 page re
 - **選手 voluntary betting (S54)** — R8.4 allows it ("player or external bettor"). User believes players shouldn't be able to. Needs organizer confirmation.
 - **取消封盤 after 自動派注 (S54)** — currently allowed without cleanup of auto-placed bets. Could create duplicate bets if member then self-bets. Design decision needed.
 - **Export buttons (S54)** — 匯出 Excel + 快速截圖 still placeholders, need implementation.
-- **Full canonical rules audit (S60)** — Systematic check of all R1–R29 rules against implementation code. Not yet started.
+- **Full canonical rules audit** ✓ (S75) — Complete. 12 gaps assessed against R1–R29. Priority fix list produced (13 items). See S75 wrap for consolidated findings.
 - **Bet-exists guard on match/pool editing (S73)** — Neither regular match edit nor sporadic pool edit checks whether bets exist before allowing changes. Changing handicap, players, or opened_by_team with existing bets could invalidate those bets. Design the guard for both simultaneously — same logic applies to both.
 
 ### End of Phase 1
