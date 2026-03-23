@@ -1,4 +1,7 @@
-# Project File Inventory — Reference/Context Files
+# Project file inventory
+# Purpose: load this file before any cross-file task to identify candidate files before reading
+# This is a discovery tool only — do not read all listed files, use it to narrow the search space
+# Last updated: 2026-03-23
 
 > Generated Session 74 (2026-03-19). One-sentence descriptions based on first 20 lines of each file.
 
@@ -17,7 +20,6 @@
 ./src/app/matches/page.tsx
 ./src/app/members/page.tsx
 ./src/app/page.tsx
-./src/components/Bets/BetEntryView.tsx
 ./src/components/Bets/BettingActions.tsx
 ./src/components/Bets/MatchBetEntry.tsx
 ./src/components/Bets/MatchBetRow.tsx

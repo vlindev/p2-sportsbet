@@ -289,3 +289,65 @@ Flag any contradiction, shortcut, or missing guard.
 
 ---
 
+## Canonical Source Protocol (Mandatory)
+
+When any rule-governed value is needed, you MUST read the canonical source and quote the exact text before using it.
+
+Rule-governed values include:
+- numeric constants
+- enums, statuses, or types
+- field names or schema structure
+- units or conversion factors
+- default values or limits
+- algorithm or branching behavior
+
+Canonical source hierarchy:
+1. `desktop/projects/p2.sportsbet/memory/canonical-rules-index.md` = lookup/index layer
+2. `desktop/projects/p2.sportsbet/memory/rules/` = topic-split canonical rule files for normal retrieval
+3. `desktop/projects/p2.sportsbet/memory/canonical-rules.md` = full untouched canonical rule, final source of truth
+
+Additional canonical sources:
+- `desktop/projects/p2.sportsbet/memory/schema/`
+- `desktop/projects/p2.sportsbet/memory/rpcs/`
+
+Lookup protocol:
+- First use the canonical index to identify the relevant rule/topic
+- Then read the relevant topic file in `memory/rules/`
+- Use the full `canonical-rules.md` only when the topic file is insufficient, ambiguous, or needs verification against the master source
+
+Never infer rule-governed values from context, memory, prior responses, or general knowledge.
+When unsure whether a value is rule-governed, treat it as rule-governed.
+
+If the value is not found in the canonical sources:
+- state "Not found in canonical sources"
+- do not assume a value
+- stop and wait for clarification
+
+---
+
+## Project file discovery rule
+
+When a task requires identifying what files exist before deciding what to read, first load:
+`desktop/projects/p2.sportsbet/memory/inventory-list-of-files.md`
+
+This file is a flat list of every file in the repository (one path per line). It provides the project topology and defines the search space.
+
+Load the inventory before:
+- blast radius or cross-file assumption checks
+- starting a new feature (to find reusable components or existing patterns)
+- cold session orientation (to re-map the project structure)
+- checking whether a file exists, was renamed, or duplicated
+- creating a new file (to avoid parallel or conflicting implementations)
+- debugging where a function, type, or feature might live
+
+Purpose:
+Use the inventory to identify candidate files and narrow the search space before choosing files to read.
+
+Constraints:
+- Treat this as a discovery step only
+- Do not summarize or analyze the inventory
+- Do not load all listed files
+- Use it only to decide which files are relevant to the task
+- The inventory reflects the project state at last update — verify existence of critical files before acting on them
+
+

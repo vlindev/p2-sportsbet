@@ -47,8 +47,8 @@ export default function SplitBar({ countA, countB, total, amountA, amountB, capa
       />
       {!isMonday && capacity != null && (
         <div className="flex justify-between text-xs text-slate-400 mt-1">
-          <span>{amountA ?? 0}/{capacity}支</span>
-          <span>{amountB ?? 0}/{capacity}支</span>
+          <span>{Math.floor((amountA ?? 0) / 3)}/{capacity}支</span>
+          <span>{Math.floor((amountB ?? 0) / 3)}/{capacity}支</span>
         </div>
       )}
     </div>

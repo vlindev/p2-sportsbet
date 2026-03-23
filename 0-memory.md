@@ -41,8 +41,8 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/schema/` — Supabase schema exports (schema-columns.csv, schema-check-constraints.csv, schema-foreign-keys.csv). Created S75.
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of Session 75)
-⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 verified (sporadic_pool_id filter). `BetEntryView.tsx` confirmed dead code (not imported anywhere).
+## What's Built (as of Session 76)
+⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 resolved (sporadic_pool_id IS NULL fix applied to both submit/correct RPCs in Supabase, 5 regression queries confirmed zero dirty rows). Priority 4 done (S76 — pool result RPC failure now shows user-facing error, reuses `resultError` state since base/pool modals are mutually exclusive). Priority 5 done (S76 — SplitBar liang→zhi conversion, `÷3` per R6.2). `BetEntryView.tsx` deleted S76 (dead code, confirmed no imports).
 - Supabase connected, 9 tables with RLS (members, matches, bets, settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies — replace with auth.role()='authenticated' when auth is built
 - Sidebar + MobileNav + OverdueCountContext: see `src/components/`. `src/types.ts`: all shared types/constants. `Record<Match["match_type"], string>` pattern enforces exhaustiveness.
@@ -61,7 +61,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - **Landing page** (`/bets` default) — `src/components/BetsLanding/` (9 files). Match list tab + member lookup tab. Shared actions in `src/lib/betting-actions.ts`.
 - **Per-match report** (`/bets?match=id&from=completed`) — `MatchSettlementReport.tsx` + settlement components. Pool sections inline.
 - **Status-based routing**: scheduled/betting_closed → entry, completed/active/cancelled → report.
-- Components: `src/components/Bets/` (16 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
+- Components: `src/components/Bets/` (15 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
 - **S72: MatchHeader redesigned** — hero matchup layout (player names biggest, directional handicap →/←, 3-zone card). 選手佔成 merged into MatchHeader footer (one-line display, inline input edit). All confirmation modals redesigned (match name in summary card, imbalance badge, member preview, zero-state handling). Edit toast → grouped summary. Player divider between self-bets and regular bets.
 
 ### `/matches` page — complete

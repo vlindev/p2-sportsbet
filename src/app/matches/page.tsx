@@ -577,6 +577,7 @@ function MatchesContent() {
     const { data, error } = await supabase.rpc(rpcName, params);
     if (error || (data && !data.success)) {
       console.error(`${rpcName} failed:`, error || data?.error);
+      setResultError(isCorrection ? "更正結果寫入失敗，請稍後再試" : "結果寫入失敗，請稍後再試");
       setSubmittingPoolResult(false);
       return;
     }
@@ -945,7 +946,7 @@ function MatchesContent() {
                           查看投注 →
                         </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
+                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); setResultError(null); }}
                           className="text-slate-400 hover:text-orange-500 transition-colors cursor-pointer p-2 -m-1"
                         >
                           <Pencil size={14} />
@@ -962,7 +963,7 @@ function MatchesContent() {
                       </button>
                       {poolCanEnterResult && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); }}
+                          onClick={(e) => { e.stopPropagation(); setPoolResultTarget(pool); setPoolResultMatch(match); setPoolResultWinner(null); setResultError(null); }}
                           className={`text-sm font-medium transition-colors cursor-pointer py-1 px-2 -mr-2 rounded-lg ${isOverdue ? "text-red-500 hover:text-red-700 hover:bg-red-50" : "text-orange-500 hover:text-orange-700 hover:bg-orange-50"}`}
                         >
                           輸入結果 &gt;
@@ -1768,6 +1769,9 @@ function MatchesContent() {
                 </button>
               ))}
             </div>
+            {resultError && (
+              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{resultError}</p>
+            )}
             <div className="flex gap-3">
               <button onClick={() => { setPoolResultTarget(null); setPoolResultMatch(null); }}
                 className="flex-1 border border-gray-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-gray-50 cursor-pointer transition-colors">
