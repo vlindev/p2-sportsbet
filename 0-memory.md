@@ -41,8 +41,8 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/schema/` — Supabase schema exports (schema-columns.csv, schema-check-constraints.csv, schema-foreign-keys.csv). Created S75.
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of Session 76)
-⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 resolved (sporadic_pool_id IS NULL fix applied to both submit/correct RPCs in Supabase, 5 regression queries confirmed zero dirty rows). Priority 4 done (S76 — pool result RPC failure now shows user-facing error, reuses `resultError` state since base/pool modals are mutually exclusive). Priority 5 done (S76 — SplitBar liang→zhi conversion, `÷3` per R6.2). `BetEntryView.tsx` deleted S76 (dead code, confirmed no imports).
+## What's Built (as of S77 — no code changes this session)
+⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 resolved (sporadic_pool_id IS NULL fix applied to both submit/correct RPCs in Supabase, 5 regression queries confirmed zero dirty rows). **Priority 3 design complete (S77)** — `place_bet` RPC architecture fully designed, all sub-decisions confirmed, implementation next. **Priority 3b identified (S77)** — `edit_bet` RPC needed for adjustAmount/swapTeam (3 rule violations discovered). Priority 4 done (S76 — pool result RPC failure now shows user-facing error). Priority 5 done (S76 — SplitBar liang→zhi conversion). `BetEntryView.tsx` deleted S76 (dead code).
 - Supabase connected, 9 tables with RLS (members, matches, bets, settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies — replace with auth.role()='authenticated' when auth is built
 - Sidebar + MobileNav + OverdueCountContext: see `src/components/`. `src/types.ts`: all shared types/constants. `Record<Match["match_type"], string>` pattern enforces exhaustiveness.
@@ -164,6 +164,8 @@ These are NOT part of any execution plan step. They emerged from the S55 page re
 - **取消封盤 after 自動派注 (S54)** — currently allowed without cleanup of auto-placed bets. Could create duplicate bets if member then self-bets. Design decision needed.
 - **Export buttons (S54)** — 匯出 Excel + 快速截圖 still placeholders, need implementation.
 - **Full canonical rules audit** ✓ (S75) — Complete. 12 gaps assessed against R1–R29. Priority fix list produced (13 items). See S75 wrap for consolidated findings.
+- **Priority 3: `place_bet` RPC** — Design complete (S77). Implementation next. Full design: `memory/design-place-bet-rpc.md`. Schema migration (`bet_config` column) + RPC SQL + client wiring (MatchBetEntry + PoolBetSection). R5.4 bug fix included (remove player exception from pool team restriction).
+- **Priority 3b: `edit_bet` RPC** — Discovered S77. adjustAmount violates R13.3 + capacity; swapTeam corrupts bet_requests.team_bet_on. Needs own design session after place_bet ships. Full details: `memory/design-place-bet-rpc.md` §Priority 3b.
 - **Bet-exists guard on match/pool editing (S73)** — Neither regular match edit nor sporadic pool edit checks whether bets exist before allowing changes. Changing handicap, players, or opened_by_team with existing bets could invalidate those bets. Design the guard for both simultaneously — same logic applies to both.
 
 ### End of Phase 1

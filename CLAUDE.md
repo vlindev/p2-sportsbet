@@ -38,6 +38,8 @@ All project memory files and when to load them. When a topic comes up mid-sessio
 | D1 member dinner presentation | `presentation-d1-member-dinner.md` | project/memory |
 | D2 investor pitch | `presentation-d2-investor-pitch.md` | project/memory |
 | D3 club sales pitch | `presentation-d3-club-sales-pitch.md` | project/memory |
+| place_bet RPC design (all S77 decisions, inputs, sequence, return shape) | `design-place-bet-rpc.md` | project/memory |
+| **Priority 3 implementation plan v3 — self-contained execution doc for fresh session** | `plan-priority3-place-bet.md` | project/memory |
 | Items tracked for Step 3b (concurrency) | `plan-track-for-3b.md` | project/memory |
 | Items deferred to Phase 2+ | `plan-defer-phase2.md` | project/memory |
 | Items deferred from execution plan (Step 7 guard, R24.4) | `plan-deferred.md` | project/memory |
