@@ -14,6 +14,7 @@ export type Match = {
   handicap_value: number;
   handicap_team: "A" | "B";
   capacity_zhi: number | null;
+  bet_config: "standard" | "small";
   result: "team_a" | "team_b" | "pending";
   status: "scheduled" | "betting_closed" | "active" | "completed" | "cancelled";
 };

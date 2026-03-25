@@ -67,6 +67,7 @@ matches,notes,text,YES,null
 matches,created_at,timestamp with time zone,YES,now()
 matches,name,text,YES,null
 matches,start_time,text,YES,null
+matches,bet_config,text,NO,'standard'::text
 members,id,uuid,NO,gen_random_uuid()
 members,name,text,NO,null
 members,phone,text,YES,null

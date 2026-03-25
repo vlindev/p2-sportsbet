@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { openBetting, runAutoPlacementAction } from "@/lib/betting-actions";
+import { openBetting, runAutoPlacementAction, placeBet } from "@/lib/betting-actions";
 import MemberSelect from "@/components/MemberSelect";
 import { ArrowLeft, ArrowLeftRight, Pencil } from "lucide-react";
 import MatchTabBar from "./MatchTabBar";
@@ -134,31 +134,17 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
   async function addBet() {
     if (!entryMemberId || !entryTeam || !entryAmount || !match) return;
     setSaving(true); setSaveError(null);
-    const { data: dup } = await supabase.from("bets").select("id")
-      .eq("match_id", matchId).eq("member_id", entryMemberId)
-      .eq("bet_type", "voluntary").eq("status", "active")
-      .is("sporadic_pool_id", null).limit(1);
-    if (dup && dup.length > 0) { setSaveError("此會員已有此場投注"); setSaving(false); return; }
-    const { data: existReq } = await supabase.from("bet_requests").select("id")
-      .eq("match_id", matchId).eq("member_id", entryMemberId)
-      .eq("bet_type", "voluntary").eq("status", "accepted")
-      .is("sporadic_pool_id", null).limit(1);
-    if (!existReq || existReq.length === 0) {
-      const { error: reqErr } = await supabase.from("bet_requests").insert({
-        match_id: matchId, member_id: entryMemberId, team_bet_on: entryTeam,
-        bet_type: "voluntary", requested_amount: entryAmount, accepted_amount: entryAmount,
-        status: "accepted", created_by_role: "bookkeeper", created_via: "manual",
-      });
-      if (reqErr) { setSaveError("儲存失敗"); console.error("bet_request:", reqErr); setSaving(false); return; }
-    }
-    const { error: betErr } = await supabase.from("bets").insert({
-      match_id: matchId, member_id: entryMemberId, team_bet_on: entryTeam,
-      amount_liang: entryAmount, bet_type: "voluntary", result: "pending", status: "active",
-      created_by_role: "bookkeeper", created_via: "manual",
+    const result = await placeBet({
+      matchId, memberId: entryMemberId, teamBetOn: entryTeam,
+      amountLiang: entryAmount, betType: "voluntary",
     });
-    if (betErr) { setSaveError("儲存失敗"); console.error("bet:", betErr); setSaving(false); return; }
-    clearForm(); setSaving(false);
-    refreshBets();
+    if (result.success && result.status === "accepted") {
+      clearForm(); setSaving(false); refreshBets(); return;
+    }
+    if (result.success && result.status === "pending") {
+      setSaveError("投注已送出，等待審核"); setSaving(false); return;
+    }
+    setSaveError(result.rejectReason); setSaving(false);
   }
 
 

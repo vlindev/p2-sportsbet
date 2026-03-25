@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { placeBet } from "@/lib/betting-actions";
 import MemberSelect from "@/components/MemberSelect";
 import ShareRatioEditor from "./ShareRatioEditor";
 import { X } from "lucide-react";
@@ -46,62 +47,43 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
   const totalZhi = Math.round((teamATotal + teamBTotal) / 3);
   const capacityPct = Math.min(100, Math.round(totalZhi / pool.capacity_zhi * 100));
 
-  // R5.4: opening team column restricted to players only
-  const playerIds = new Set([match.team_a_player1_id, match.team_a_player2_id, match.team_b_player1_id, match.team_b_player2_id]);
+  // R5.4: NO ONE can bet on the opening team (universal — no player exception)
   const openingSide = pool.opened_by_team;
 
-  // R5.4: auto-clear team selection if member changes and selection becomes invalid
-  const entryMemberIsPlayer = entryMemberId ? playerIds.has(entryMemberId) : true;
+  // R5.4: auto-clear team selection if opening side selected
   useEffect(() => {
-    if (entryMemberId && !entryMemberIsPlayer && entryTeam === openingSide) {
+    if (entryTeam === openingSide) {
       setEntryTeam(null);
     }
-  }, [entryMemberId, entryMemberIsPlayer, entryTeam, openingSide]);
+  }, [entryTeam, openingSide]);
 
   const effectiveZhi = entryZhi ?? (customZhi ? parseInt(customZhi) || 0 : 0);
   const effectiveLiang = effectiveZhi * 3;
 
   async function addBet() {
     if (!entryMemberId || !entryTeam || effectiveZhi <= 0) return;
-    // R5.4: external bettors cannot bet on opening team
-    if (entryTeam === openingSide && !playerIds.has(entryMemberId)) {
-      setSaveError("僅限球員可投注開盤方"); return;
+    // R5.4: universal — no one can bet on opening team (advisory, RPC is authority)
+    if (entryTeam === openingSide) {
+      setSaveError("不可投注開盤方"); return;
     }
-    // R11.2: pool bets must be multiples of 3兩 (1支)
+    // R11.2: pool amount advisory check
     if (effectiveLiang < 3 || effectiveLiang > 150) {
       setSaveError("投注金額：1–50 支（3–150兩）"); return;
     }
     setSaving(true); setSaveError(null);
-    // 🟡-3: Duplicate bet pre-check
-    const { data: dup } = await supabase.from("bets").select("id")
-      .eq("match_id", match.id).eq("member_id", entryMemberId)
-      .eq("bet_type", "voluntary").eq("status", "active")
-      .eq("sporadic_pool_id", pool.id).limit(1);
-    if (dup && dup.length > 0) { setSaveError("此會員已有此盤投注"); setSaving(false); return; }
-    // 🟠-5: Check existing accepted bet_request before creating
-    const { data: existReq } = await supabase.from("bet_requests").select("id")
-      .eq("match_id", match.id).eq("member_id", entryMemberId)
-      .eq("bet_type", "voluntary").eq("status", "accepted")
-      .eq("sporadic_pool_id", pool.id).limit(1);
-    if (!existReq || existReq.length === 0) {
-      const { error: reqErr } = await supabase.from("bet_requests").insert({
-        match_id: match.id, member_id: entryMemberId, sporadic_pool_id: pool.id,
-        team_bet_on: entryTeam, bet_type: "voluntary",
-        requested_amount: effectiveLiang, accepted_amount: effectiveLiang,
-        status: "accepted", created_by_role: "bookkeeper", created_via: "manual",
-      });
-      if (reqErr) { setSaveError("儲存失敗"); console.error("pool bet_request:", reqErr); setSaving(false); return; }
-    }
-    const { error: betErr } = await supabase.from("bets").insert({
-      match_id: match.id, member_id: entryMemberId, sporadic_pool_id: pool.id,
-      team_bet_on: entryTeam, amount_liang: effectiveLiang, bet_type: "voluntary",
-      result: "pending", status: "active",
-      created_by_role: "bookkeeper", created_via: "manual",
+    const result = await placeBet({
+      matchId: match.id, memberId: entryMemberId, teamBetOn: entryTeam,
+      amountLiang: effectiveLiang, betType: "voluntary",
+      sporadicPoolId: pool.id,
     });
-    if (betErr) { setSaveError("儲存失敗"); console.error("pool bet:", betErr); setSaving(false); return; }
-    setEntryMemberId(""); setEntryTeam(null); setEntryZhi(null); setCustomZhi("");
-    setSaving(false); setSaveError(null);
-    fetchBets();
+    if (result.success && result.status === "accepted") {
+      setEntryMemberId(""); setEntryTeam(null); setEntryZhi(null); setCustomZhi("");
+      setSaving(false); setSaveError(null); fetchBets(); return;
+    }
+    if (result.success && result.status === "pending") {
+      setSaveError("投注已送出，等待審核"); setSaving(false); return;
+    }
+    setSaveError(result.rejectReason); setSaving(false);
   }
 
   async function removeBet(bet: Bet) {
@@ -146,7 +128,7 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
             ))}
           </div>
         )}
-        {isRestricted && <p className="text-xs text-fuchsia-500 text-center mt-2">僅限球員投注</p>}
+        {isRestricted && <p className="text-xs text-fuchsia-500 text-center mt-2">開盤方 · 不可投注</p>}
       </div>
     );
   }
@@ -211,11 +193,10 @@ export default function PoolBetSection({ pool, match, members, memberMap, poolIn
             <div className="flex gap-1.5">
               {(["A", "B"] as const).map(t => {
                 const isOpeningSide = t === openingSide;
-                const disabled = isOpeningSide && !entryMemberIsPlayer;
                 return (
-                  <button key={t} onClick={() => !disabled && setEntryTeam(entryTeam === t ? null : t)} disabled={disabled}
+                  <button key={t} onClick={() => !isOpeningSide && setEntryTeam(entryTeam === t ? null : t)} disabled={isOpeningSide}
                     className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                      disabled ? "bg-gray-50 text-slate-300 border-gray-100 cursor-not-allowed"
+                      isOpeningSide ? "bg-gray-50 text-slate-300 border-gray-100 cursor-not-allowed"
                       : entryTeam === t ? "bg-orange-500 text-white border-orange-500 cursor-pointer"
                       : "bg-white text-slate-600 border-gray-200 hover:border-orange-300 cursor-pointer"
                     }`}>{t} 隊</button>

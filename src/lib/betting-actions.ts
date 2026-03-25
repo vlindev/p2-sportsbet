@@ -14,6 +14,96 @@ type BetForClose = { team_bet_on: "A" | "B"; amount_liang: number };
 type BetForAutoPlace = { member_id: string; team_bet_on: "A" | "B"; amount_liang: number };
 type BasicMember = { id: string; active: boolean };
 
+// -- place_bet RPC wrapper ------------------------------------------------
+
+export type PlaceBetResult =
+  | { success: true; status: "accepted"; betId: string; requestId: string }
+  | { success: true; status: "pending"; betId: null; requestId: string }
+  | { success: false; status: "rejected"; rejectReason: string }
+  | { success: false; status: "error"; rejectReason: string };
+
+const REJECT_MESSAGES: Record<string, string> = {
+  duplicate_bet: "此會員已有此場投注",
+  duplicate_pending_request: "此會員已有待處理的投注請求",
+  bet_on_opening_team: "不可投注開盤方",
+  invalid_base_amount: "投注金額不符（標準盤：1或2兩）",
+  invalid_small_amount: "投注金額不符（小盤：僅限1兩）",
+  invalid_pool_amount: "投注金額：1–50 支（3–150兩）",
+  betting_closed: "已封盤，會員無法下注",
+  match_status_active: "比賽進行中，無法下注",
+  match_status_completed: "比賽已結束",
+  match_status_cancelled: "比賽已取消",
+};
+
+/**
+ * Place a bet via the server-side `place_bet` RPC.
+ * Single atomic transaction — no dual writes.
+ */
+export async function placeBet(params: {
+  matchId: string;
+  memberId: string;
+  teamBetOn: "A" | "B";
+  amountLiang: number;
+  betType: "mandatory_monday" | "voluntary";
+  sporadicPoolId?: string | null;
+  createdByRole?: "member" | "bookkeeper" | "system";
+  createdVia?: "manual" | "rule_engine" | "scheduled_job" | "import" | "api";
+  performedBy?: string;
+}): Promise<PlaceBetResult> {
+  const { data, error } = await supabase.rpc("place_bet", {
+    p_match_id: params.matchId,
+    p_member_id: params.memberId,
+    p_team_bet_on: params.teamBetOn,
+    p_amount_liang: params.amountLiang,
+    p_bet_type: params.betType,
+    p_sporadic_pool_id: params.sporadicPoolId ?? null,
+    p_created_by_role: params.createdByRole ?? "bookkeeper",
+    p_created_via: params.createdVia ?? "manual",
+    p_performed_by: params.performedBy ?? "bookkeeper",
+  });
+
+  // Supabase-level error (network, RPC exception)
+  if (error) {
+    console.error("place_bet RPC error:", error);
+    return { success: false, status: "error", rejectReason: "系統錯誤，請重試" };
+  }
+
+  const result = data as {
+    success: boolean;
+    destination: string | null;
+    status: string;
+    bet_id: string | null;
+    request_id: string | null;
+    reject_reason: string | null;
+  };
+
+  if (result.success && result.status === "accepted") {
+    return {
+      success: true,
+      status: "accepted",
+      betId: result.bet_id!,
+      requestId: result.request_id!,
+    };
+  }
+
+  if (result.success && result.status === "pending") {
+    return {
+      success: true,
+      status: "pending",
+      betId: null,
+      requestId: result.request_id!,
+    };
+  }
+
+  // Business rejection
+  const reason = result.reject_reason ?? "unknown";
+  return {
+    success: false,
+    status: "rejected",
+    rejectReason: REJECT_MESSAGES[reason] ?? `投注失敗：${reason}`,
+  };
+}
+
 /**
  * Close betting (封盤) + R17.11 min exposure check.
  * @param matchBets — active base-match bets for THIS match only
