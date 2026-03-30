@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { placeBet } from "@/lib/betting-actions";
 import type { Match } from "@/types";
 
 type Props = {
@@ -25,23 +25,23 @@ export default function MemberQuickActions({
     setBulkBuying(true);
     setBulkError(null);
 
-    const reqs = unbettedMondayMatches.map((m) => ({
-      match_id: m.id, member_id: memberId, team_bet_on: team,
-      bet_type: "voluntary", requested_amount: amountToggle, accepted_amount: amountToggle,
-      status: "accepted", created_by_role: "bookkeeper", created_via: "manual",
-    }));
-    const { error: reqErr } = await supabase.from("bet_requests").insert(reqs);
-    if (reqErr) { console.error("Bulk buy bet_requests:", reqErr); setBulkError("批次投注失敗，請重試"); setBulkBuying(false); return; }
-
-    const bets = unbettedMondayMatches.map((m) => ({
-      match_id: m.id, member_id: memberId, team_bet_on: team,
-      amount_liang: amountToggle, bet_type: "voluntary", result: "pending", status: "active",
-      created_by_role: "bookkeeper", created_via: "manual",
-    }));
-    const { error: betErr } = await supabase.from("bets").insert(bets);
-    if (betErr) { console.error("Bulk buy bets:", betErr); setBulkError("批次投注失敗，請重試"); setBulkBuying(false); return; }
+    let placed = 0;
+    let skipped = 0;
+    let lastError = "";
+    for (const m of unbettedMondayMatches) {
+      const result = await placeBet({
+        matchId: m.id, memberId, teamBetOn: team,
+        amountLiang: amountToggle, betType: "voluntary",
+      });
+      if (result.success && result.status === "accepted") { placed++; continue; }
+      if (result.success && result.status === "pending") { placed++; continue; }
+      // Duplicate = already betted, skip gracefully
+      if (result.rejectReason === "此會員已有此場投注") { skipped++; continue; }
+      lastError = result.rejectReason;
+    }
 
     setBulkBuying(false);
+    if (placed === 0 && skipped === 0 && lastError) { setBulkError(lastError); return; }
     onBetsChange();
   }
 

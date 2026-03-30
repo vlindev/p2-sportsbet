@@ -104,6 +104,45 @@ export async function placeBet(params: {
   };
 }
 
+// -- edit_bet RPC wrapper -------------------------------------------------
+
+export type EditBetResult = {
+  success: boolean;
+  operation?: string;
+  betId?: string;
+  oldValue?: number | string;
+  newValue?: number | string;
+  reasonCode?: string;
+  message?: string;
+};
+
+/**
+ * Edit an existing bet via the server-side `edit_bet` RPC.
+ * Single atomic transaction — updates both bets + bet_requests.
+ */
+export async function editBet(params: {
+  betId: string;
+  operation: "adjust_amount" | "swap_team";
+  newAmountLiang?: number;
+  newTeamBetOn?: "A" | "B";
+  performedBy?: string;
+}): Promise<EditBetResult> {
+  const { data, error } = await supabase.rpc("edit_bet", {
+    p_bet_id: params.betId,
+    p_operation: params.operation,
+    p_new_amount_liang: params.newAmountLiang ?? null,
+    p_new_team_bet_on: params.newTeamBetOn ?? null,
+    p_performed_by: params.performedBy ?? "bookkeeper",
+  });
+
+  if (error) {
+    console.error("edit_bet RPC error:", error);
+    return { success: false, reasonCode: "RPC_ERROR", message: error.message };
+  }
+
+  return data as EditBetResult;
+}
+
 /**
  * Close betting (封盤) + R17.11 min exposure check.
  * @param matchBets — active base-match bets for THIS match only

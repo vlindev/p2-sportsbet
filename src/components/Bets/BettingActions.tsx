@@ -65,7 +65,7 @@ export default function BettingActions({
     const memberIds = targetBets.map((b) => b.member_id);
     if (memberIds.length > 0) {
       await supabase.from("bet_requests")
-        .update({ accepted_amount: 1 })
+        .update({ requested_amount: 1, accepted_amount: 1 })
         .eq("match_id", matchId)
         .eq("bet_type", "voluntary")
         .eq("status", "accepted")

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { closeBetting, openBetting, runAutoPlacementAction } from "@/lib/betting-actions";
 import CloseBettingModal from "@/components/CloseBettingModal";
 import type { Match, Bet } from "@/types";
@@ -59,7 +60,13 @@ export default function MatchListActions({ match, matchBets, members, isAutoPlac
     e.stopPropagation();
     if (placing || placed) return;
     setPlacing(true);
-    const result = await runAutoPlacementAction(match.id, members, matchBets);
+    // Fresh fetch before auto-placement — stale prop could cause wrong balancing
+    const { data: freshBets, error: betsErr } = await supabase
+      .from("bets").select("member_id, team_bet_on, amount_liang")
+      .eq("match_id", match.id).eq("status", "active").is("sporadic_pool_id", null);
+    if (betsErr) { console.error("Fetch bets for auto-placement:", betsErr); setPlacing(false); return; }
+    const freshMatchBets = (freshBets || []) as { member_id: string; team_bet_on: "A" | "B"; amount_liang: number }[];
+    const result = await runAutoPlacementAction(match.id, members, freshMatchBets);
     setPlacing(false);
     if (!result.success) return;
     setPlaced(true);

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { placeBet } from "@/lib/betting-actions";
 import type { Match, Bet } from "@/types";
 
 const BADGE_LABEL: Record<Match["match_type"], string> = { monday: "週一", optional: "熱身" };
@@ -50,22 +50,17 @@ export default function MemberMatchRow({
     if (saving) return;
     setSaving(true);
     setSaveError(null);
-    const { error: reqErr } = await supabase.from("bet_requests").insert({
-      match_id: match.id, member_id: memberId, team_bet_on: team,
-      bet_type: "voluntary", requested_amount: amountToggle, accepted_amount: amountToggle,
-      status: "accepted", created_by_role: "bookkeeper", created_via: "manual",
+    const result = await placeBet({
+      matchId: match.id, memberId, teamBetOn: team,
+      amountLiang: amountToggle, betType: "voluntary",
     });
-    if (reqErr) { console.error("Quick-pick bet_request:", reqErr); setSaveError("儲存失敗，請重試"); setSaving(false); return; }
-
-    const { error: betErr } = await supabase.from("bets").insert({
-      match_id: match.id, member_id: memberId, team_bet_on: team,
-      amount_liang: amountToggle, bet_type: "voluntary", result: "pending", status: "active",
-      created_by_role: "bookkeeper", created_via: "manual",
-    });
-    if (betErr) { console.error("Quick-pick bet:", betErr); setSaveError("儲存失敗，請重試"); setSaving(false); return; }
-
-    setSaving(false);
-    onBetsChange();
+    if (result.success && result.status === "accepted") {
+      setSaving(false); onBetsChange(); return;
+    }
+    if (result.success && result.status === "pending") {
+      setSaveError("投注已送出，等待審核"); setSaving(false); return;
+    }
+    setSaveError(result.rejectReason); setSaving(false);
   }
 
   // Bet status display

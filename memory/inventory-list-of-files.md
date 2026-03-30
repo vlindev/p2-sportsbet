@@ -1,8 +1,7 @@
 # Project file inventory
 # Purpose: load this file before any cross-file task to identify candidate files before reading
 # This is a discovery tool only — do not read all listed files, use it to narrow the search space
-# Last updated: 2026-03-25
-
+# Last updated: 2026-03-30
 ./.claude/settings.json
 ./.claude/settings.local.json
 ./.env.local
@@ -34,6 +33,8 @@
 ./4-last-wraps/wrap-s74.md
 ./4-last-wraps/wrap-s75.md
 ./4-last-wraps/wrap-s76.md
+./4-last-wraps/wrap-s77.md
+./4-last-wraps/wrap-s78.md
 ./CLAUDE.md
 ./README.md
 ./archive/audit-backend-report-s52.md
@@ -41,6 +42,7 @@
 ./archive/plan-context-share-editing.md
 ./archive/plan-fix-now-part1.md
 ./archive/plan-fix-now-part2.md
+./archive/plan-priority3-place-bet.md
 ./archive/plan-report-rewrite.md
 ./archive/plan-resolved.md
 ./archive/plan-sporadic-correct-cancel.md
@@ -53,9 +55,6 @@
 ./archive/step4-conflict-report.md
 ./archive/step5-migration-plan.md
 ./archive/test-checklist-s53.md
-./add-bet-config-column.sql
-./deploy-place-bet-rpc.sql
-./test-place-bet-rpc.sql
 ./eslint.config.mjs
 ./memory/0-memory-backup-2026-03.md
 ./memory/architecture-brief-full.md
@@ -71,7 +70,6 @@
 ./memory/phase3-club-onboarding.md
 ./memory/plan-defer-phase2.md
 ./memory/plan-deferred.md
-./memory/plan-priority3-place-bet.md
 ./memory/plan-track-for-3b.md
 ./memory/presentation-d1-member-dinner.md
 ./memory/presentation-d2-investor-pitch.md
@@ -156,3 +154,4 @@
 ./tests/bet-pipeline.test.ts
 ./tests/settlement.test.ts
 ./tsconfig.json
+./tsconfig.tsbuildinfo

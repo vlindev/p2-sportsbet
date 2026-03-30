@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { openBetting, runAutoPlacementAction, placeBet } from "@/lib/betting-actions";
+import { openBetting, runAutoPlacementAction, placeBet, editBet } from "@/lib/betting-actions";
 import MemberSelect from "@/components/MemberSelect";
 import { ArrowLeft, ArrowLeftRight, Pencil } from "lucide-react";
 import MatchTabBar from "./MatchTabBar";
@@ -150,16 +150,10 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
 
   async function adjustAmount(bet: Bet) {
     const newAmount = bet.amount_liang === 1 ? 2 : 1;
-    // Convert to voluntary on any edit — removes 補 badge
-    const { error } = await supabase.from("bets").update({
-      amount_liang: newAmount, bet_type: "voluntary",
-      created_by_role: "bookkeeper", created_via: "manual",
-    }).eq("id", bet.id);
-    if (error) { console.error("adjust bet:", error); return; }
-    await supabase.from("bet_requests").update({ accepted_amount: newAmount })
-      .eq("match_id", matchId).eq("member_id", bet.member_id)
-      .eq("bet_type", bet.bet_type).eq("status", "accepted")
-      .is("sporadic_pool_id", null);
+    const result = await editBet({
+      betId: bet.id, operation: "adjust_amount", newAmountLiang: newAmount,
+    });
+    if (!result.success) { console.error("adjustAmount rejected:", result.reasonCode, result.message); return; }
     setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "adjust", from: bet.amount_liang, to: newAmount }]);
     adjustedBetIds.current.add(bet.id);
     // Local state update — no refetch during edit mode (prevents re-sort)
@@ -170,12 +164,10 @@ export default function MatchBetEntry({ matchId, backUrl, backLabel }: Props) {
 
   async function swapTeam(bet: Bet) {
     const newTeam = bet.team_bet_on === "A" ? "B" : "A";
-    // Convert to voluntary — no longer auto-placed after bookkeeper intervention
-    const { error } = await supabase.from("bets").update({
-      team_bet_on: newTeam, bet_type: "voluntary",
-      created_by_role: "bookkeeper", created_via: "manual",
-    }).eq("id", bet.id);
-    if (error) { console.error("swap team:", error); return; }
+    const result = await editBet({
+      betId: bet.id, operation: "swap_team", newTeamBetOn: newTeam,
+    });
+    if (!result.success) { console.error("swapTeam rejected:", result.reasonCode, result.message); return; }
     setEditChanges(prev => [...prev, { name: memberMap[bet.member_id] || "—", action: "swap", from: bet.team_bet_on, to: newTeam }]);
     setHighlightBetIds(new Set([bet.id]));
     setTimeout(() => setHighlightBetIds(new Set()), 5000);
