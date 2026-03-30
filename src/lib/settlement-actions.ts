@@ -45,7 +45,7 @@ export async function persistMatchSettlement(params: {
 
     const { error: upsertError } = await supabase
       .from("match_settlements")
-      .upsert(rows, { onConflict: "member_id,match_id", ignoreDuplicates: false });
+      .upsert(rows, { onConflict: "member_id,match_id,settlement_context,sporadic_pool_id", ignoreDuplicates: false });
 
     if (upsertError) {
       return { success: false, error: `match_settlements upsert failed: ${upsertError.message}` };
@@ -130,7 +130,7 @@ export async function persistPoolSettlement(params: {
 
     const { error: upsertError } = await supabase
       .from("match_settlements")
-      .upsert(rows, { onConflict: "member_id,match_id,sporadic_pool_id", ignoreDuplicates: false });
+      .upsert(rows, { onConflict: "member_id,match_id,settlement_context,sporadic_pool_id", ignoreDuplicates: false });
 
     if (upsertError) {
       return { success: false, error: `match_settlements pool upsert failed: ${upsertError.message}` };
