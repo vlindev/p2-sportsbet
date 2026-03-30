@@ -35,6 +35,7 @@
 ./4-last-wraps/wrap-s76.md
 ./4-last-wraps/wrap-s77.md
 ./4-last-wraps/wrap-s78.md
+./4-last-wraps/wrap-s79.md
 ./CLAUDE.md
 ./README.md
 ./archive/audit-backend-report-s52.md
@@ -67,6 +68,8 @@
 ./memory/design-page-responsibilities.md
 ./memory/design-place-bet-rpc.md
 ./memory/inventory-list-of-files.md
+./memory/migrations/006_match_settlements.sql
+./memory/migrations/007_settlement_detail.sql
 ./memory/phase3-club-onboarding.md
 ./memory/plan-defer-phase2.md
 ./memory/plan-deferred.md
@@ -78,6 +81,7 @@
 ./memory/rpcs/cancel_match.sql
 ./memory/rpcs/correct_match_result.sql
 ./memory/rpcs/correct_pool_result.sql
+./memory/rpcs/edit_bet.sql
 ./memory/rpcs/place_bet.sql
 ./memory/rpcs/replace_match_player.sql
 ./memory/rpcs/rls_auto_enable.sql
@@ -124,7 +128,6 @@
 ./src/components/Bets/SettlementSection.tsx
 ./src/components/Bets/SettlementSummary.tsx
 ./src/components/Bets/ShareRatioEditor.tsx
-./src/components/Bets/settlement-helpers.ts
 ./src/components/Bets/types.ts
 ./src/components/BetsLanding/BetsLandingPage.tsx
 ./src/components/BetsLanding/MatchListActions.tsx
@@ -136,6 +139,7 @@
 ./src/components/BetsLanding/SplitBar.tsx
 ./src/components/BetsLanding/types.ts
 ./src/components/CloseBettingModal.tsx
+./src/components/CorrectionPreviewModal.tsx
 ./src/components/Matches/PoolCreationModal.tsx
 ./src/components/MemberSelect.tsx
 ./src/components/MobileNav.tsx
@@ -144,6 +148,8 @@
 ./src/lib/auto-placement.ts
 ./src/lib/bet-pipeline.ts
 ./src/lib/betting-actions.ts
+./src/lib/settlement-actions.ts
+./src/lib/settlement-helpers.ts
 ./src/lib/settlement.ts
 ./src/lib/share-validation.ts
 ./src/lib/supabase.ts

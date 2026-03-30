@@ -7,6 +7,9 @@ import { Plus, Pencil, ChevronDown, ChevronLeft, ChevronRight } from "lucide-rea
 import MemberSelect from "@/components/MemberSelect";
 import { Match, SporadicPool, MATCH_TYPE_LABEL, MATCH_TYPE_STYLE } from "@/types";
 import PoolCreationModal from "@/components/Matches/PoolCreationModal";
+import CorrectionPreviewModal from "@/components/CorrectionPreviewModal";
+import { persistMatchSettlement, persistPoolSettlement } from "@/lib/settlement-actions";
+import { toBillingConfig } from "@/lib/settlement-helpers";
 
 type Member = { id: string; name: string; active: boolean };
 
@@ -136,6 +139,8 @@ function MatchesContent() {
   const [poolResultWinner, setPoolResultWinner] = useState<"team_a" | "team_b" | null>(null);
   const [submittingPoolResult, setSubmittingPoolResult] = useState(false);
   const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set());
+  const [showCorrectionPreview, setShowCorrectionPreview] = useState(false);
+  const [showPoolCorrectionPreview, setShowPoolCorrectionPreview] = useState(false);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     if (typeof window === "undefined") return new Set(["nextWeek", "future"]);
@@ -511,35 +516,98 @@ function MatchesContent() {
     setResultError(null);
   }
 
+  // Settlement persist helper — shared by new result and correction paths
+  async function persistSettlementForMatch(matchTarget: Match, winner: "team_a" | "team_b") {
+    const [betsRes, sharesRes, billingRes] = await Promise.all([
+      supabase.from("bets").select("*").eq("match_id", matchTarget.id).eq("status", "active").is("sporadic_pool_id", null),
+      supabase.from("match_team_player_shares").select("*").eq("match_id", matchTarget.id).eq("context", "base"),
+      supabase.from("club_billing_config").select("*").limit(1).single(),
+    ]);
+    if (!betsRes.error && !sharesRes.error && !billingRes.error) {
+      const result = await persistMatchSettlement({
+        match: {
+          matchId: matchTarget.id,
+          result: winner,
+          teamAPlayer1Id: matchTarget.team_a_player1_id,
+          teamAPlayer2Id: matchTarget.team_a_player2_id,
+          teamBPlayer1Id: matchTarget.team_b_player1_id,
+          teamBPlayer2Id: matchTarget.team_b_player2_id,
+          date: matchTarget.date,
+        },
+        baseBets: betsRes.data,
+        baseShares: sharesRes.data,
+        billingConfig: toBillingConfig(billingRes.data),
+      });
+      if (!result.success) console.error("Settlement persist failed:", result.error);
+    } else {
+      console.error("Settlement data fetch failed — settlement not persisted");
+    }
+  }
+
   // TODO: Phase 3 — wrap fan-out writes in a Supabase RPC for true transaction safety.
   // Current architecture uses Promise.all with read-after-write verification as a safety net.
   async function submitResult() {
     if (!resultTarget || !resultWinner) return;
+
+    // Corrections: show preview modal first (auto-skips if no settlement exists)
+    if (isCorrection) {
+      setShowCorrectionPreview(true);
+      return;
+    }
+
     setSubmittingResult(true);
     setResultError(null);
     const completedId = resultTarget.id;
 
-    const rpcName = isCorrection ? "correct_match_result" : "submit_match_result";
-    const rpcParams = isCorrection
-      ? { p_match_id: resultTarget.id, p_new_winner: resultWinner, p_performed_by: "bookkeeper" }
-      : { p_match_id: resultTarget.id, p_winner: resultWinner, p_performed_by: "bookkeeper" };
-
-    const { data, error } = await supabase.rpc(rpcName, rpcParams);
+    const { data, error } = await supabase.rpc("submit_match_result", {
+      p_match_id: resultTarget.id, p_winner: resultWinner, p_performed_by: "bookkeeper",
+    });
 
     if (error) {
-      console.error(`${rpcName} failed:`, error);
-      setResultError(isCorrection ? "更正結果寫入失敗，請稍後再試" : "結果寫入失敗，請稍後再試");
+      console.error("submit_match_result failed:", error);
+      setResultError("結果寫入失敗，請稍後再試");
       setSubmittingResult(false);
       return;
     }
 
     if (data?.affected_bets === 0) {
-      console.warn(`${rpcName}: zero bets affected for match`, resultTarget.id);
+      console.warn("submit_match_result: zero bets affected for match", resultTarget.id);
     }
 
+    // Persist settlement — non-blocking, result already committed
+    await persistSettlementForMatch(resultTarget, resultWinner);
+
     // Inbox Zero: don't fetchAll or switch tabs. Card stays in place, transforms visually.
-    // Local match state unchanged — justCompleted map drives the visual override.
-    // Cleanup happens on next fetchAll (tab switch or auto-poll resume).
+    setJustCompleted((prev) => new Map(prev).set(completedId, resultWinner!));
+    closeResultModal();
+    setSubmittingResult(false);
+  }
+
+  async function executeMatchCorrection() {
+    if (!resultTarget || !resultWinner) return;
+    setShowCorrectionPreview(false);
+    setSubmittingResult(true);
+    setResultError(null);
+    const completedId = resultTarget.id;
+
+    const { data, error } = await supabase.rpc("correct_match_result", {
+      p_match_id: resultTarget.id, p_new_winner: resultWinner, p_performed_by: "bookkeeper",
+    });
+
+    if (error) {
+      console.error("correct_match_result failed:", error);
+      setResultError("更正結果寫入失敗，請稍後再試");
+      setSubmittingResult(false);
+      return;
+    }
+
+    if (data?.affected_bets === 0) {
+      console.warn("correct_match_result: zero bets affected for match", resultTarget.id);
+    }
+
+    // Re-persist settlement — upsert overwrites old rows
+    await persistSettlementForMatch(resultTarget, resultWinner);
+
     setJustCompleted((prev) => new Map(prev).set(completedId, resultWinner!));
     closeResultModal();
     setSubmittingResult(false);
@@ -566,21 +634,79 @@ function MatchesContent() {
     return pools.filter(p => p.match_id === matchId);
   }
 
+  // Pool settlement persist helper — shared by new result and correction paths
+  async function persistSettlementForPool(pool: SporadicPool, matchForPool: Match, winner: "team_a" | "team_b") {
+    const [poolBetsRes, poolSharesRes, billingRes] = await Promise.all([
+      supabase.from("bets").select("*").eq("sporadic_pool_id", pool.id).eq("status", "active"),
+      supabase.from("match_team_player_shares").select("*").eq("match_id", matchForPool.id).eq("context", "sporadic_pool").eq("sporadic_pool_id", pool.id),
+      supabase.from("club_billing_config").select("*").limit(1).single(),
+    ]);
+    if (!poolBetsRes.error && !poolSharesRes.error && !billingRes.error) {
+      const result = await persistPoolSettlement({
+        pool: { id: pool.id, match_id: matchForPool.id },
+        match: { date: matchForPool.date, id: matchForPool.id },
+        poolBets: poolBetsRes.data,
+        poolShares: poolSharesRes.data,
+        billingConfig: toBillingConfig(billingRes.data),
+        poolResult: winner,
+      });
+      if (!result.success) console.error("Pool settlement persist failed:", result.error);
+    } else {
+      console.error("Pool settlement data fetch failed — settlement not persisted");
+    }
+  }
+
   async function submitPoolResult() {
     if (!poolResultTarget || !poolResultWinner) return;
+    const isPoolCorrection = poolResultTarget.result === "team_a" || poolResultTarget.result === "team_b";
+
+    // Corrections: show preview modal first (auto-skips if no settlement exists)
+    if (isPoolCorrection) {
+      setShowPoolCorrectionPreview(true);
+      return;
+    }
+
     setSubmittingPoolResult(true);
-    const isCorrection = poolResultTarget.result === "team_a" || poolResultTarget.result === "team_b";
-    const rpcName = isCorrection ? "correct_pool_result" : "submit_pool_result";
-    const params = isCorrection
-      ? { p_pool_id: poolResultTarget.id, p_new_winner: poolResultWinner, p_performed_by: "bookkeeper" }
-      : { p_pool_id: poolResultTarget.id, p_winner: poolResultWinner, p_performed_by: "bookkeeper" };
-    const { data, error } = await supabase.rpc(rpcName, params);
+    const { data, error } = await supabase.rpc("submit_pool_result", {
+      p_pool_id: poolResultTarget.id, p_winner: poolResultWinner, p_performed_by: "bookkeeper",
+    });
     if (error || (data && !data.success)) {
-      console.error(`${rpcName} failed:`, error || data?.error);
-      setResultError(isCorrection ? "更正結果寫入失敗，請稍後再試" : "結果寫入失敗，請稍後再試");
+      console.error("submit_pool_result failed:", error || data?.error);
+      setResultError("結果寫入失敗，請稍後再試");
       setSubmittingPoolResult(false);
       return;
     }
+
+    // Persist pool settlement — non-blocking
+    if (poolResultMatch) {
+      await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+    }
+
+    setSubmittingPoolResult(false);
+    setPoolResultTarget(null);
+    setPoolResultMatch(null);
+    setPoolResultWinner(null);
+    await fetchAll();
+  }
+
+  async function executePoolCorrection() {
+    if (!poolResultTarget || !poolResultWinner || !poolResultMatch) return;
+    setShowPoolCorrectionPreview(false);
+    setSubmittingPoolResult(true);
+
+    const { data, error } = await supabase.rpc("correct_pool_result", {
+      p_pool_id: poolResultTarget.id, p_new_winner: poolResultWinner, p_performed_by: "bookkeeper",
+    });
+    if (error || (data && !data.success)) {
+      console.error("correct_pool_result failed:", error || data?.error);
+      setResultError("更正結果寫入失敗，請稍後再試");
+      setSubmittingPoolResult(false);
+      return;
+    }
+
+    // Re-persist pool settlement — upsert overwrites old rows
+    await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+
     setSubmittingPoolResult(false);
     setPoolResultTarget(null);
     setPoolResultMatch(null);
@@ -1748,6 +1874,31 @@ function MatchesContent() {
           match={poolCreateTarget}
           onClose={() => setPoolCreateTarget(null)}
           onCreated={() => fetchAll()}
+        />
+      )}
+
+      {/* Base match correction preview */}
+      {showCorrectionPreview && resultTarget && resultWinner && (
+        <CorrectionPreviewModal
+          matchId={resultTarget.id}
+          settlementContext="base"
+          oldWinner={resultTarget.result as "team_a" | "team_b"}
+          newWinner={resultWinner}
+          onCancel={() => setShowCorrectionPreview(false)}
+          onConfirm={executeMatchCorrection}
+        />
+      )}
+
+      {/* Pool correction preview */}
+      {showPoolCorrectionPreview && poolResultTarget && poolResultWinner && (
+        <CorrectionPreviewModal
+          matchId={poolResultTarget.match_id}
+          settlementContext="sporadic_pool"
+          sporadicPoolId={poolResultTarget.id}
+          oldWinner={poolResultTarget.result as "team_a" | "team_b"}
+          newWinner={poolResultWinner}
+          onCancel={() => setShowPoolCorrectionPreview(false)}
+          onConfirm={executePoolCorrection}
         />
       )}
 

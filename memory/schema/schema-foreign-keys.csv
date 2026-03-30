@@ -5,6 +5,9 @@ bet_requests,member_id,members,id
 bets,sporadic_pool_id,sporadic_pools,id
 bets,match_id,matches,id
 bets,member_id,members,id
+match_settlements,match_id,matches,id
+match_settlements,member_id,members,id
+match_settlements,sporadic_pool_id,sporadic_pools,id
 match_team_player_shares,player_id,members,id
 match_team_player_shares,match_id,matches,id
 matches,team_b_player2_id,members,id

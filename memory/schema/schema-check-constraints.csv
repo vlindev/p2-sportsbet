@@ -93,3 +93,17 @@ sporadic_pools,sporadic_pools_handicap_type_check,"(handicap_type = ANY (ARRAY['
 sporadic_pools,sporadic_pools_handicap_team_check,"(handicap_team = ANY (ARRAY['A'::text, 'B'::text]))"
 sporadic_pools,sporadic_pools_capacity_zhi_check,(capacity_zhi >= 20)
 sporadic_pools,2200_22085_1_not_null,id IS NOT NULL
+match_settlements,match_settlements_settlement_context_check,"(settlement_context = ANY (ARRAY['base'::text, 'sporadic_pool'::text]))"
+match_settlements,pool_context_requires_pool_id,"(((settlement_context = 'base'::text) AND (sporadic_pool_id IS NULL)) OR ((settlement_context = 'sporadic_pool'::text) AND (sporadic_pool_id IS NOT NULL)))"
+match_settlements,match_settlements_id_not_null,id IS NOT NULL
+match_settlements,match_settlements_member_id_not_null,member_id IS NOT NULL
+match_settlements,match_settlements_match_id_not_null,match_id IS NOT NULL
+match_settlements,match_settlements_settlement_context_not_null,settlement_context IS NOT NULL
+match_settlements,match_settlements_settlement_date_not_null,settlement_date IS NOT NULL
+match_settlements,match_settlements_gross_liang_not_null,gross_liang IS NOT NULL
+match_settlements,match_settlements_rake_liang_not_null,rake_liang IS NOT NULL
+match_settlements,match_settlements_provider_fee_liang_not_null,provider_fee_liang IS NOT NULL
+match_settlements,match_settlements_net_liang_not_null,net_liang IS NOT NULL
+match_settlements,match_settlements_created_at_not_null,created_at IS NOT NULL
+match_settlements,match_settlements_updated_at_not_null,updated_at IS NOT NULL
+settlements,settlements_provider_fee_liang_not_null,provider_fee_liang IS NOT NULL

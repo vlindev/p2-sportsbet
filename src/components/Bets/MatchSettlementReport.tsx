@@ -5,10 +5,10 @@ import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { calculateMatchPayout } from "@/lib/settlement";
+import { calculateMatchPayout, liangToNtd } from "@/lib/settlement";
 import type { CompletedMatch, BillingConfig, MemberMatchDetail } from "@/lib/settlement";
 import type { Match, Bet, SporadicPool, MatchTeamPlayerShare } from "@/types";
-import { toBillingConfig, toActiveBets, toPlayerShares, groupBy, sharesValid } from "./settlement-helpers";
+import { toBillingConfig, toActiveBets, toPlayerShares, groupBy, sharesValid } from "@/lib/settlement-helpers";
 import MatchTabBar from "./MatchTabBar";
 import MatchHeader from "./MatchHeader";
 import ShareRatioEditor from "./ShareRatioEditor";
@@ -18,6 +18,42 @@ import SettlementSummary from "./SettlementSummary";
 
 type Props = { matchId: string; backUrl: string; backLabel?: string };
 type Member = { id: string; name: string };
+
+type MatchSettlementRow = {
+  id: string;
+  member_id: string;
+  match_id: string;
+  settlement_context: "base" | "sporadic_pool";
+  sporadic_pool_id: string | null;
+  settlement_date: string;
+  gross_liang: number;
+  rake_liang: number;
+  provider_fee_liang: number;
+  net_liang: number;
+  detail_jsonb: MemberMatchDetail | null;
+};
+
+/** Convert a DB settlement row to MemberMatchDetail for SettlementSection.
+ *  Reads from detail_jsonb (NTD) if available, otherwise derives from canonical columns. */
+function rowToDetail(row: MatchSettlementRow, matchId: string): MemberMatchDetail {
+  if (row.detail_jsonb) return row.detail_jsonb;
+  // Fallback: derive from canonical columns (less detail, but functional)
+  const netNtd = liangToNtd(row.net_liang);
+  const rakeNtd = liangToNtd(row.rake_liang);
+  const grossGainNtd = liangToNtd(row.gross_liang);
+  const providerFeeNtd = liangToNtd(row.provider_fee_liang);
+  return {
+    memberId: row.member_id,
+    matchId,
+    betGainNtd: 0, betLossNtd: 0,
+    flow1IncomeNtd: 0, flow2LiabilityNtd: 0,
+    grossGainNtd, grossLossNtd: grossGainNtd - netNtd - rakeNtd - providerFeeNtd,
+    netGainNtd: netNtd + rakeNtd + providerFeeNtd,
+    rakeNtd, providerFeeNtd,
+    providerFeeReason: providerFeeNtd > 0 ? "standard" : "none",
+    finalNetNtd: netNtd,
+  };
+}
 
 export default function MatchSettlementReport({ matchId, backUrl, backLabel }: Props) {
   const router = useRouter();
@@ -30,20 +66,24 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
   const [baseShares, setBaseShares] = useState<MatchTeamPlayerShare[]>([]);
   const [poolShares, setPoolShares] = useState<Record<string, MatchTeamPlayerShare[]>>({});
   const [billingConfig, setBillingConfig] = useState<BillingConfig | null>(null);
+  const [settlementRows, setSettlementRows] = useState<MatchSettlementRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [billingError, setBillingError] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState<"base" | string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     setBillingError(false);
-    const [matchRes, betsRes, membersRes, sharesRes, billingRes] = await Promise.all([
+    setShowDiagnostic(null);
+    const [matchRes, betsRes, membersRes, sharesRes, billingRes, settlementRes] = await Promise.all([
       supabase.from("matches").select("*").eq("id", matchId).single(),
       supabase.from("bets").select("*").eq("match_id", matchId).eq("status", "active").order("team_bet_on").order("created_at"),
       supabase.from("members").select("id, name"),
       supabase.from("match_team_player_shares").select("*").eq("match_id", matchId),
       supabase.from("club_billing_config").select("*").limit(1).single(),
+      supabase.from("match_settlements").select("*").eq("match_id", matchId),
     ]);
 
     if (matchRes.error) { setFetchError("找不到此賽事"); setLoading(false); return; }
@@ -65,6 +105,7 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
     setPoolShares(groupBy(allShares.filter(s => s.context === "sporadic_pool"), s => s.sporadic_pool_id));
 
     if (!billingRes.error && billingRes.data) setBillingConfig(toBillingConfig(billingRes.data));
+    setSettlementRows((settlementRes.data || []) as MatchSettlementRow[]);
 
     const [sibRes, poolRes] = await Promise.all([
       supabase.from("matches").select("*").eq("date", m.date).neq("status", "cancelled").order("start_time"),
@@ -96,33 +137,54 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
 
   const baseSharesOk = sharesValid(baseShares);
 
-  // Compute base settlement
-  let baseSettlement: MemberMatchDetail[] | null = null;
-  if (hasResult && billingConfig && baseSharesOk) {
+  // Read base settlement from DB
+  const baseSettlementRows = settlementRows.filter(r => r.settlement_context === "base");
+  const baseSettlement: MemberMatchDetail[] | null =
+    hasResult && baseSettlementRows.length > 0
+      ? baseSettlementRows.map(r => rowToDetail(r, match.id))
+      : null;
+  const baseSettlementMissing = hasResult && baseSettlementRows.length === 0;
+
+  // Diagnostic preview: calculate client-side on demand
+  let diagnosticBaseSettlement: MemberMatchDetail[] | null = null;
+  if (showDiagnostic === "base" && billingConfig && baseSharesOk) {
     const cm: CompletedMatch = {
       matchId: match.id, result: match.result as "team_a" | "team_b",
       teamAPlayer1Id: pIds.a1, teamAPlayer2Id: pIds.a2, teamBPlayer1Id: pIds.b1, teamBPlayer2Id: pIds.b2,
     };
-    baseSettlement = calculateMatchPayout(cm, toActiveBets(baseBets), toPlayerShares(baseShares), billingConfig, match.date);
+    diagnosticBaseSettlement = calculateMatchPayout(cm, toActiveBets(baseBets), toPlayerShares(baseShares), billingConfig, match.date);
   }
 
-  // Compute pool settlements
+  // Read pool settlements from DB
   const poolSettlements: Record<string, MemberMatchDetail[] | null> = {};
+  const poolSettlementMissing: Record<string, boolean> = {};
+  const diagnosticPoolSettlements: Record<string, MemberMatchDetail[] | null> = {};
+
   for (const pool of pools) {
-    const pShares = poolShares[pool.id] || [];
-    if ((pool.result === "team_a" || pool.result === "team_b") && billingConfig && sharesValid(pShares)) {
-      const poolAsMatch: CompletedMatch = {
-        matchId: pool.id, result: pool.result as "team_a" | "team_b",
-        teamAPlayer1Id: pIds.a1, teamAPlayer2Id: pIds.a2, teamBPlayer1Id: pIds.b1, teamBPlayer2Id: pIds.b2,
-      };
-      const pBets = poolBets[pool.id] || [];
-      poolSettlements[pool.id] = calculateMatchPayout(poolAsMatch, toActiveBets(pBets), toPlayerShares(pShares), billingConfig, match.date);
+    const poolHasResult = pool.result === "team_a" || pool.result === "team_b";
+    const poolRows = settlementRows.filter(r => r.settlement_context === "sporadic_pool" && r.sporadic_pool_id === pool.id);
+
+    if (poolHasResult && poolRows.length > 0) {
+      poolSettlements[pool.id] = poolRows.map(r => rowToDetail(r, pool.id));
     } else {
       poolSettlements[pool.id] = null;
     }
+    poolSettlementMissing[pool.id] = poolHasResult && poolRows.length === 0;
+
+    // Diagnostic preview for this pool
+    if (showDiagnostic === pool.id && billingConfig) {
+      const pShares = poolShares[pool.id] || [];
+      if (poolHasResult && sharesValid(pShares)) {
+        const poolAsMatch: CompletedMatch = {
+          matchId: pool.id, result: pool.result as "team_a" | "team_b",
+          teamAPlayer1Id: pIds.a1, teamAPlayer2Id: pIds.a2, teamBPlayer1Id: pIds.b1, teamBPlayer2Id: pIds.b2,
+        };
+        diagnosticPoolSettlements[pool.id] = calculateMatchPayout(poolAsMatch, toActiveBets(poolBets[pool.id] || []), toPlayerShares(pShares), billingConfig, match.date);
+      }
+    }
   }
 
-  // Summary sections
+  // Summary sections — use DB settlements
   const summarySections = [
     { label: hasPools ? "基本盤" : "總計", bets: baseBets, settlements: baseSettlement },
     ...pools.map((pool, i) => ({
@@ -171,9 +233,35 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
         </div>
       )}
 
-      <SettlementSection label={hasPools ? "基本盤" : "投注明細"} bets={baseBets} settlements={baseSettlement}
-        memberMap={memberMap} winningTeam={winningTeam} playerIds={pIds}
-        shares={toPlayerShares(baseShares)} />
+      {/* Base settlement: failure state if rows missing */}
+      {baseSettlementMissing && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 my-4">
+          <p className="font-medium mb-1">結算資料尚未生成</p>
+          <button onClick={() => setShowDiagnostic(showDiagnostic === "base" ? null : "base")}
+            className="text-xs text-amber-600 underline underline-offset-2 cursor-pointer hover:text-amber-800">
+            {showDiagnostic === "base" ? "隱藏預覽" : "預覽計算結果"}
+          </button>
+        </div>
+      )}
+
+      {/* Diagnostic preview for base — clearly labelled */}
+      {showDiagnostic === "base" && diagnosticBaseSettlement && (
+        <>
+          <div className="bg-amber-100/50 border border-dashed border-amber-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-medium mb-2 text-center">
+            未確認預覽 — 僅供診斷參考，非正式結算
+          </div>
+          <SettlementSection label={hasPools ? "基本盤" : "投注明細"} bets={baseBets} settlements={diagnosticBaseSettlement}
+            memberMap={memberMap} winningTeam={winningTeam} playerIds={pIds}
+            shares={toPlayerShares(baseShares)} />
+        </>
+      )}
+
+      {/* Normal base settlement from DB */}
+      {!baseSettlementMissing && (
+        <SettlementSection label={hasPools ? "基本盤" : "投注明細"} bets={baseBets} settlements={baseSettlement}
+          memberMap={memberMap} winningTeam={winningTeam} playerIds={pIds}
+          shares={toPlayerShares(baseShares)} />
+      )}
 
       {!hasResult && (
         <div className="text-center text-sm text-slate-500 py-6 mt-4 mb-8 bg-slate-100 rounded-xl border border-slate-200">
@@ -183,13 +271,43 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
 
       {pools.map((pool, i) => {
         const poolWinner: "A" | "B" | null = pool.result === "team_a" ? "A" : pool.result === "team_b" ? "B" : null;
+        const poolMissing = poolSettlementMissing[pool.id];
+        const diagnosticPool = diagnosticPoolSettlements[pool.id] || null;
         return (
           <div key={pool.id}>
             <PoolReportHeader poolIndex={i} pool={pool} />
-            <SettlementSection label={`加強盤 #${i + 1}`} bets={poolBets[pool.id] || []}
-              settlements={poolSettlements[pool.id]} memberMap={memberMap} winningTeam={poolWinner}
-              playerIds={pIds} shares={toPlayerShares(poolShares[pool.id] || [])}
-              isPool openedByTeam={pool.opened_by_team} />
+
+            {/* Pool settlement: failure state if rows missing */}
+            {poolMissing && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 my-4">
+                <p className="font-medium mb-1">結算資料尚未生成</p>
+                <button onClick={() => setShowDiagnostic(showDiagnostic === pool.id ? null : pool.id)}
+                  className="text-xs text-amber-600 underline underline-offset-2 cursor-pointer hover:text-amber-800">
+                  {showDiagnostic === pool.id ? "隱藏預覽" : "預覽計算結果"}
+                </button>
+              </div>
+            )}
+
+            {/* Diagnostic preview for pool */}
+            {showDiagnostic === pool.id && diagnosticPool && (
+              <>
+                <div className="bg-amber-100/50 border border-dashed border-amber-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-medium mb-2 text-center">
+                  未確認預覽 — 僅供診斷參考，非正式結算
+                </div>
+                <SettlementSection label={`加強盤 #${i + 1}`} bets={poolBets[pool.id] || []}
+                  settlements={diagnosticPool} memberMap={memberMap} winningTeam={poolWinner}
+                  playerIds={pIds} shares={toPlayerShares(poolShares[pool.id] || [])}
+                  isPool openedByTeam={pool.opened_by_team} />
+              </>
+            )}
+
+            {/* Normal pool settlement from DB */}
+            {!poolMissing && (
+              <SettlementSection label={`加強盤 #${i + 1}`} bets={poolBets[pool.id] || []}
+                settlements={poolSettlements[pool.id]} memberMap={memberMap} winningTeam={poolWinner}
+                playerIds={pIds} shares={toPlayerShares(poolShares[pool.id] || [])}
+                isPool openedByTeam={pool.opened_by_team} />
+            )}
           </div>
         );
       })}

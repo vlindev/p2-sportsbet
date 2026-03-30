@@ -42,6 +42,19 @@ club_billing_config,provider_rate_bps,integer,NO,100
 club_billing_config,free_period_months,integer,NO,3
 club_billing_config,contract_start_date,date,NO,null
 club_billing_config,billing_enabled,boolean,NO,true
+match_settlements,id,uuid,NO,gen_random_uuid()
+match_settlements,match_id,uuid,NO,null
+match_settlements,member_id,uuid,NO,null
+match_settlements,sporadic_pool_id,uuid,YES,null
+match_settlements,settlement_context,text,NO,null
+match_settlements,gross_liang,integer,NO,null
+match_settlements,rake_liang,integer,NO,null
+match_settlements,provider_fee_liang,integer,NO,0
+match_settlements,net_liang,integer,NO,null
+match_settlements,detail_jsonb,jsonb,YES,null
+match_settlements,settlement_date,date,NO,null
+match_settlements,created_at,timestamp with time zone,NO,now()
+match_settlements,updated_at,timestamp with time zone,NO,now()
 match_team_player_shares,id,uuid,NO,gen_random_uuid()
 match_team_player_shares,match_id,uuid,NO,null
 match_team_player_shares,match_side,text,NO,null
@@ -68,6 +81,19 @@ matches,created_at,timestamp with time zone,YES,now()
 matches,name,text,YES,null
 matches,start_time,text,YES,null
 matches,bet_config,text,NO,'standard'::text
+match_settlements,id,uuid,NO,gen_random_uuid()
+match_settlements,member_id,uuid,NO,null
+match_settlements,match_id,uuid,NO,null
+match_settlements,settlement_context,text,NO,null
+match_settlements,sporadic_pool_id,uuid,YES,null
+match_settlements,settlement_date,date,NO,null
+match_settlements,gross_liang,integer,NO,null
+match_settlements,rake_liang,integer,NO,null
+match_settlements,provider_fee_liang,integer,NO,0
+match_settlements,net_liang,integer,NO,null
+match_settlements,detail_jsonb,jsonb,YES,null
+match_settlements,created_at,timestamp with time zone,NO,now()
+match_settlements,updated_at,timestamp with time zone,NO,now()
 members,id,uuid,NO,gen_random_uuid()
 members,name,text,NO,null
 members,phone,text,YES,null
@@ -84,6 +110,7 @@ settlements,net_liang,integer,YES,0
 settlements,status,text,YES,'pending'::text
 settlements,settled_date,date,YES,null
 settlements,created_at,timestamp with time zone,YES,now()
+settlements,provider_fee_liang,integer,NO,0
 sporadic_pools,id,uuid,NO,gen_random_uuid()
 sporadic_pools,match_id,uuid,NO,null
 sporadic_pools,opened_by_team,text,NO,null
