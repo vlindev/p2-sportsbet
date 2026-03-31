@@ -94,12 +94,12 @@
 
 ## Error States
 
-### #11 ⬜ Console errors on settlement persist failure
+### #11 ✅ Console errors on settlement persist failure
 **Action:** Observe the browser console during #1 (result submission).
 **Expected:** No errors logged. No "Settlement persist failed" or "Settlement data fetch failed" messages.
 **Check:** If any such messages appear, note the full error text.
 
-### #12 ⬜ Billing config missing
+### #12 ✅ Billing config missing
 **Action:** In Supabase → club_billing_config, temporarily delete the single row. Submit a match result on a match with bets.
 **Expected:** Result RPC succeeds (match gets its result). Settlement does NOT persist. Console shows: "Settlement data fetch failed — settlement not persisted". Report page shows the amber "結算資料尚未生成" banner.
 **Check:** Restore the billing config row after testing. Verify match still has its result (the RPC is independent of settlement persistence).
@@ -108,17 +108,17 @@
 
 ## Correction Flow
 
-### #13 ⬜ Correct a base match result (with existing settlement)
+### #13 ✅ Correct a base match result (with existing settlement)
 **Action:** Go to 已完成 tab. Find a match that has match_settlements rows. Click the pencil (correct result). Select the opposite team. A correction preview modal should appear.
 **Expected:** Modal title: "更正結果確認". Shows old winner crossed out → new winner. Amber warning: "此場次已有確認結算。修改勝負將重新計算所有相關結算資料。" List of affected members with their current net_liang values.
 **Check:** Member count matches the number of match_settlements rows for this match. Members sorted by absolute net_liang (largest impact first).
 
-### #14 ⬜ Confirm correction — settlement re-persisted
+### #14 ✅ Confirm correction — settlement re-persisted
 **Action:** Click "確認修改" in the modal from #13.
 **Expected:** Modal closes. Card updates to show new winner.
 **Check:** In Supabase → match_settlements, filter by this match_id. Rows now reflect the NEW result (winners/losers flipped). updated_at timestamps are fresh (just now). detail_jsonb reflects the new calculation. Monthly settlements table also re-aggregated.
 
-### #15 ⬜ Correct a result when NO settlement rows exist
+### #15 ✅ Correct a result when NO settlement rows exist
 **Action:** Delete the match_settlements rows for a completed match (Supabase). Then attempt to correct that match's result via pencil icon.
 **Expected:** CorrectionPreviewModal auto-skips (no modal appears). Correction proceeds directly — RPC runs, new settlement rows created.
 **Check:** match_settlements rows now exist with the corrected result. No console errors.
@@ -127,17 +127,18 @@
 
 ## Pool Settlement
 
-### #16 ⬜ Submit sporadic pool result
+### #16 🚫 Submit sporadic pool result — BLOCKED (pre-existing bug: no UI to enter pool result on completed match)
+**Bug:** `poolCanEnterResult` requires `match.status === "active"`, but completed matches hide the button. Pools with pending results on completed matches have no entry point. Logged for fix list.
 **Action:** Find a TEST match that has a sporadic pool with bets. On the matches page, click the pool's result entry. Select a winner. Confirm.
 **Expected:** Pool result saves. Settlement rows created in match_settlements.
 **Check:** In Supabase → match_settlements, filter by match_id + settlement_context = 'sporadic_pool'. sporadic_pool_id matches the pool's UUID. settlement_date = parent match's date. detail_jsonb populated. Values non-zero. Monthly settlements re-aggregated (member totals now include pool settlement).
 
-### #17 ⬜ Pool correction with existing settlement
+### #17 🚫 Pool correction with existing settlement — BLOCKED (depends on #16)
 **Action:** Correct the pool result from #16 to the opposite team.
 **Expected:** CorrectionPreviewModal appears with pool context (settlement_context = 'sporadic_pool', shows pool's affected members). After confirming, match_settlements rows overwritten with new calculation.
 **Check:** Same verifications as #14 but for pool rows. Monthly settlements re-aggregated.
 
-### #18 ⬜ Report shows pool settlements from DB
+### #18 🚫 Report shows pool settlements from DB — BLOCKED (depends on #16)
 **Action:** Navigate to the report page for the match with the settled pool.
 **Expected:** Base settlement section renders (from DB). Pool section renders below it (from DB). Each has its own settlement data.
 **Check:** Pool section header visible. Pool settlement values match match_settlements rows for that sporadic_pool_id.
@@ -146,7 +147,10 @@
 
 ## End-to-End Workflow
 
-### #19 ⬜ Complete bookkeeper workflow: result → report → correction → verify
+### #19 ✅ Complete bookkeeper workflow: result → report → correction → verify
+**UX issues found (not data bugs):**
+1. **C/D vs A/B labels** — matches page shows C/D for same-day multi-match, report always shows A/B. Same players, confusing mismatch.
+2. **Correction preview shows CURRENT values, not projected** — modal says "受影響會員" with pre-correction settlements. User reads as post-correction values. Needs clearer labeling or show projected values.
 **Action:**
 (a) Find a TEST match with bets (scheduled or betting_closed). Submit result (A隊勝).
 (b) Navigate to the report page for that match. Verify settlement renders.
