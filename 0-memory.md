@@ -158,6 +158,7 @@ This is a kind reminder of where we are — not a detailed plan. Each step has i
 11. P12 — Overdue count reliability. R23.7 violation, design decision required (3 options)
 12. Step 3b-lite — capacity enforcement + pending bet UI, bookkeeper override removal
 13. P3c — Auto-placement rewire to RPC. Last direct-insert bet creation path
+14. Revisit/rewrite `~/.claude/CLAUDE.md` (user-driven, not Claude)
 
 #### Standalone Design Tasks (pre-Step 6, gap-filled from S55)
 - **Bets page default landing** ✓ — S60 implementation, S61 visual match confirmed.
