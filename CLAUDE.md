@@ -43,6 +43,7 @@ All project memory files and when to load them. When a topic comes up mid-sessio
 | Items tracked for Step 3b (concurrency) | `plan-track-for-3b.md` | project/memory |
 | Items deferred to Phase 2+ | `plan-defer-phase2.md` | project/memory |
 | Items deferred from execution plan (Step 7 guard, R24.4) | `plan-deferred.md` | project/memory |
+| P7 settlement bug fixes — pool eligibility, correction path, team labels, scope analysis | `plan-P7-bug-fixes.md` | project/memory |
 
 ### Memory File Naming Convention
 
@@ -142,29 +143,6 @@ Load the relevant cluster file(s) BEFORE proceeding whenever ANY of the followin
 **Rule:** If in doubt, load more. The cost of one read is far less than the cost of building against stale rules.
 
 ---
-
-## ⚠️ Next Session — Discuss Before Building
-
-### S73 Revert: Sporadic Pool Fixes Need Holistic Redesign
-
-S73 ran blastcheck on sporadic pool drift, found 8 issues, attempted fixes, and reverted all code. The critical problem: the matches page grouping logic (overdue/today/thisWeek/etc.) uses separate source arrays per section. Adding new match categories (e.g., completed-with-pending-pools) creates invisible matches because they don't fit any existing group.
-
-**Before writing any sporadic pool code, design the grouping logic first:**
-- Single source (`currentMatches`) for all groups — every match appears in exactly one group
-- Overdue = all past-date matches needing action (not just active)
-- Today = `date === today` (strict)
-- Future = by week range
-- Status determines card appearance, date determines card placement
-
-**Then reapply the verified fixes (1–6) as a unit.** Full details + reference code at `archive/s73-reverted/README-s73-revert.md`.
-
-### Previous Items (S67–72)
-
-1. ~~**Edit mode UX redesign**~~ ✓ (S69)
-2. ~~**uieval on bets entry page**~~ ✓ (S72)
-3. **Post-自動派注 workflow** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism — discuss.
-4. **Sporadic pool edit mode** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
-5. ~~**PoolBetSection + ShareRatioEditor visual check**~~ — S73 blastcheck assessed. User said it looks fine. Other pool issues supersede.
 
 ---
 

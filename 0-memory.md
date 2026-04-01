@@ -43,7 +43,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 
 ## What's Built (as of S81)
 ⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 resolved (sporadic_pool_id IS NULL fix). **Priority 3 done (S78)** — `place_bet` RPC deployed, all 4 new-bet creation paths rewired (paths 1+2 in S78, quickPick+bulkBuy in S79), R5.4 client fix applied, 18/18 functional tests pass. **Priority 3b done (S79)** — `edit_bet` RPC deployed, adjustAmount+swapTeam rewired to atomic RPC, R13.3 invariant enforced, bulkReduce R13.3 drift fixed. Priority 4 done (S76). Priority 5 done (S76). `BetEntryView.tsx` deleted S76. **Priority 6 done (S80)** — `match_settlements` table created (schema migration). **Priority 7 done (S80)** — settlement write path: `persistMatchSettlement`/`persistPoolSettlement` auto-persist after result RPCs, `MatchSettlementReport.tsx` reads from DB (single source of truth), `CorrectionPreviewModal` for result corrections, monthly `settlements` table auto-aggregated.
-- **8 Supabase RPCs:** submit/correct_match_result, submit/correct_pool_result, cancel_match, replace_match_player, place_bet, edit_bet. References: `memory/rpcs/`.
+- **8 Supabase RPCs:** submit/correct_match_result, submit/correct_pool_result, cancel_match, replace_match_player, place_bet, edit_bet. Plus `rls_auto_enable` utility. References: `memory/rpcs/` (9 files).
 - Supabase connected, 10 tables with RLS (members, matches, bets, settlements, match_settlements, match_team_player_shares, club_billing_config, audit_log, sporadic_pools, bet_requests)
 - RLS: permissive allow_all policies — replace with auth.role()='authenticated' when auth is built
 - Sidebar + MobileNav + OverdueCountContext: see `src/components/`. `src/types.ts`: all shared types/constants. `Record<Match["match_type"], string>` pattern enforces exhaustiveness.
@@ -62,7 +62,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - **Landing page** (`/bets` default) — `src/components/BetsLanding/` (9 files). Match list tab + member lookup tab. Shared actions in `src/lib/betting-actions.ts`.
 - **Per-match report** (`/bets?match=id&from=completed`) — `MatchSettlementReport.tsx` + settlement components. Pool sections inline.
 - **Status-based routing**: scheduled/betting_closed → entry, completed/active/cancelled → report.
-- Components: `src/components/Bets/` (15 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
+- Components: `src/components/Bets/` (13 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
 - **S72: MatchHeader redesigned** — hero matchup layout (player names biggest, directional handicap →/←, 3-zone card). 選手佔成 merged into MatchHeader footer (one-line display, inline input edit). All confirmation modals redesigned (match name in summary card, imbalance badge, member preview, zero-state handling). Edit toast → grouped summary. Player divider between self-bets and regular bets.
 
 ### `/matches` page — complete
@@ -142,16 +142,31 @@ Transform the internal tool into a sellable product for other golf clubs. Introd
 ### Next (Execution Plan Steps)
 - **Step 4+5: Bookkeeper Bet Entry + Match Enhancements + Per-Match Report** ✓ (Sessions 33–55) — All 6 unified items (#4 share editing, #5 sporadic pools, #6 report rewrite, 4A–4E base features). 17 fix-now items implemented (S53). Functional testing complete: 14/14 tests pass + 5 code-review confirmed (S54–55). Export buttons placeholder only. 4G (小盤) = built but hidden. S55: 投注明細 hidden when match has result (redundant with 結算明細).
 
-#### ⬛ Standalone Design Tasks (pre-Step 6, gap-filled from S55)
-These are NOT part of any execution plan step. They emerged from the S55 page responsibilities discussion as work the plan didn't originally account for. Must be completed before Step 6.
-- **Bets page default landing** ✓ — match list tab + member lookup tab. Architecture locked (S55), information requirements confirmed (S57), **mockup v7 approved (S59)** at `3-mockup-HTML/Mockup-Bets-Landing.html`. **S60: Implementation complete (SIP Step 6). S61: SIP Step 7 complete (user confirmed visual match). 9 files in `src/components/BetsLanding/`, shared `src/lib/betting-actions.ts`. Back navigation fixed (from=bets → 返回投注).**
-- **Match card redesign** ✓ (S62–63) — footer 3-item spread, Option C labels, horizontal player names, date/time combined, pool child cards (fuchsia outline, collapsible via tag, hover stack animation), 封盤 removed from matches page, 輸入結果 hidden on scheduled/betting_closed, B隊開盤 prominent badge, bigger tap targets, card-wide click removed. `items-start` on grids.
-- **Bets entry/report UI optimization** 🔄 (S63–73) — Full UX/UI evaluation → mockup v5 (S65) → implementation (S66) → visual/functional fixes (S67–68) → edit mode redesign (S69) → **S72: UIEval on 5 screenshots → MatchHeader hero rewrite (Option C) + 選手佔成 merged into footer + all modal fixes + typoaudit. Full decision log: `memory/design-bets-entry-report-redesign.md`. S73: blastcheck run found 8 needs-update items on sporadic pools. Attempted 8 fixes — fixes 1–6 individually correct, fixes 7–8 (grouping logic) failed reactively. All code reverted to S72 state. Reference code + full documentation at `archive/s73-reverted/`. Next session: redesign grouping logic holistically, then reapply fixes as a unit.**
-- **Member profile/history view (Step 9b design)** — expand `/members` from roster CRUD to member reference tool. Bet history, settlement history, running balance. Historical member questions route here, not to bets page. **Needs: discussion → mockup → approval.** Implementation can wait until Step 9b in the plan sequence.
+#### Roadmap — Current Priority Sequence (S82)
+This is a kind reminder of where we are — not a detailed plan. Each step has its own plan file or will get one at design time. Steps 1–2 are a prerequisite gate: if tests #16–18 fail after Fix 1, or correction regression tests fail after Fix 2, do not proceed to Fix 3.
+
+1. Execute Fixes 1+2+5 — mechanical, zero design ambiguity. Plan: `memory/plan-P7-bug-fixes.md`
+2. Validate — re-run existing testplan #1–19 (`memory/testplan-P7-settlement-write-path.md`)
+3. Design Fix 3 — correction preview with projected values (~1 session)
+4. Implement Fix 3
+5. Test Fix 3
+6. Design Fix 4 — team label consistency, sort rule decision + prop threading (~1–2 sessions)
+7. Implement Fix 4
+8. Test Fix 4
+9. Combined validation pass — re-run Fix 3 + Fix 4 test scenarios together
+10. S73 sporadic pool grouping redesign — holistic grouping logic before reapplying fixes
+11. P12 — Overdue count reliability. R23.7 violation, design decision required (3 options)
+12. Step 3b-lite — capacity enforcement + pending bet UI, bookkeeper override removal
+13. P3c — Auto-placement rewire to RPC. Last direct-insert bet creation path
+
+#### Standalone Design Tasks (pre-Step 6, gap-filled from S55)
+- **Bets page default landing** ✓ — S60 implementation, S61 visual match confirmed.
+- **Match card redesign** ✓ (S62–63)
+- **Bets entry/report UI optimization** 🔄 (S63–73) — S72 UIEval complete. S73 sporadic pool fixes reverted. Reference: `archive/s73-reverted/`. Resuming at roadmap step 10.
+- **Member profile/history view (Step 9b design)** — needs discussion → mockup → approval. Implementation at Step 9b.
 
 #### Execution Plan Steps (remaining)
-- **Step 3b-lite: Capacity Check + Pending Bet UI** — Split from Step 3b (S60). Enforce capacity limits on optional matches, pending/confirmed visual distinction, accept/reject flow. Current code skips capacity entirely — correctness issue, not just scaling. Does NOT need concurrency layer. Needs own session (discussion → plan → build).
-- **Step 6: Weekly Report (每週報表)** — `/reports` page. Per-member weekly summary, screenshot-friendly for LINE sharing, content per R22.5. Separate page, separate scope. Not started.
+- **Step 6: Weekly Report (每週報表)** — `/reports` page. Per-member weekly summary, screenshot-friendly for LINE sharing, content per R22.5. Not started.
 - **Step 7: Monthly Settlement (月度結算)** — auto-calculated, double-check audit, rake rounding
 - **Step 9: Auth + Member Read-Only View**
 - **Step 9b: Member Profile View on `/members`** — implementation of the design from the standalone task above. Not launch-blocking, ships Phase 1.
@@ -172,9 +187,12 @@ These are NOT part of any execution plan step. They emerged from the S55 page re
 - **Pool section UX improvements (S78)** — Two items from functional testing: (1) Pool title should show player names + full handicap info (currently only `B隊開盤 · A隊讓2洞`). (2) Pool bet deletion (X button) should have a confirmation modal ("確定要刪除？") to prevent accidental deletes. Both are UI enhancements, not bugs. Discuss design before building.
 - **Pool result entry hidden on completed matches (S81, critical)** — `poolCanEnterResult` requires `match.status === "active"` but `submit_pool_result` RPC allows both `active` and `completed`. Pending pools on completed matches have no UI entry point. One-line fix: change condition to also allow `completed`. Blocks pool settlement testing (#16-18).
 - **Stale state after result correction (S81)** — After correcting a match result, the match object in local state retains the OLD result. Card displays correctly (via `justCompleted` map), but clicking pencil again shows the previous winner as "目前記錄", 查看投注 disappears. Root cause: `executeMatchCorrection` doesn't call `fetchAll()` — inconsistent with `executePoolCorrection` which does. Workaround: refresh page.
-- **Correction preview shows current values, not projected (S81)** — `CorrectionPreviewModal` displays pre-correction `net_liang`. User misreads as post-correction outcomes. Needs clearer labeling or show projected values.
-- **C/D vs A/B team label mismatch (S81)** — Matches page uses `teamLabel()` (dynamic: A/B, C/D, E/F by same-day index). Report page + CorrectionPreviewModal hardcode A/B. Same match shows different team letters across pages.
+- **Correction preview must show projected values (S81→S82 decision)** — `CorrectionPreviewModal` displays pre-correction `net_liang` with no label. S82 decided: labeling the old numbers is throwaway work. Build Option A instead: modal fetches bets/shares/billing config, runs `calculateMatchPayout` (pure TS, already in `src/lib/settlement.ts`) with both old and new winner client-side, displays per-member before/after/delta. Must handle both base match and sporadic pool contexts. No server-side RPC needed — the settlement engine is already client-side. **Scope: ~1 session** (modify `CorrectionPreviewModal.tsx` to fetch settlement inputs + run engine + redesign member list with 3-column before/after/delta layout). Needs own design discussion for the delta display format. **Scoping question:** `calculateMatchPayout` needs bets, shares, and billing config. The modal currently only fetches `match_settlements` rows — it has no access to those inputs. Design session should start with whether to pass them as props or fetch inside the modal.
+- **C/D vs A/B team label mismatch (S81→S82 scope analysis)** — Matches page uses `teamLabel()` (status-based sort: active=0, scheduled=1, completed=2). Report page + 12 child components hardcode A/B. S82 found: the two pages use incompatible sort orders (status-priority vs start_time), and the blast radius is 13+ locations across 10 files (full inventory in `memory/plan-P7-bug-fixes.md` Fix 4 section). Partial fix is worse than current state (header says "C隊" but settlement columns say "A隊" on the same page). **Scope: ~1–2 sessions.** Requires: (1) design decision on canonical sort rule (recommendation: start_time ascending, created_at tiebreaker — labels stay stable across status transitions), (2) create `getMatchDisplayLabels()` in `match-domain.ts`, (3) thread label pair as props through full component tree (10 files), (4) blastcheck after.
 - **Bet-exists guard on match/pool editing (S73)** — Neither regular match edit nor sporadic pool edit checks whether bets exist before allowing changes. Changing handicap, players, or opened_by_team with existing bets could invalidate those bets. Design the guard for both simultaneously — same logic applies to both.
+- **S73 sporadic pool grouping redesign** — S73 blastcheck found 8 issues, attempted fixes, reverted all code. Critical problem: matches page grouping logic uses separate source arrays per section — new match categories create invisible matches. Before writing any sporadic pool code, redesign grouping: single source (`currentMatches`) for all groups, overdue = all past-date needing action, today = strict date match, status determines appearance, date determines placement. Then reapply verified fixes (1–6) as a unit. Reference: `archive/s73-reverted/README-s73-revert.md`.
+- **Post-自動派注 workflow (S54)** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism.
+- **Sporadic pool edit mode (S67)** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
 
 ### End of Phase 1
 - Generate bookkeeper user guide — blocked by Steps 4–9

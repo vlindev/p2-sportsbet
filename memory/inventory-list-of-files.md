@@ -1,7 +1,7 @@
 # Project file inventory
 # Purpose: load this file before any cross-file task to identify candidate files before reading
 # This is a discovery tool only — do not read all listed files, use it to narrow the search space
-# Last updated: 2026-03-30
+# Last updated: 2026-04-01
 ./.claude/settings.json
 ./.claude/settings.local.json
 ./.env.local
@@ -36,10 +36,17 @@
 ./4-last-wraps/wrap-s77.md
 ./4-last-wraps/wrap-s78.md
 ./4-last-wraps/wrap-s79.md
+./4-last-wraps/wrap-s80.md
+./4-last-wraps/wrap-s81.md
 ./CLAUDE.md
 ./README.md
+./archive/0-memory-backup-2026-03.md
 ./archive/audit-backend-report-s52.md
 ./archive/audit-ui-report-s51.md
+./archive/migrations/006_match_settlements.sql
+./archive/migrations/007_settlement_detail.sql
+./archive/migrations/007b_match_settlements_upsert_key.sql
+./archive/migrations/007c_liang_columns_numeric.sql
 ./archive/plan-context-share-editing.md
 ./archive/plan-fix-now-part1.md
 ./archive/plan-fix-now-part2.md
@@ -57,7 +64,6 @@
 ./archive/step5-migration-plan.md
 ./archive/test-checklist-s53.md
 ./eslint.config.mjs
-./memory/0-memory-backup-2026-03.md
 ./memory/architecture-brief-full.md
 ./memory/architecture-brief.md
 ./memory/canonical-rules-index.md
@@ -68,9 +74,8 @@
 ./memory/design-page-responsibilities.md
 ./memory/design-place-bet-rpc.md
 ./memory/inventory-list-of-files.md
-./memory/migrations/006_match_settlements.sql
-./memory/migrations/007_settlement_detail.sql
 ./memory/phase3-club-onboarding.md
+./memory/plan-P7-bug-fixes.md
 ./memory/plan-defer-phase2.md
 ./memory/plan-deferred.md
 ./memory/plan-track-for-3b.md
@@ -97,6 +102,7 @@
 ./memory/schema/schema-check-constraints.csv
 ./memory/schema/schema-columns.csv
 ./memory/schema/schema-foreign-keys.csv
+./memory/testplan-P7-settlement-write-path.md
 ./next-env.d.ts
 ./next.config.ts
 ./package-lock.json
