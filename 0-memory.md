@@ -131,7 +131,7 @@ Transform the internal tool into a sellable product for other golf clubs. Introd
 - Rolling wraps: `/Users/veronicalin/Desktop/projects/p2.sportsbet/4-last-wraps/wrap-sXX.md` (XX = session number)
 
 ## Pre-Launch Execution Plan (MVP)
-⚠️ **Full plan:** `~/.claude/plans/ticklish-chasing-cocke.md` — finalized Session 28. Phase A (Mar 4–Apr 7, 13–19 sessions) → Blackout (Apr 8–26) → Phase B Polish (Apr 27–30) → Launch (May 4 presentation, May 11 go live) → Phase C post-launch. Visual roadmap: `3-mockup-HTML/Mockup-Execution-Roadmap.html`. Step 3 split into 3a (schema) / 3b (concurrency). Member read-only view ships at launch (Step 9). **Steps 4+5 fully tested (S55). Implementation plan: `memory/plan-*` files (6 files). Deferred: `plan-deferred.md` (Step 7 guard, R24.4).**
+⚠️ **Full plan:** `memory/plan-execution-mvp.md` — finalized Session 28. Phase A (Mar 4–Apr 7, 13–19 sessions) → Blackout (Apr 8–26) → Phase B Polish (Apr 27–30) → Launch (May 4 presentation, May 11 go live) → Phase C post-launch. Visual roadmap: `3-mockup-HTML/Mockup-Execution-Roadmap.html`. Step 3 split into 3a (schema) / 3b (concurrency). Member read-only view ships at launch (Step 9). **Steps 4+5 fully tested (S55). Implementation plan: `memory/plan-*` files (6 files). Deferred: `plan-deferred.md` (Step 7 guard, R24.4).**
 
 ## TODO
 ### Done ✓
