@@ -9,6 +9,7 @@ import { Match, SporadicPool, MATCH_TYPE_LABEL, MATCH_TYPE_STYLE } from "@/types
 import PoolCreationModal from "@/components/Matches/PoolCreationModal";
 import CorrectionPreviewModal from "@/components/CorrectionPreviewModal";
 import { persistMatchSettlement, persistPoolSettlement } from "@/lib/settlement-actions";
+import { canEnterPoolResult } from "@/lib/match-domain";
 import { toBillingConfig } from "@/lib/settlement-helpers";
 
 type Member = { id: string; name: string; active: boolean };
@@ -588,7 +589,6 @@ function MatchesContent() {
     setShowCorrectionPreview(false);
     setSubmittingResult(true);
     setResultError(null);
-    const completedId = resultTarget.id;
 
     const { data, error } = await supabase.rpc("correct_match_result", {
       p_match_id: resultTarget.id, p_new_winner: resultWinner, p_performed_by: "bookkeeper",
@@ -608,9 +608,9 @@ function MatchesContent() {
     // Re-persist settlement — upsert overwrites old rows
     await persistSettlementForMatch(resultTarget, resultWinner);
 
-    setJustCompleted((prev) => new Map(prev).set(completedId, resultWinner!));
     closeResultModal();
     setSubmittingResult(false);
+    await fetchAll();
   }
 
   async function confirmCancel() {
@@ -682,11 +682,27 @@ function MatchesContent() {
       await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
     }
 
+    // Check if this match has remaining pending pools
+    const matchId = poolResultTarget.match_id;
+    const siblingPools = pools.filter(p => p.match_id === matchId);
+    const remainingPending = siblingPools.filter(p =>
+      p.id !== poolResultTarget.id && p.result !== "team_a" && p.result !== "team_b"
+    );
+
     setSubmittingPoolResult(false);
     setPoolResultTarget(null);
     setPoolResultMatch(null);
     setPoolResultWinner(null);
-    await fetchAll();
+
+    if (remainingPending.length > 0) {
+      // More pools need results — update local state, card stays in place
+      setPools(prev => prev.map(p =>
+        p.id === poolResultTarget.id ? { ...p, result: poolResultWinner } : p
+      ));
+    } else {
+      // All pools resolved — full sync so card moves to completed
+      await fetchAll();
+    }
   }
 
   async function executePoolCorrection() {
@@ -707,6 +723,7 @@ function MatchesContent() {
     // Re-persist pool settlement — upsert overwrites old rows
     await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
 
+    // Corrections don't change pending/resolved count — full sync is safe
     setSubmittingPoolResult(false);
     setPoolResultTarget(null);
     setPoolResultMatch(null);
@@ -1005,8 +1022,7 @@ function MatchesContent() {
         <div className="border-l-[3px] border-fuchsia-400 ml-5 pl-4 mt-2 space-y-3">
           {mPools.map((pool, i) => {
             const poolResolved = pool.result === "team_a" || pool.result === "team_b";
-            const poolIsActive = match.status === "active";
-            const poolCanEnterResult = poolIsActive && !poolResolved;
+            const poolCanEnterResult = canEnterPoolResult(match.status, pool.result);
             return (
               <div key={pool.id}
                 className="bg-white rounded-xl border border-fuchsia-300 shadow-sm p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow"

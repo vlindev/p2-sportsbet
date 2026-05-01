@@ -222,6 +222,12 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
         />
       </MatchHeader>
 
+      {!hasResult && (
+        <div className="text-center text-sm text-slate-500 py-6 mt-4 mb-8 bg-slate-100 rounded-xl border border-slate-200">
+          比賽進行中，結算待結果輸入後計算
+        </div>
+      )}
+
       {hasResult && billingError && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-600 my-4 flex items-start gap-2">
           <span>⚠</span><span>無法載入費率設定，結算無法計算。請聯繫系統管理員</span>
@@ -261,12 +267,6 @@ export default function MatchSettlementReport({ matchId, backUrl, backLabel }: P
         <SettlementSection label={hasPools ? "基本盤" : "投注明細"} bets={baseBets} settlements={baseSettlement}
           memberMap={memberMap} winningTeam={winningTeam} playerIds={pIds}
           shares={toPlayerShares(baseShares)} />
-      )}
-
-      {!hasResult && (
-        <div className="text-center text-sm text-slate-500 py-6 mt-4 mb-8 bg-slate-100 rounded-xl border border-slate-200">
-          比賽進行中，結算待結果輸入後計算
-        </div>
       )}
 
       {pools.map((pool, i) => {
