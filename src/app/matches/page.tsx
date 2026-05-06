@@ -13,6 +13,7 @@ import { canEnterPoolResult } from "@/lib/match-domain";
 import { toBillingConfig } from "@/lib/settlement-helpers";
 
 type Member = { id: string; name: string; active: boolean };
+type SettlementPersistResult = { success: boolean; error?: string };
 
 type MatchForm = {
   name: string;
@@ -518,7 +519,7 @@ function MatchesContent() {
   }
 
   // Settlement persist helper — shared by new result and correction paths
-  async function persistSettlementForMatch(matchTarget: Match, winner: "team_a" | "team_b") {
+  async function persistSettlementForMatch(matchTarget: Match, winner: "team_a" | "team_b"): Promise<SettlementPersistResult> {
     const [betsRes, sharesRes, billingRes] = await Promise.all([
       supabase.from("bets").select("*").eq("match_id", matchTarget.id).eq("status", "active").is("sporadic_pool_id", null),
       supabase.from("match_team_player_shares").select("*").eq("match_id", matchTarget.id).eq("context", "base"),
@@ -540,8 +541,15 @@ function MatchesContent() {
         billingConfig: toBillingConfig(billingRes.data),
       });
       if (!result.success) console.error("Settlement persist failed:", result.error);
+      return result;
     } else {
-      console.error("Settlement data fetch failed — settlement not persisted");
+      const error = [
+        betsRes.error?.message,
+        sharesRes.error?.message,
+        billingRes.error?.message,
+      ].filter(Boolean).join(" | ");
+      console.error("Settlement data fetch failed — settlement not persisted", error);
+      return { success: false, error: error || "Settlement data fetch failed" };
     }
   }
 
@@ -575,8 +583,13 @@ function MatchesContent() {
       console.warn("submit_match_result: zero bets affected for match", resultTarget.id);
     }
 
-    // Persist settlement — non-blocking, result already committed
-    await persistSettlementForMatch(resultTarget, resultWinner);
+    // Result RPC is already committed; settlement persistence must still be surfaced if it fails.
+    const settlementResult = await persistSettlementForMatch(resultTarget, resultWinner);
+    if (!settlementResult.success) {
+      setResultError("結果已寫入，但結算資料生成失敗。請不要重複送出，請重新整理頁面確認狀態後聯繫系統管理員。");
+      setSubmittingResult(false);
+      return;
+    }
 
     // Inbox Zero: don't fetchAll or switch tabs. Card stays in place, transforms visually.
     setJustCompleted((prev) => new Map(prev).set(completedId, resultWinner!));
@@ -606,7 +619,12 @@ function MatchesContent() {
     }
 
     // Re-persist settlement — upsert overwrites old rows
-    await persistSettlementForMatch(resultTarget, resultWinner);
+    const settlementResult = await persistSettlementForMatch(resultTarget, resultWinner);
+    if (!settlementResult.success) {
+      setResultError("結果更正已寫入，但結算資料重新生成失敗。請不要重複送出，請重新整理頁面確認狀態後聯繫系統管理員。");
+      setSubmittingResult(false);
+      return;
+    }
 
     closeResultModal();
     setSubmittingResult(false);
@@ -635,7 +653,7 @@ function MatchesContent() {
   }
 
   // Pool settlement persist helper — shared by new result and correction paths
-  async function persistSettlementForPool(pool: SporadicPool, matchForPool: Match, winner: "team_a" | "team_b") {
+  async function persistSettlementForPool(pool: SporadicPool, matchForPool: Match, winner: "team_a" | "team_b"): Promise<SettlementPersistResult> {
     const [poolBetsRes, poolSharesRes, billingRes] = await Promise.all([
       supabase.from("bets").select("*").eq("sporadic_pool_id", pool.id).eq("status", "active"),
       supabase.from("match_team_player_shares").select("*").eq("match_id", matchForPool.id).eq("context", "sporadic_pool").eq("sporadic_pool_id", pool.id),
@@ -651,8 +669,15 @@ function MatchesContent() {
         poolResult: winner,
       });
       if (!result.success) console.error("Pool settlement persist failed:", result.error);
+      return result;
     } else {
-      console.error("Pool settlement data fetch failed — settlement not persisted");
+      const error = [
+        poolBetsRes.error?.message,
+        poolSharesRes.error?.message,
+        billingRes.error?.message,
+      ].filter(Boolean).join(" | ");
+      console.error("Pool settlement data fetch failed — settlement not persisted", error);
+      return { success: false, error: error || "Pool settlement data fetch failed" };
     }
   }
 
@@ -667,6 +692,7 @@ function MatchesContent() {
     }
 
     setSubmittingPoolResult(true);
+    setResultError(null);
     const { data, error } = await supabase.rpc("submit_pool_result", {
       p_pool_id: poolResultTarget.id, p_winner: poolResultWinner, p_performed_by: "bookkeeper",
     });
@@ -677,9 +703,14 @@ function MatchesContent() {
       return;
     }
 
-    // Persist pool settlement — non-blocking
+    // Pool result RPC is already committed; settlement persistence must still be surfaced if it fails.
     if (poolResultMatch) {
-      await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+      const settlementResult = await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+      if (!settlementResult.success) {
+        setResultError("加強盤結果已寫入，但結算資料生成失敗。請不要重複送出，請重新整理頁面確認狀態後聯繫系統管理員。");
+        setSubmittingPoolResult(false);
+        return;
+      }
     }
 
     // Check if this match has remaining pending pools
@@ -709,6 +740,7 @@ function MatchesContent() {
     if (!poolResultTarget || !poolResultWinner || !poolResultMatch) return;
     setShowPoolCorrectionPreview(false);
     setSubmittingPoolResult(true);
+    setResultError(null);
 
     const { data, error } = await supabase.rpc("correct_pool_result", {
       p_pool_id: poolResultTarget.id, p_new_winner: poolResultWinner, p_performed_by: "bookkeeper",
@@ -721,7 +753,12 @@ function MatchesContent() {
     }
 
     // Re-persist pool settlement — upsert overwrites old rows
-    await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+    const settlementResult = await persistSettlementForPool(poolResultTarget, poolResultMatch, poolResultWinner);
+    if (!settlementResult.success) {
+      setResultError("加強盤結果更正已寫入，但結算資料重新生成失敗。請不要重複送出，請重新整理頁面確認狀態後聯繫系統管理員。");
+      setSubmittingPoolResult(false);
+      return;
+    }
 
     // Corrections don't change pending/resolved count — full sync is safe
     setSubmittingPoolResult(false);

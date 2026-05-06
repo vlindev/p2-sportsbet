@@ -7,14 +7,56 @@
  * Covers testplan scenarios: #1-5, #7, #11-18 (data integrity).
  * Manual visual checks still needed: #9 (placeholder position), #4/#18 (report rendering).
  *
- * Usage: node test-p7-settlement.mjs
+ * Usage:
+ *   P2_TEST_SUPABASE_URL="https://<test-ref>.supabase.co" \
+ *   P2_TEST_SUPABASE_ANON_KEY="<test anon key>" \
+ *   P2_TEST_PROJECT_REF="<test-ref>" \
+ *   P2_ALLOW_DB_MUTATION="I_UNDERSTAND_THIS_MUTATES_TEST_DB" \
+ *   node test-p7-settlement.mjs
  */
 
 import { createClient } from "@supabase/supabase-js";
 
 // --- Config ---
-const SUPABASE_URL = "https://xbdtjzbygpsxsnxzqwpz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiZHRqemJ5Z3BzeHNueHpxd3B6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NTM4MzgsImV4cCI6MjA4NzQyOTgzOH0.ivzEEZCvSewuZUOgHZNepSg6VPPrtSwQ4C6_aw-HbeM";
+const MUTATION_CONFIRMATION = "I_UNDERSTAND_THIS_MUTATES_TEST_DB";
+const SUPABASE_URL = process.env.P2_TEST_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.P2_TEST_SUPABASE_ANON_KEY;
+const EXPECTED_PROJECT_REF = process.env.P2_TEST_PROJECT_REF;
+const ALLOW_DB_MUTATION = process.env.P2_ALLOW_DB_MUTATION;
+
+function projectRefFromUrl(url) {
+  try {
+    return new URL(url).hostname.split(".")[0];
+  } catch {
+    return null;
+  }
+}
+
+function requireSafeTestTarget() {
+  const missing = [];
+  if (!SUPABASE_URL) missing.push("P2_TEST_SUPABASE_URL");
+  if (!SUPABASE_ANON_KEY) missing.push("P2_TEST_SUPABASE_ANON_KEY");
+  if (!EXPECTED_PROJECT_REF) missing.push("P2_TEST_PROJECT_REF");
+  if (missing.length > 0) {
+    throw new Error(`Missing required env vars: ${missing.join(", ")}`);
+  }
+
+  const actualProjectRef = projectRefFromUrl(SUPABASE_URL);
+  if (!actualProjectRef || actualProjectRef !== EXPECTED_PROJECT_REF) {
+    throw new Error(
+      `Supabase project guard failed. URL ref "${actualProjectRef || "unknown"}" does not match P2_TEST_PROJECT_REF "${EXPECTED_PROJECT_REF}".`
+    );
+  }
+
+  if (ALLOW_DB_MUTATION !== MUTATION_CONFIRMATION) {
+    throw new Error(
+      `Refusing to mutate database. Set P2_ALLOW_DB_MUTATION="${MUTATION_CONFIRMATION}" only for a confirmed test/staging Supabase project.`
+    );
+  }
+}
+
+requireSafeTestTarget();
+const { calculateMatchPayout, ntdToLiang } = await import("./src/lib/settlement.ts");
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Test match IDs from test-data.sql
@@ -23,124 +65,6 @@ const MATCH4 = "22222222-0000-0000-0000-000000000004"; // active, optional, has 
 
 // Member IDs
 const M = (n) => `11111111-0000-0000-0000-0000000000${String(n).padStart(2, "0")}`;
-
-// --- Settlement calculation (inline, mirrors src/lib/settlement.ts) ---
-
-function floorDiv(a, b) { return Math.floor(a / b); }
-function roundHalfUp(a, b) { return Math.floor(a / b + 0.5); }
-function ntdToLiang(ntd) { return ntd / 1000; }
-const LIANG_TO_NTD = 1000;
-
-function calculateMatchPayout(match, bets, shares, billing, date) {
-  const winningSide = match.result === "team_a" ? "A" : "B";
-  const losingSide = winningSide === "A" ? "B" : "A";
-
-  // Player IDs per side
-  const playerIds = {
-    A: [match.teamAPlayer1Id, match.teamAPlayer2Id],
-    B: [match.teamBPlayer1Id, match.teamBPlayer2Id],
-  };
-
-  // Total bet amounts per side in NTD
-  const totalNtd = { A: 0, B: 0 };
-  for (const b of bets) totalNtd[b.teamBetOn] += b.amountLiang * LIANG_TO_NTD;
-
-  // Losing side total = pool that gets redistributed
-  const losingPool = totalNtd[losingSide];
-
-  // Per-member details
-  const memberMap = new Map();
-  const ensureMember = (id) => {
-    if (!memberMap.has(id)) {
-      memberMap.set(id, {
-        memberId: id, matchId: match.matchId, betAmountNtd: 0, betGainNtd: 0,
-        playerFlowNtd: 0, rakeNtd: 0, providerFeeNtd: 0, grossGainNtd: 0, finalNetNtd: 0,
-      });
-    }
-    return memberMap.get(id);
-  };
-
-  // Flow 1: Bet gains — winners split the losing pool proportionally
-  const winningBets = bets.filter(b => b.result === "win");
-  const winningTotal = winningBets.reduce((s, b) => s + b.amountLiang * LIANG_TO_NTD, 0);
-
-  for (const b of bets) {
-    const m = ensureMember(b.memberId);
-    const ntd = b.amountLiang * LIANG_TO_NTD;
-    m.betAmountNtd += ntd;
-    if (b.result === "win") {
-      m.betGainNtd += winningTotal > 0 ? floorDiv(ntd * losingPool, winningTotal) : 0;
-    } else {
-      m.betGainNtd -= ntd;
-    }
-  }
-
-  // Remainder distribution for bet gains
-  if (winningTotal > 0 && losingPool > 0) {
-    let distributed = 0;
-    for (const b of winningBets) {
-      const ntd = b.amountLiang * LIANG_TO_NTD;
-      distributed += floorDiv(ntd * losingPool, winningTotal);
-    }
-    let remainder = losingPool - distributed;
-    // Distribute remainder 1 NTD at a time to winners
-    const sortedWinners = [...winningBets].sort((a, b) => b.amountLiang - a.amountLiang);
-    let i = 0;
-    while (remainder > 0) {
-      const m = ensureMember(sortedWinners[i % sortedWinners.length].memberId);
-      m.betGainNtd += 1;
-      remainder -= 1;
-      i++;
-    }
-  }
-
-  // Flow 2: Player shares — players on each side share the other side's total
-  const winSharePlayers = shares.filter(s => s.matchSide === winningSide);
-  const loseSharePlayers = shares.filter(s => s.matchSide === losingSide);
-
-  // Winning side players receive from losing pool
-  for (const s of winSharePlayers) {
-    const m = ensureMember(s.playerId);
-    m.playerFlowNtd += floorDiv(losingPool * s.shareBps, 10000);
-  }
-  // Losing side players pay from winning pool (= losing side total since 1:1)
-  for (const s of loseSharePlayers) {
-    const m = ensureMember(s.playerId);
-    m.playerFlowNtd -= floorDiv(losingPool * s.shareBps, 10000);
-  }
-
-  // Gross = betGain + playerFlow
-  for (const m of memberMap.values()) {
-    m.grossGainNtd = m.betGainNtd + m.playerFlowNtd;
-  }
-
-  // Rake: 5% of positive grossGain, rounded to nearest 100
-  for (const m of memberMap.values()) {
-    if (m.grossGainNtd > 0) {
-      m.rakeNtd = roundHalfUp(m.grossGainNtd * 5, 100) * 100;
-      // Clamp: rake cannot exceed grossGain
-      if (m.rakeNtd > m.grossGainNtd) m.rakeNtd = m.grossGainNtd;
-    }
-  }
-
-  // Provider fee: 0 during free period
-  const freeEnd = billing.freePeriodEndDate;
-  const inFreePeriod = !billing.billingEnabled || date < freeEnd;
-  if (!inFreePeriod) {
-    for (const m of memberMap.values()) {
-      if (m.grossGainNtd > 0) {
-        m.providerFeeNtd = roundHalfUp(m.grossGainNtd * billing.providerRateBps, 10000);
-      }
-    }
-  }
-
-  // Final net
-  for (const m of memberMap.values()) {
-    m.finalNetNtd = m.grossGainNtd - m.rakeNtd - m.providerFeeNtd;
-  }
-
-  return [...memberMap.values()];
-}
 
 // --- Helpers ---
 
@@ -253,6 +177,7 @@ async function persistSettlement(matchId, matchResult, matchDate, playerIds, isP
 // --- Test runner ---
 
 let passed = 0; let failed = 0; let skipped = 0;
+let createdPoolId = null;
 function pass(n, msg) { console.log(`  ✅ #${n} ${msg}`); passed++; }
 function fail(n, msg) { console.log(`  ❌ #${n} ${msg}`); failed++; }
 function skip(n, msg) { console.log(`  ⏭️  #${n} ${msg}`); skipped++; }
@@ -280,11 +205,50 @@ async function cleanup() {
   }
 }
 
+async function restoreTestState() {
+  if (createdPoolId) {
+    await sb.from("bets").delete().eq("sporadic_pool_id", createdPoolId);
+    await sb.from("match_settlements").delete().eq("sporadic_pool_id", createdPoolId);
+    await sb.from("match_team_player_shares").delete().eq("sporadic_pool_id", createdPoolId);
+    await sb.from("sporadic_pools").delete().eq("id", createdPoolId);
+    createdPoolId = null;
+  }
+  await cleanup();
+}
+
+async function withBillingConfigTemporarilyDeleted(callback) {
+  const { data: bcRows, error: fetchError } = await sb.from("club_billing_config").select("*");
+  if (fetchError) throw new Error(`Fetch billing backup failed: ${fetchError.message}`);
+  const bcBackup = bcRows?.[0];
+  if (!bcBackup) throw new Error("NO_BILLING_CONFIG_TO_BACKUP");
+
+  let thrown = null;
+  try {
+    const { error: deleteError } = await sb
+      .from("club_billing_config")
+      .delete()
+      .eq("club_id", bcBackup.club_id);
+    if (deleteError) throw new Error(`Delete billing config failed: ${deleteError.message}`);
+    return await callback();
+  } catch (callbackError) {
+    thrown = callbackError;
+    throw callbackError;
+  } finally {
+    const { error: restoreError } = await sb
+      .from("club_billing_config")
+      .upsert(bcBackup, { onConflict: "club_id", ignoreDuplicates: false });
+    if (restoreError) {
+      console.error("Restore billing config failed:", restoreError);
+      if (!thrown) throw new Error(`Restore billing config failed: ${restoreError.message}`);
+    }
+  }
+}
+
 async function run() {
   console.log("\n🔧 P7 Settlement Write Path — Automated Tests\n");
 
   // --- Verify connection ---
-  const { data: ping, error: pingErr } = await sb.from("members").select("id").limit(1);
+  const { error: pingErr } = await sb.from("members").select("id").limit(1);
   if (pingErr) {
     console.log(`❌ Cannot connect to Supabase: ${pingErr.message}`);
     console.log("   Is the project paused? Restore it at supabase.com/dashboard");
@@ -354,7 +318,7 @@ async function run() {
 
   // ========== #5: Submit result for opposite team (match 4, team B) ==========
   try {
-    const { data, error } = await sb.rpc("submit_match_result", {
+    const { error } = await sb.rpc("submit_match_result", {
       p_match_id: MATCH4, p_winner: "team_b", p_performed_by: "test_script",
     });
     if (error) throw new Error(error.message);
@@ -399,35 +363,27 @@ async function run() {
 
   // ========== #12: Billing config missing ==========
   try {
-    // Save billing config
-    const { data: bcRows } = await sb.from("club_billing_config").select("*");
-    const bcBackup = bcRows?.[0];
+    await withBillingConfigTemporarilyDeleted(async () => {
+      // Reset match 3 to test re-submission
+      await sb.from("matches").update({ result: "pending", status: "active" }).eq("id", MATCH3);
+      await sb.from("bets").update({ result: "pending" }).eq("match_id", MATCH3).is("sporadic_pool_id", null);
+      await sb.from("match_settlements").delete().eq("match_id", MATCH3);
 
-    // Delete billing config
-    await sb.from("club_billing_config").delete().eq("club_id", bcBackup.club_id);
+      // Submit result — RPC should succeed
+      const { error: rpcErr } = await sb.rpc("submit_match_result", {
+        p_match_id: MATCH3, p_winner: "team_a", p_performed_by: "test_script",
+      });
+      if (rpcErr) { fail(12, `RPC should succeed even without billing: ${rpcErr.message}`); }
+      else {
+        // Persist should fail gracefully
+        let persistFailed = false;
+        try { await persistSettlement(MATCH3, "team_a", "2026-02-24", m3Players); }
+        catch (e) { if (e.message === "NO_BILLING_CONFIG") persistFailed = true; else throw e; }
 
-    // Reset match 3 to test re-submission
-    await sb.from("matches").update({ result: "pending", status: "active" }).eq("id", MATCH3);
-    await sb.from("bets").update({ result: "pending" }).eq("match_id", MATCH3).is("sporadic_pool_id", null);
-    await sb.from("match_settlements").delete().eq("match_id", MATCH3);
-
-    // Submit result — RPC should succeed
-    const { error: rpcErr } = await sb.rpc("submit_match_result", {
-      p_match_id: MATCH3, p_winner: "team_a", p_performed_by: "test_script",
+        if (persistFailed) pass(12, "Billing missing — RPC succeeded, settlement persist correctly failed");
+        else fail(12, "Expected settlement persist to fail without billing config");
+      }
     });
-    if (rpcErr) { fail(12, `RPC should succeed even without billing: ${rpcErr.message}`); }
-    else {
-      // Persist should fail gracefully
-      let persistFailed = false;
-      try { await persistSettlement(MATCH3, "team_a", "2026-02-24", m3Players); }
-      catch (e) { if (e.message === "NO_BILLING_CONFIG") persistFailed = true; else throw e; }
-
-      if (persistFailed) pass(12, "Billing missing — RPC succeeded, settlement persist correctly failed");
-      else fail(12, "Expected settlement persist to fail without billing config");
-    }
-
-    // Restore billing config
-    await sb.from("club_billing_config").insert(bcBackup);
 
     // Re-persist settlement now that billing is back
     await persistSettlement(MATCH3, "team_a", "2026-02-24", m3Players);
@@ -447,7 +403,7 @@ async function run() {
     }
 
     // Run correction RPC
-    const { data, error } = await sb.rpc("correct_match_result", {
+    const { error } = await sb.rpc("correct_match_result", {
       p_match_id: MATCH3, p_new_winner: "team_b", p_performed_by: "test_script",
     });
     if (error) throw new Error(`Correction RPC: ${error.message}`);
@@ -494,6 +450,7 @@ async function run() {
     }).select().single();
     if (poolErr) throw new Error(`Pool creation: ${poolErr.message}`);
     poolId = pool.id;
+    createdPoolId = pool.id;
 
     // Create share rows for pool
     const poolShares = [
@@ -515,7 +472,7 @@ async function run() {
     if (betsErr) throw new Error(`Pool bets: ${betsErr.message}`);
 
     // Submit pool result
-    const { data: poolResult, error: poolRpcErr } = await sb.rpc("submit_pool_result", {
+    const { error: poolRpcErr } = await sb.rpc("submit_pool_result", {
       p_pool_id: poolId, p_winner: "team_a", p_performed_by: "test_script",
     });
     if (poolRpcErr) throw new Error(`Pool result RPC: ${poolRpcErr.message}`);
@@ -578,14 +535,17 @@ async function run() {
 
   // --- Cleanup ---
   console.log("  Cleaning up test artifacts...");
-  if (poolId) {
-    await sb.from("bets").delete().eq("sporadic_pool_id", poolId);
-    await sb.from("match_settlements").delete().eq("sporadic_pool_id", poolId);
-    await sb.from("match_team_player_shares").delete().eq("sporadic_pool_id", poolId);
-    await sb.from("sporadic_pools").delete().eq("id", poolId);
-  }
-  await cleanup();
+  await restoreTestState();
   console.log("  Done — test data restored to original state.\n");
 }
 
-run().catch(e => { console.error("Fatal:", e); process.exit(1); });
+run().catch(async (e) => {
+  console.error("Fatal:", e);
+  try {
+    console.log("Attempting to restore test data after fatal error...");
+    await restoreTestState();
+  } catch (restoreError) {
+    console.error("Test data restore failed:", restoreError);
+  }
+  process.exit(1);
+});

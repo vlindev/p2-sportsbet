@@ -88,6 +88,13 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `match_team_player_shares` table — R17.2. Auto-populated at match creation (INSERT only, 50/50 default). UPDATE does not touch shares.
 - `club_billing_config` table — R20.2. Seeded: 100 BPS (1%), 6 months free from 2026-05-11.
 
+## Working Preferences
+- Move carefully section by section for code reviews and implementation. Prefer small verified slices over broad changes, especially around database, settlement, money-state, or test-harness work.
+
+## Lessons Learned / Gotchas
+- DB mutation scripts must fail closed by default: no hardcoded Supabase URL/key, require env vars + explicit test/staging project guard, and restore shared config/test data through `finally` cleanup paths.
+- After mechanical destructure cleanup, search the changed identifier in the surrounding block before verifying. Removing `{ data }` while a later line still reads `data` creates runtime-only failures that `tsc` may not catch in excluded `.mjs` scripts.
+
 ## UI/UX Design Principles
 
 **Visual hierarchy** — size = importance. Clear tiers. Too many elements at the same size = noise. Smallest font sets the floor — build upward, never go below it.
