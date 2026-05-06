@@ -94,6 +94,8 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 ## Lessons Learned / Gotchas
 - DB mutation scripts must fail closed by default: no hardcoded Supabase URL/key, require env vars + explicit test/staging project guard, and restore shared config/test data through `finally` cleanup paths.
 - After mechanical destructure cleanup, search the changed identifier in the surrounding block before verifying. Removing `{ data }` while a later line still reads `data` creates runtime-only failures that `tsc` may not catch in excluded `.mjs` scripts.
+- Settlement is a multi-write pipeline (result RPC → `match_settlements` → monthly `settlements`) with no atomicity boundary. New write paths in this domain must either be atomic at the DB layer or expose a durable repair state — surfacing errors in the UI alone is a stopgap, not a fix.
+- Supabase RPC migrations must preserve existing parameter defaults in the `CREATE OR REPLACE FUNCTION` wrapper; omitting a remote default causes `cannot remove parameter defaults from existing function` and blocks `db push` before applying changes.
 
 ## UI/UX Design Principles
 
@@ -202,6 +204,7 @@ Reordered S83: build launch-critical features first, polish later. Fixes 1+2+5 d
 - **Post-自動派注 workflow (S54)** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism.
 - **Bets landing page empty state (S83)** — Page shows "目前沒有可投注的賽事" when no scheduled/betting_closed matches exist. Intentional design (S55: present-focused scope). Recommendation: don't expand scope, add redirect link to matches page. Awaiting user decision.
 - **Sporadic pool edit mode (S67)** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
+- **Code audit — Batch 1 (Settlement)** 🔄 — see `memory/audit-batch1-settlement.md`. 6 findings (5 critical, 1 medium). Finding 6 fix in working tree (uncommitted + undeployed). Pending: architecture decision for Findings 1+2, R21.5 verbatim verification (Finding 3), Finding 4 standalone fix, R21.6 deferral-status check (Finding 5). Batches 2 (Betting) + 3 (Lifecycle) not started.
 
 ### End of Phase 1
 - Generate bookkeeper user guide — blocked by Steps 4–9

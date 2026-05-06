@@ -510,6 +510,91 @@ async function run() {
     } catch (e) { fail(17, e.message); }
   } else { skip(17, "Pool creation failed — can't test correction"); }
 
+  // ========== #17b: Pool correction recomputes stale bet results ==========
+  if (poolId) {
+    try {
+      const { data: poolState, error: poolStateErr } = await sb
+        .from("sporadic_pools")
+        .select("result")
+        .eq("id", poolId)
+        .single();
+      if (poolStateErr) throw new Error(`Fetch pool state: ${poolStateErr.message}`);
+
+      let correctionTarget = null;
+      let expectedA = null;
+      let expectedB = null;
+      if (poolState?.result === "team_a") {
+        correctionTarget = "team_b";
+        expectedA = "loss";
+        expectedB = "win";
+      } else if (poolState?.result === "team_b") {
+        correctionTarget = "team_a";
+        expectedA = "win";
+        expectedB = "loss";
+      } else {
+        skip("17b", `Pool result is ${poolState?.result || "missing"} — can't test stale result recompute`);
+      }
+
+      if (correctionTarget && expectedA && expectedB) {
+        // Add a dedicated B-side bet for this test without changing earlier pool settlement expectations.
+        const { data: bBet, error: bBetErr } = await sb.from("bets").insert({
+          match_id: MATCH4,
+          member_id: M(9),
+          sporadic_pool_id: poolId,
+          team_bet_on: "B",
+          amount_liang: 3,
+          bet_type: "voluntary",
+          result: "win",
+          status: "active",
+          created_by_role: "bookkeeper",
+          created_via: "manual",
+        }).select("id, team_bet_on").single();
+        if (bBetErr) throw new Error(`Create B-side pool bet: ${bBetErr.message}`);
+
+        const { data: aBet, error: aBetErr } = await sb
+          .from("bets")
+          .select("id, team_bet_on")
+          .eq("sporadic_pool_id", poolId)
+          .eq("status", "active")
+          .eq("team_bet_on", "A")
+          .limit(1)
+          .single();
+        if (aBetErr) throw new Error(`Fetch A-side pool bet: ${aBetErr.message}`);
+
+        // Corrupt both rows to win. Recompute should derive final values from team_bet_on,
+        // not flip from the stale prior result.
+        const { error: corruptErr } = await sb
+          .from("bets")
+          .update({ result: "win" })
+          .in("id", [aBet.id, bBet.id]);
+        if (corruptErr) throw new Error(`Corrupt pool bet results: ${corruptErr.message}`);
+
+        const { error } = await sb.rpc("correct_pool_result", {
+          p_pool_id: poolId, p_new_winner: correctionTarget, p_performed_by: "test_script",
+        });
+        if (error) throw new Error(`Pool stale correction RPC: ${error.message}`);
+
+        const { data: checked, error: checkErr } = await sb
+          .from("bets")
+          .select("id, team_bet_on, result")
+          .eq("sporadic_pool_id", poolId)
+          .eq("status", "active");
+        if (checkErr) throw new Error(`Check recomputed pool bets: ${checkErr.message}`);
+
+        const aAfter = checked?.find(b => b.id === aBet.id);
+        const bAfter = checked?.find(b => b.id === bBet.id);
+        const allRecomputed = (checked || []).every((b) =>
+          b.team_bet_on === "A" ? b.result === expectedA : b.result === expectedB
+        );
+
+        if (aAfter?.result === expectedA && bAfter?.result === expectedB && allRecomputed)
+          pass("17b", `Pool correction recomputed all active pool bet results from team_bet_on (${correctionTarget})`);
+        else
+          fail("17b", `Expected all A=${expectedA}/B=${expectedB}, got test rows A=${aAfter?.result}, B=${bAfter?.result}`);
+      }
+    } catch (e) { fail("17b", e.message); }
+  } else { skip("17b", "Pool creation failed — can't test stale result recompute"); }
+
   // ========== #18: Report shows pool settlements — VISUAL ==========
   skip(18, "Report shows pool settlements from DB — requires visual check");
 

@@ -1,5 +1,13 @@
-
-
+CREATE OR REPLACE FUNCTION public.correct_pool_result(
+  p_pool_id uuid,
+  p_new_winner text,
+  p_performed_by text DEFAULT 'bookkeeper'
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
  v_pool sporadic_pools%ROWTYPE;
  v_updated_count INTEGER;
@@ -57,3 +65,4 @@ BEGIN
 
  RETURN jsonb_build_object('success', true, 'bets_flipped', v_updated_count);
 END;
+$$;
