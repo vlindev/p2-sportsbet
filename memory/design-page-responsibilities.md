@@ -58,7 +58,7 @@ The system must support all three without requiring her to think about which mod
 
 ### `/bets` — Betting Operations (List View)
 
-**Interaction pattern:** List. Dense, scannable, optimized for speed. Two equal tabs.
+**Interaction pattern:** List. Dense, scannable, optimized for speed. Three operational tabs.
 
 **What this page owns:**
 - All betting operations (entry, editing, viewing)
@@ -104,7 +104,27 @@ The system must support all three without requiring her to think about which mod
 **Key workflow this tab supports:**
 Sunday crunch: scan progress → 封盤 each match → 自動派注 each match → verify 85/85 coverage. All without leaving the page.
 
-#### Tab 2: Member Lookup
+#### Tab 2: Member Batch Entry
+
+**Serves:** Data entry operator processing LINE messages member-by-member.
+
+**Scope:** Same as Tab 1 — all matches with status `scheduled` or `betting_closed`, grouped by selected date.
+
+**What it shows:**
+- Date pills for bettable match dates
+- Member selector
+- All bettable matches on the selected date
+- Existing bet/player state per match
+- A/B + 1兩/2兩 controls for unbetted matches
+- Sticky submit that creates one bet per selected match through `place_bet`
+- Per-match result summary after submit: accepted, pending, duplicate/skipped, error
+
+**What this tab does NOT do:**
+- Directly insert into `bets` or `bet_requests`
+- Edit existing bets inline
+- Show historical member data
+
+#### Tab 3: Member Lookup
 
 **Serves:** Member support agent (primary) + data entry operator (secondary, for 全部買A隊 scenarios)
 
@@ -214,7 +234,7 @@ Sidebar "會員" → /members (roster + future profile)
 /members profile match   → /bets?match=id (report view)  [Step 9b]
 
 Within /bets:
-  Tab: 賽事投注 (match list)  ↔  Tab: 會員查詢 (member lookup)
+  Tab: 賽事總覽 (match list)  ↔  Tab: 會員批次登錄 (batch entry)  ↔  Tab: 會員查詢 (member lookup)
   Match list row click       →  /bets?match=id (entry view)
 ```
 

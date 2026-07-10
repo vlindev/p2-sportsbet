@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>投注管理工作台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <main class="mx-auto min-h-screen max-w-3xl px-6 pb-28 pt-10">
+    <header class="mb-5 flex items-center justify-between">
+      <h1 class="text-xl font-bold">投注管理</h1>
+      <a class="text-base font-medium text-orange-500" href="/matches">前往賽事</a>
+    </header>
+
+    <nav class="mb-5 flex gap-6 border-b border-gray-200">
+      <button class="border-b-2 border-orange-500 px-1 pb-3 text-base font-bold">賽事總覽</button>
+      <button class="border-b-2 border-transparent px-1 pb-3 text-base font-semibold text-slate-400">會員批次登錄</button>
+      <button class="border-b-2 border-transparent px-1 pb-3 text-base font-semibold text-slate-400">會員查詢</button>
+    </nav>
+
+    <section class="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button class="rounded-lg border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-medium text-white">5/25 (一)<span class="ml-1.5 text-xs text-orange-100">7場</span></button>
+        <button class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">5/28 (四)<span class="ml-1.5 text-xs text-slate-400">2場</span></button>
+      </div>
+      <div class="max-w-sm rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">王小明</div>
+    </section>
+
+    <section class="space-y-3">
+      <article class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div class="mb-2 flex items-center gap-2">
+          <strong class="text-base">第1組</strong>
+          <span class="text-sm text-orange-500">A 讓 2 洞</span>
+          <span class="ml-auto rounded-full bg-blue-100 px-2 py-0.5 text-sm font-medium text-blue-700">週一例行賽</span>
+        </div>
+        <p class="mb-3 text-sm text-slate-500">A 張大明 · 李志強 ｜ B 陳志華 · 林冠宇</p>
+        <div class="flex flex-wrap items-center gap-3">
+          <button class="rounded-lg border border-orange-500 bg-orange-500 px-4 py-2 text-sm font-medium text-white">A 隊</button>
+          <button class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-slate-600">B 隊</button>
+          <button class="rounded-lg border border-slate-700 bg-slate-700 px-3 py-2 text-sm font-medium text-white">1兩</button>
+          <button class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-slate-600">2兩</button>
+        </div>
+      </article>
+
+      <article class="rounded-xl border border-amber-200 bg-white p-4 shadow-sm">
+        <div class="mb-2 flex items-center gap-2">
+          <strong class="text-base">第2組</strong>
+          <span class="text-sm text-slate-400">平盤</span>
+          <span class="rounded-full bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-700">封盤</span>
+        </div>
+        <p class="mb-3 text-sm text-slate-500">A 黃志強 · 吳冠廷 ｜ B 周建宏 · 蔡明哲</p>
+        <p class="text-sm font-medium text-emerald-600">已下注 B 隊 · 2兩</p>
+      </article>
+    </section>
+
+    <div class="sticky bottom-4 mt-5 rounded-xl border border-orange-200 bg-white p-3 shadow-lg">
+      <div class="mb-2 text-sm text-slate-500">已選 1 場 · 透過 place_bet 逐場送出</div>
+      <button class="w-full rounded-xl bg-orange-500 py-3 text-base font-semibold text-white">確認新增 1 筆投注</button>
+    </div>
+  </main>
+</body>
+</html>

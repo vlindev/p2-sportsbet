@@ -2,6 +2,11 @@ import type { Match, Bet } from "@/types";
 
 export type LandingMember = { id: string; name: string; active: boolean };
 
+export type NewBatchBetEntry = {
+  teamBetOn: "A" | "B";
+  amountLiang: 1 | 2 | null;
+};
+
 /** Per-match derived data for Tab 1 (match list) */
 export type MatchRowData = {
   match: Match;

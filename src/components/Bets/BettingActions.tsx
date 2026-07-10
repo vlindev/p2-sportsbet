@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { closeBetting } from "@/lib/betting-actions";
+import { closeBetting, editBet } from "@/lib/betting-actions";
 import CloseBettingModal from "@/components/CloseBettingModal";
 import type { Match, Bet } from "@/types";
 
@@ -59,17 +59,18 @@ export default function BettingActions({
     const ids = targetBets.map((b) => b.id);
     if (ids.length === 0) { setBulkReducing(false); onBulkReduceModalClose(); return; }
 
-    const { error } = await supabase.from("bets").update({ amount_liang: 1 }).in("id", ids);
-    if (error) { console.error("Bulk reduce:", error); setBulkReducing(false); return; }
-
-    const memberIds = targetBets.map((b) => b.member_id);
-    if (memberIds.length > 0) {
-      await supabase.from("bet_requests")
-        .update({ requested_amount: 1, accepted_amount: 1 })
-        .eq("match_id", matchId)
-        .eq("bet_type", "voluntary")
-        .eq("status", "accepted")
-        .in("member_id", memberIds);
+    for (const bet of targetBets) {
+      const result = await editBet({
+        betId: bet.id,
+        operation: "adjust_amount",
+        newAmountLiang: 1,
+        performedBy: "bookkeeper:bulk-reduction",
+      });
+      if (!result.success) {
+        console.error("Bulk reduce:", result.reasonCode, result.message);
+        setBulkReducing(false);
+        return;
+      }
     }
 
     const sideLabel = bulkReduceSide === "all" ? "全部" : `${bulkReduceSide}隊`;

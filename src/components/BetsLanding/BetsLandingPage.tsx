@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import BetsLandingEmptyState from "./BetsLandingEmptyState";
+import BetsLandingTabs, { type BetsLandingTab } from "./BetsLandingTabs";
 import MatchListTab from "./MatchListTab";
+import MemberBatchEntryTab from "./MemberBatchEntryTab";
 import MemberLookupTab from "./MemberLookupTab";
 import type { Match, Bet } from "@/types";
 import type { LandingMember } from "./types";
-
-type Tab = "match-list" | "member-lookup";
 
 export default function BetsLandingPage() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -17,7 +18,7 @@ export default function BetsLandingPage() {
   const [poolCounts, setPoolCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<Tab>("match-list");
+  const [activeTab, setActiveTab] = useState<BetsLandingTab>("match-list");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -89,7 +90,9 @@ export default function BetsLandingPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    void Promise.resolve().then(loadData);
+  }, [loadData]);
 
   // Refetch bets only (after any bet-changing action)
   const refreshBets = useCallback(async () => {
@@ -133,14 +136,7 @@ export default function BetsLandingPage() {
     );
   }
 
-  if (matches.length === 0) {
-    return (
-      <div className="p-6 pt-10 min-h-screen max-w-3xl mx-auto">
-        <h2 className="text-xl font-bold text-slate-800 mb-5">投注管理</h2>
-        <p className="text-sm text-slate-400">目前沒有可投注的賽事</p>
-      </div>
-    );
-  }
+  if (matches.length === 0) return <BetsLandingEmptyState />;
 
   return (
     <div className="p-6 pt-10 pb-32 min-h-screen max-w-3xl mx-auto">
@@ -150,31 +146,10 @@ export default function BetsLandingPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-6 border-b border-gray-200 mb-5">
-        <button
-          onClick={() => setActiveTab("match-list")}
-          className={`pb-3 text-base px-1 cursor-pointer ${
-            activeTab === "match-list"
-              ? "border-b-2 border-orange-500 text-slate-800 font-bold"
-              : "border-b-2 border-transparent text-slate-400 font-semibold hover:text-slate-500"
-          }`}
-        >
-          賽事投注
-        </button>
-        <button
-          onClick={() => setActiveTab("member-lookup")}
-          className={`pb-3 text-base px-1 cursor-pointer ${
-            activeTab === "member-lookup"
-              ? "border-b-2 border-orange-500 text-slate-800 font-bold"
-              : "border-b-2 border-transparent text-slate-400 font-semibold hover:text-slate-500"
-          }`}
-        >
-          會員查詢
-        </button>
-      </div>
+      <BetsLandingTabs activeTab={activeTab} onChange={setActiveTab} />
 
       {/* Tab content */}
-      {activeTab === "match-list" ? (
+      {activeTab === "match-list" && (
         <MatchListTab
           matches={matches}
           bets={bets}
@@ -185,7 +160,17 @@ export default function BetsLandingPage() {
           onBetsChange={refreshBets}
           members={members}
         />
-      ) : (
+      )}
+      {activeTab === "member-batch" && (
+        <MemberBatchEntryTab
+          matches={matches}
+          bets={bets}
+          members={members}
+          memberMap={memberMap}
+          onBetsChange={refreshBets}
+        />
+      )}
+      {activeTab === "member-lookup" && (
         <MemberLookupTab
           matches={matches}
           bets={bets}

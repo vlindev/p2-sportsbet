@@ -231,33 +231,27 @@ export async function runAutoPlacementAction(
   }));
   const placements = autoPlaceMonday(existing, unplacedIds);
 
-  const betRequests = placements.map((p) => ({
-    match_id: matchId,
-    member_id: p.memberId,
-    team_bet_on: p.teamBetOn,
-    bet_type: "mandatory_monday",
-    requested_amount: 1,
-    accepted_amount: 1,
-    status: "accepted",
-    created_by_role: "system",
-    created_via: "scheduled_job",
-  }));
-  const { error: reqErr } = await supabase.from("bet_requests").insert(betRequests);
-  if (reqErr) return { success: false, count: 0, error: "派注失敗，請重試" };
+  let accepted = 0;
+  for (const p of placements) {
+    const result = await placeBet({
+      matchId,
+      memberId: p.memberId,
+      teamBetOn: p.teamBetOn,
+      amountLiang: 1,
+      betType: "mandatory_monday",
+      createdByRole: "system",
+      createdVia: "scheduled_job",
+      performedBy: "system:auto-placement",
+    });
+    if (result.success && result.status === "accepted") {
+      accepted++;
+      continue;
+    }
+    if (!result.success && result.rejectReason === "此會員已有此場投注") {
+      continue;
+    }
+    return { success: false, count: accepted, error: result.success ? "派注進入待審核，請檢查容量設定" : result.rejectReason };
+  }
 
-  const newBets = placements.map((p) => ({
-    match_id: matchId,
-    member_id: p.memberId,
-    team_bet_on: p.teamBetOn,
-    amount_liang: 1,
-    bet_type: "mandatory_monday",
-    result: "pending",
-    status: "active",
-    created_by_role: "system",
-    created_via: "scheduled_job",
-  }));
-  const { error: betErr } = await supabase.from("bets").insert(newBets);
-  if (betErr) return { success: false, count: 0, error: "派注失敗，請重試" };
-
-  return { success: true, count: placements.length };
+  return { success: true, count: accepted };
 }

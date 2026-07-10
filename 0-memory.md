@@ -60,7 +60,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 
 ### `/bets` page — entry + report + landing (Sessions 34–72)
 - **Match-first entry** (`/bets?match=id&from=bets`) — `MatchBetEntry.tsx`. Two-column bets, entry form, pencil edit mode, 選手佔成 inline edit, pool bet entry.
-- **Landing page** (`/bets` default) — `src/components/BetsLanding/` (9 files). Match list tab + member lookup tab. Shared actions in `src/lib/betting-actions.ts`.
+- **Landing page / workbench** (`/bets` default) — `src/components/BetsLanding/`. Three tabs: 賽事總覽, 會員批次登錄, 會員查詢. Member batch entry restores the old LINE member-first workflow but submits through `place_bet` only. Shared actions in `src/lib/betting-actions.ts`.
 - **Per-match report** (`/bets?match=id&from=completed`) — `MatchSettlementReport.tsx` + settlement components. Pool sections inline.
 - **Status-based routing**: scheduled/betting_closed → entry, completed/active/cancelled → report.
 - Components: `src/components/Bets/` (13 files). Share editing (#4), sporadic pools (#5), report (#6). All issues resolved — see `memory/design-bets-report-issues.md`.
@@ -202,10 +202,10 @@ Reordered S83: build launch-critical features first, polish later. Fixes 1+2+5 d
 - **Bet-exists guard on match/pool editing (S73→S83 closed)** — Investigated S83: player changes already go through `replace_match_player` RPC (R25.3, atomic void+create). Handicap changes don't invalidate bets. No guard needed — design was intentional.
 - **S73 sporadic pool grouping redesign** — S73 blastcheck found 8 issues, attempted fixes, reverted all code. Critical problem: matches page grouping logic uses separate source arrays per section — new match categories create invisible matches. Before writing any sporadic pool code, redesign grouping: single source (`currentMatches`) for all groups, overdue = all past-date needing action, today = strict date match, status determines appearance, date determines placement. Then reapply verified fixes (1–6) as a unit. Reference: `archive/s73-reverted/README-s73-revert.md`.
 - **Post-自動派注 workflow (S54)** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism.
-- **Bets landing page empty state (S83)** — Page shows "目前沒有可投注的賽事" when no scheduled/betting_closed matches exist. Intentional design (S55: present-focused scope). Recommendation: don't expand scope, add redirect link to matches page. Awaiting user decision.
+- **Bets landing page empty state (S83→S86)** — Resolved with present-focused scope: `/bets` still shows only scheduled/betting_closed matches, and empty state links to `/matches`.
 - **Sporadic pool edit mode (S67)** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
 - **Code audit — Batch 1 (Settlement)** 🔄 — see `memory/audit-batch1-settlement.md`. 6 findings (5 critical, 1 medium). Finding 6 fix shipped (commit 2024815, supabase migration `20260506161005`, **deployment unverified**). Pending: architecture for Findings 1+2 (Option A atomic RPC vs Option B durable repair state — assistant recommends B), R21.5 verbatim verification (Finding 3), Finding 4 standalone fix, R21.6 deferral-status check (Finding 5). Batches 2 (Betting) + 3 (Lifecycle) not started.
-- **Bets landing page empty-state affordance (S85)** — `/bets` filters to `scheduled/betting_closed` only; currently 0 such matches → empty state `目前沒有可投注的賽事`. Concrete surfacing of parked S83 entry. Option A (keep present-focused, add link to matches page on empty state) recommended over Option B (expand scope to include completed) per `memory/design-page-responsibilities.md`. Decision pending.
+- **Bets workbench + backend safety (S86)** — Added `會員批次登錄` tab and backend safety migration. Details/deferred pool deletion RPC: `memory/design-bets-workbench-backend-safety.md`.
 
 ### End of Phase 1
 - Generate bookkeeper user guide — blocked by Steps 4–9
