@@ -41,7 +41,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `memory/schema/` — Supabase schema exports (schema-columns.csv, schema-check-constraints.csv, schema-foreign-keys.csv). Created S75.
 - Auto-memory (`~/.claude/projects/.../memory/MEMORY.md`) handles domain rules, data model, resolved decisions — separate system, no overlap
 
-## What's Built (as of S83)
+## What's Built (as of S83 — existing "1.0" build; see S86 direction change: being rebuilt as 2.0)
 ⚠️ **S75 full system audit complete.** 38 source files + 8 rules files + 7 RPCs audited. 12 gaps identified with rule compliance verdicts. Priority fix list (13 items) received — 4 need design decisions. Priority 1 done (duplicate RPCs cleaned). Priority 2 resolved (sporadic_pool_id IS NULL fix). **Priority 3 done (S78)** — `place_bet` RPC deployed, all 4 new-bet creation paths rewired (paths 1+2 in S78, quickPick+bulkBuy in S79), R5.4 client fix applied, 18/18 functional tests pass. **Priority 3b done (S79)** — `edit_bet` RPC deployed, adjustAmount+swapTeam rewired to atomic RPC, R13.3 invariant enforced, bulkReduce R13.3 drift fixed. Priority 4 done (S76). Priority 5 done (S76). `BetEntryView.tsx` deleted S76. **Priority 6 done (S80)** — `match_settlements` table created (schema migration). **Priority 7 done (S80)** — settlement write path: `persistMatchSettlement`/`persistPoolSettlement` auto-persist after result RPCs, `MatchSettlementReport.tsx` reads from DB (single source of truth), `CorrectionPreviewModal` for result corrections, monthly `settlements` table auto-aggregated.
 - **S83: P7 bug fixes done** — Fix 1 (pool result on completed matches), Fix 2 (stale state after correction), Fix 5 (placeholder position). Pool result flow redesigned: conditional fetchAll (stay if pending pools, sync if all resolved). Automated test script `test-p7-settlement.mjs` (13/13 pass). `src/lib/match-domain.ts` created.
 - **8 Supabase RPCs:** submit/correct_match_result, submit/correct_pool_result, cancel_match, replace_match_player, place_bet, edit_bet. Plus `rls_auto_enable` utility. References: `memory/rpcs/` (9 files).
@@ -141,6 +141,16 @@ Transform the internal tool into a sellable product for other golf clubs. Introd
 
 ## Pre-Launch Execution Plan (MVP)
 ⚠️ **Full plan:** `memory/plan-ticklish-chasing-cocke.md` — finalized Session 28. Phase A (Mar 4–Apr 7, 13–19 sessions) → Blackout (Apr 8–26) → Phase B Polish (Apr 27–30) → Launch (May 4 presentation, May 11 go live) → Phase C post-launch. Visual roadmap: `3-mockup-HTML/Mockup-Execution-Roadmap.html`. Step 3 split into 3a (schema) / 3b (concurrency). Member read-only view ships at launch (Step 9). **Steps 4+5 fully tested (S55). Implementation plan: `memory/plan-*` files (6 files). Deferred: `plan-deferred.md` (Step 7 guard, R24.4).**
+
+## ⚠️ DIRECTION CHANGE (S86, 2026-07-11) — READ FIRST
+**External engineering team onboarded (betting-industry veterans, working free). System being rebuilt fresh as "2.0" — existing build is reference only, not being ported.** Veronica's role shifts from builder → **domain authority**. Full context: `project_2.0_team_rewrite_urd.md` (auto-memory) + `4-last-wraps/wrap-s86.md`.
+- **Phase 1 (build now):** bookkeeper-facing ONLY, single club. Goals: prove money math correct + gather first real dataset. NO member-facing.
+- **Phase 2 (future):** member-facing. **Phase 3 (future):** multi-club.
+- **Handoff spec authored:** `URD-Golf-Betting-System.md` (EN) + `URD-高爾夫投注系統-繁中.md` + `.pdf` (the send artifact) + `.html`. 9 screenshots in `here/`.
+- **New reqs (absent from current build):** weekly settlement, settle-tracking (mark paid, terminal/protected), settlement confirmation (commit a period), 1v1/1v2/1v3 formats, assisted match creation from pasted text, real-time unsettled balance per member.
+- **Canonical R22.4 changed monthly → weekly** (創隊長-confirmed, dated revision in frozen file). ⚠️ Other memory files still say "monthly" — reconcile.
+- **Open:** 創隊長 to verify the 4 worked settlement examples (URD Appendix E); `canonical-rules.md` deliberately NOT sent to team (test to see if they ask) → URD Appendices D+E are their entire correctness contract; English PDF not yet generated.
+- The old solo pre-launch roadmap (`plan-ticklish-chasing-cocke.md` + the priority sequence below) is **PAUSED** pending the team's 2.0 build.
 
 ## TODO
 ### Done ✓

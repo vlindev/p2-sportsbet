@@ -1,5 +1,5 @@
 CASINO GOLF SOCIETY — CANONICAL SYSTEM RULES
-Version: Session 22 | 2026-03-03
+Version: Session 22 | 2026-03-03  (Revised 2026-07-10: R22.4 settlement cadence changed monthly → weekly, confirmed with 創隊長)
 
 This file is the sole authoritative source of all system rules.
 All prior documentation is superseded where it conflicts with this file.
@@ -476,7 +476,7 @@ R22. SETTLEMENT LIFECYCLE
 R22.1  settlements.status MUST be one of: pending, settled. No other values are valid.
 R22.2  pending: Calculation complete, not yet confirmed as paid. Initial state.
 R22.3  settled: Authorized operator has confirmed payment for this member's balance. TERMINAL.
-R22.4  Settlement is calculated monthly. Money changes hands on the 4th Monday of every month.
+R22.4  Settlement is calculated and reconciled WEEKLY: members settle money directly with each other each week. Monthly totals are a cumulative roll-up of the weekly settlements for record-keeping. [Revised 2026-07-10, confirmed with 創隊長 — supersedes the original S22 rule of monthly-only settlement on the 4th Monday.]
 R22.5  Weekly reports are generated per member showing: all matches that week, all bets placed by that member, running monthly balance (cumulative, not week-only).
 R22.6  The system tracks balances but NEVER holds or moves money. Settlement is peer-to-peer.
 
