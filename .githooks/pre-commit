@@ -1,0 +1,16 @@
+#!/bin/sh
+# pre-commit: block commits that DELETE files, unless explicitly overridden.
+# Intentional deletion:  ALLOW_DELETIONS=1 git commit ...
+[ "$ALLOW_DELETIONS" = "1" ] && exit 0
+
+deleted=$(git diff --cached --diff-filter=D -M --name-only)
+[ -z "$deleted" ] && exit 0
+
+echo "⛔  Commit blocked — this commit would DELETE:"
+printf '%s\n' "$deleted" | sed 's/^/      • /'
+echo
+echo "    If that is intentional, re-run with an override:"
+echo "        ALLOW_DELETIONS=1 git commit ..."
+echo
+echo "    If not, restore the file(s):  git checkout -- <path>"
+exit 1
