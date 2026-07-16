@@ -97,6 +97,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - Settlement is a multi-write pipeline (result RPC → `match_settlements` → monthly `settlements`) with no atomicity boundary. New write paths in this domain must either be atomic at the DB layer or expose a durable repair state — surfacing errors in the UI alone is a stopgap, not a fix.
 - Supabase RPC migrations must preserve existing parameter defaults in the `CREATE OR REPLACE FUNCTION` wrapper; omitting a remote default causes `cannot remove parameter defaults from existing function` and blocks `db push` before applying changes.
 - Never commit file deletions silently (S87). `wrap`/`commit` `git add -A` can propagate app-side deletions to all devices. Guarded now: `.githooks/pre-commit` blocks deletion commits in both repos (override `ALLOW_DELETIONS=1 git commit`), `wrap`/`commit` ask-first, `ready` step 1b auto-arms per machine. See auto-memory `feedback_no_silent_deletions.md`.
+- Frozen master `canonical-rules.md` self-contradicts in 2 early glossary defs (S88): R1.3 defines `is_sporadic` (deprecated by R2.2/R5.12 → count `sporadic_pools` rows); R1.25 defines `bet_increment_liang` (deprecated by R2.6/R11.3 → base amounts fixed 1/2兩). R1 section never revised. `canonical-rules-index.md` verified 100% in sync with master. Don't treat R1.3/R1.25 fields as live.
 
 ## UI/UX Design Principles
 
