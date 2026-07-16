@@ -96,6 +96,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - After mechanical destructure cleanup, search the changed identifier in the surrounding block before verifying. Removing `{ data }` while a later line still reads `data` creates runtime-only failures that `tsc` may not catch in excluded `.mjs` scripts.
 - Settlement is a multi-write pipeline (result RPC → `match_settlements` → monthly `settlements`) with no atomicity boundary. New write paths in this domain must either be atomic at the DB layer or expose a durable repair state — surfacing errors in the UI alone is a stopgap, not a fix.
 - Supabase RPC migrations must preserve existing parameter defaults in the `CREATE OR REPLACE FUNCTION` wrapper; omitting a remote default causes `cannot remove parameter defaults from existing function` and blocks `db push` before applying changes.
+- Never commit file deletions silently (S87). `wrap`/`commit` `git add -A` can propagate app-side deletions to all devices. Guarded now: `.githooks/pre-commit` blocks deletion commits in both repos (override `ALLOW_DELETIONS=1 git commit`), `wrap`/`commit` ask-first, `ready` step 1b auto-arms per machine. See auto-memory `feedback_no_silent_deletions.md`.
 
 ## UI/UX Design Principles
 
