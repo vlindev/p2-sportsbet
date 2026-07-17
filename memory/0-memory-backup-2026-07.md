@@ -51,6 +51,7 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - `test-data.sql` — 10 TEST members, 4 matches, 30 bets, 10 settlements (cleanup: `DELETE FROM members WHERE name LIKE 'TEST%'`)
 - `stress-test-bets.sql` + `seed-stress-test.mjs` — 85-bet stress test (cleanup: `DELETE FROM members WHERE name LIKE 'STRESS%'`)
 
+
 ⚠️ **Keep test data in Supabase until launch** — needed for testing across all pages. **Before launch:** `DELETE FROM members WHERE name LIKE 'TEST%'; DELETE FROM members WHERE name LIKE 'STRESS%';` and delete `seed-stress-test.mjs` from project root.
 
 ### `/members` page — roster complete, profile planned (Step 9b)
@@ -99,13 +100,20 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - Frozen master `canonical-rules.md` self-contradicts in 2 early glossary defs (S88): R1.3 defines `is_sporadic` (deprecated by R2.2/R5.12 → count `sporadic_pools` rows); R1.25 defines `bet_increment_liang` (deprecated by R2.6/R11.3 → base amounts fixed 1/2兩). R1 section never revised. `canonical-rules-index.md` verified 100% in sync with master. Don't treat R1.3/R1.25 fields as live.
 
 ## UI/UX Design Principles
-- **Visual hierarchy** — size = importance. Clear tiers; same-size = noise. Smallest font sets the floor, build upward.
-- **Simplicity** — every element earns its place. Clean whites, soft shadows. Show what matters, recede the rest.
-- **Confirmation for danger only** — no popups for non-destructive actions. Reserve for delete, cancel match, settle money.
-- **Intuition over instruction** — first-time user knows what to do. cursor-pointer + hover everywhere. Primary = orange solid; destructive = unmistakable but not alarming.
-- **Color is functional** — consistent meaning app-wide (see Design System).
-- **Proportionality is systemic** — font changes disrupt contrast across tiers; audit the full page, not just the target.
-- **Mobile first** — sidebar desktop, bottom nav mobile, built in from day one.
+
+**Visual hierarchy** — size = importance. Clear tiers. Too many elements at the same size = noise. Smallest font sets the floor — build upward, never go below it.
+
+**Simplicity** — every element earns its place. Clean whites, soft shadows, no clutter. Show what matters, let everything else recede.
+
+**Confirmation for danger only** — no popups for non-destructive actions. Reserve for delete, cancel match, settle money.
+
+**Intuition over instruction** — first-time user knows what to do without explanation. cursor-pointer + hover states everywhere. Primary actions: orange, solid. Destructive actions: unmistakable but not alarming.
+
+**Color is functional** — consistent meaning app-wide. See Design System for mappings.
+
+**Proportionality is systemic** — font changes disrupt contrast across tiers. Audit the full page, not just the target element.
+
+**Mobile first** — sidebar desktop, bottom nav mobile, built in from day one, never retrofitted.
 
 ## Design System
 - **Colors:** slate-900 sidebar · orange-500 primary · teal active/live · red danger · emerald positive/win · blue-400 toggle on / slate-300 toggle off
@@ -115,10 +123,15 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - **Hierarchy:** size = importance. cursor-pointer on every clickable element, no exceptions
 
 ## Phases — Project Roadmap
-> ⚠️ S86 redefined phase scope — see DIRECTION CHANGE section (Phase 1 = bookkeeper-only, single club).
-- **Phase 1 — MVP:** functional product for Casino Golf Society. 85 real users, real money — must be correct.
-- **Phase 2 — Polish & member-facing:** robust daily-use UI, member frontend (view + place/edit bets).
-- **Phase 3 — Scale & commercialise:** multi-tenant product for other clubs; performance history, auto odds, analytics dashboard.
+
+**Phase 1 — MVP**
+Build a functional product for Casino Golf Society. Two interfaces: bookkeeper backstage (match management, bet entry, result recording, settlement reports) + member-facing frontend (view data, place/edit bets; full scope TBD). Same backend/database. 85 real users, real money — must handle everything the club needs correctly.
+
+**Phase 2 — Polish & Interactivity**
+Refine UI, improve usability, complete all functional features. Make the system robust, foolproof, and ready for real daily use by the bookkeeper and admins.
+
+**Phase 3 — Scale & Commercialise**
+Transform the internal tool into a sellable product for other golf clubs. Introduce member performance history, automatic odds calculation, and a data analytics dashboard. The system evolves from an internal admin tool into a full data insights platform. Requires rethinking architecture for multi-tenancy and scalability.
 
 ## Session Config
 - Timer unavailable = log duration as `n/a`
@@ -142,30 +155,69 @@ See `MEMORY.md` for full schema (members, matches, bets, settlements).
 - The old solo pre-launch roadmap (`plan-ticklish-chasing-cocke.md` + the priority sequence below) is **PAUSED** pending the team's 2.0 build.
 
 ## TODO
-> ⚠️ S86 pivot paused the entire 1.0 roadmap — 2.0 is a fresh rebuild by the external team.
-> 1.0 items below kept as reference. See DIRECTION CHANGE section + wrap-s86.
+### Done ✓
+- Sessions 1–10: matches/members page UI, security rules, phase roadmap.
+- Sessions 21–26: canonical rules normalization (R1–R29). All OQs resolved S22.
+- **Step 1** ✓ (S29–30): Settlement engine + `match_team_player_shares` + `club_billing_config`. 143 test assertions.
+- **Step 2** ✓ (S31): Result entry RPCs + `audit_log`. **Step 3a** ✓ (S32): `bet_requests` + `sporadic_pools` tables, attribution columns, 47 pipeline tests.
 
-### Done ✓ (1.0 build, S1–S83)
-- Pages: matches, members, bets (entry/report/landing). Settlement + auto-placement engines. 8 RPCs. `audit_log`, `bet_requests`, `sporadic_pools`, `match_settlements`. Full detail: "What's Built" above + wraps s75–s83.
+### Next (Execution Plan Steps)
+- **Step 4+5: Bookkeeper Bet Entry + Match Enhancements + Per-Match Report** ✓ (Sessions 33–55) — All 6 unified items (#4 share editing, #5 sporadic pools, #6 report rewrite, 4A–4E base features). 17 fix-now items implemented (S53). Functional testing complete: 14/14 tests pass + 5 code-review confirmed (S54–55). Export buttons placeholder only. 4G (小盤) = built but hidden. S55: 投注明細 hidden when match has result (redundant with 結算明細).
 
-### Paused 1.0 roadmap (reference — full plan `memory/plan-ticklish-chasing-cocke.md`)
-Pending if resumed: Step 6 Weekly Report (`/reports`, R22.5) · Step 7 Weekly Settlement (`/settlement`, real money) · Step 9 Auth + member read-only · Step 9b member profile on `/members` · Fix 3 correction-preview projected values · Fix 4 C/D team label · S73 pool-grouping redesign · P12 overdue count · Step 3b-lite capacity+pending UI · P3c auto-placement→RPC · rewrite `~/.claude/CLAUDE.md` (user-driven).
+#### Roadmap — Current Priority Sequence (S83)
+Reordered S83: build launch-critical features first, polish later. Fixes 1+2+5 done and validated (13/13 automated + 4/4 visual).
 
-### Open design decisions (domain knowledge — carry into 2.0)
-- **選手 voluntary betting** — R8.4 allows ("player or external bettor"); user believes no. Needs 創隊長 confirmation.
-- **取消封盤 after 自動派注** — auto-placed bet cleanup undefined; dup-bet risk if member then self-bets.
-- **Error code system (錯誤代碼)** — taxonomy/namespace undefined (e.g. `SETTLE-MISMATCH-0302-G3`). Powers calc-error state in per-match reports.
-- **Correction preview projected values** — run `calculateMatchPayout` (client-side, `src/lib/settlement.ts`) old vs new winner, show per-member before/after/delta; handle base + pool. Open: pass inputs as props or fetch in modal. Scope: wrap-s82.
-- **C/D vs A/B team label mismatch** — matches page `teamLabel()` (status sort) vs report hardcoded A/B; 13+ locations, 10 files. Need canonical sort (rec: start_time asc + created_at) → `getMatchDisplayLabels()`. `memory/plan-P7-bug-fixes.md` Fix 4.
-- **S73 pool grouping redesign** — matches grouping uses separate source arrays/section → invisible matches. Redesign to single source (`currentMatches`) before any pool code, then reapply fixes 1–6. `archive/s73-reverted/`.
-- **Pool section UX (S78)** — pool title needs player names + full handicap; pool bet delete needs confirm modal.
-- **Export buttons (S54)** — 匯出 Excel / 快速截圖 still placeholders.
-- **Deferred:** admin permission matrix (R29.8) · bulk-reduction naming · sporadic pool edit mode (delete+recreate only) · post-自動派注 verification/count mechanism.
-- **Code audit Batch 1 (Settlement)** 🔄 — `memory/audit-batch1-settlement.md`. Finding 6 shipped (deploy unverified). Pending: Findings 1+2 architecture (assistant recs Option B durable repair state), 3 (R21.5 verify), 4, 5 (R21.6). Batches 2/3 not started.
-- **Bets workbench backend safety (S86)** — `會員批次登錄` tab + safety migration. Deferred pool-deletion RPC: `memory/design-bets-workbench-backend-safety.md`.
+1. ~~Fixes 1+2+5~~ ✓ (S83) — pool eligibility, correction fetchAll, placeholder position
+2. ~~Validate testplan~~ ✓ (S83) — automated script `test-p7-settlement.mjs`, 13/13 pass
+3. **Step 6: Weekly Report** — `/reports` page, bookkeeper's weekly LINE deliverable `← NEXT`
+4. **Step 7: Monthly Settlement** — `/settlement` page, real money
+5. **Step 9: Auth + Member Read-Only View** — security, member access
+6. Fix 3 — correction preview with projected values (~1 session)
+7. Fix 4 — team label consistency (~1–2 sessions)
+8. S73 sporadic pool grouping redesign
+9. P12 — Overdue count reliability
+10. Step 3b-lite — capacity enforcement + pending bet UI
+11. P3c — Auto-placement rewire to RPC
+12. Revisit/rewrite `~/.claude/CLAUDE.md` (user-driven, not Claude)
 
-### Deferred — someday
-- **Canonical rules review pass (`memory/canonical-rules.md`)** — small errors have accumulated as the project evolved (known so far: R1.3 `is_sporadic` + R1.25 `bet_increment_liang` stale defs, see Lessons/Gotchas). One day sit down and carefully examine the whole master for what needs fixing/revising. **NOT now** — keep the master frozen as-is for the 2.0 team to work from. Do not edit until this dedicated pass.
+#### Standalone Design Tasks (pre-Step 6, gap-filled from S55)
+- **Bets page default landing** ✓ — S60 implementation, S61 visual match confirmed.
+- **Match card redesign** ✓ (S62–63)
+- **Bets entry/report UI optimization** 🔄 (S63–73) — S72 UIEval complete. S73 sporadic pool fixes reverted. Reference: `archive/s73-reverted/`. Resuming at roadmap step 10.
+- **Member profile/history view (Step 9b design)** — needs discussion → mockup → approval. Implementation at Step 9b.
+
+#### Execution Plan Steps (remaining)
+- **Step 6: Weekly Report (每週報表)** — `/reports` page. Per-member weekly summary, screenshot-friendly for LINE sharing, content per R22.5. Not started.
+- **Step 7: Monthly Settlement (月度結算)** — auto-calculated, double-check audit, rake rounding
+- **Step 9: Auth + Member Read-Only View**
+- **Step 9b: Member Profile View on `/members`** — implementation of the design from the standalone task above. Not launch-blocking, ships Phase 1.
+- Buffer: Presentation Prep + Step 10 (Member Bet-Placement UX)
+
+### Parked Discussions (need design decision before building)
+- **Bulk reduction naming** — naming convention still open
+- **Admin permission matrix** — deferred, revisit when admin roles are built (R29.8)
+- **Error code system (錯誤代碼)** — Design a structured error code framework for settlement mismatches and other system failures (example format: `SETTLE-MISMATCH-0302-G3`). This system will power the calculation-error state shown in per-match reports. Final scope, namespace structure, and error taxonomy are **not yet defined**.
+- **選手 voluntary betting (S54)** — R8.4 allows it ("player or external bettor"). User believes players shouldn't be able to. Needs organizer confirmation.
+- **取消封盤 after 自動派注 (S54)** — currently allowed without cleanup of auto-placed bets. Could create duplicate bets if member then self-bets. Design decision needed.
+- **Export buttons (S54)** — 匯出 Excel + 快速截圖 still placeholders, need implementation.
+- **Full canonical rules audit** ✓ (S75) — Complete. 12 gaps assessed against R1–R29. Priority fix list produced (13 items). See S75 wrap for consolidated findings.
+- **Priority 3: `place_bet` RPC** ✓ (S78) — Implemented and functionally tested (18/18 pass). Schema migrated (`bet_config`), RPC deployed (`memory/rpcs/place_bet.sql`), paths 1+2 rewired, R5.4 client fix applied. Phase 10 artifacts saved.
+- **Priority 3b: `edit_bet` RPC** ✓ (S79) — Implemented and tested. Atomic RPC for adjustAmount+swapTeam, R13.3 enforced, both tables synced. RPC deployed, `memory/rpcs/edit_bet.sql`. bulkReduce R13.3 drift also fixed. Design details: `memory/design-place-bet-rpc.md` §Priority 3b.
+  - **Priority 6: `match_settlements` schema** ✓ (S80) — Table created with partial unique indexes, CHECK constraints, RLS. `provider_fee_liang` added to `settlements`. Migrations: `memory/migrations/006_match_settlements.sql`, `007_settlement_detail.sql`.
+  - **Priority 7: Settlement write path** ✓ (S80) — `persistMatchSettlement`/`persistPoolSettlement` in `src/lib/settlement-actions.ts`. Auto-persists after result RPCs. `MatchSettlementReport.tsx` reads from DB (single source of truth). `CorrectionPreviewModal` for corrections. Monthly `settlements` auto-aggregated. Blastcheck: 10 consistent, 0 code issues. **S81: Functional testing complete (14/19 pass, 3 blocked by pool UI bug). Two bugs fixed: upsert constraint (007b) + liang NUMERIC columns (007c). Five additional bugs found and logged (1 critical, 2 medium, 2 low). Testplan: `memory/testplan-P7-settlement-write-path.md`.**
+- **Pool section UX improvements (S78)** — Two items from functional testing: (1) Pool title should show player names + full handicap info (currently only `B隊開盤 · A隊讓2洞`). (2) Pool bet deletion (X button) should have a confirmation modal ("確定要刪除？") to prevent accidental deletes. Both are UI enhancements, not bugs. Discuss design before building.
+- **Pool result entry hidden on completed matches** — ✓ Fixed S83 (Fix 1). `canEnterPoolResult()` in `src/lib/match-domain.ts`.
+- **Stale state after result correction** — ✓ Fixed S83 (Fix 2). `executeMatchCorrection` now calls `fetchAll()`.
+- **Pool result flow loses context** — ✓ Fixed S83. Conditional fetchAll: stay if pending pools remain, sync if all resolved.
+- **Correction preview must show projected values (S81→S82 decision)** — `CorrectionPreviewModal` displays pre-correction `net_liang` with no label. S82 decided: labeling the old numbers is throwaway work. Build Option A instead: modal fetches bets/shares/billing config, runs `calculateMatchPayout` (pure TS, already in `src/lib/settlement.ts`) with both old and new winner client-side, displays per-member before/after/delta. Must handle both base match and sporadic pool contexts. No server-side RPC needed — the settlement engine is already client-side. **Scope: ~1 session** (modify `CorrectionPreviewModal.tsx` to fetch settlement inputs + run engine + redesign member list with 3-column before/after/delta layout). Needs own design discussion for the delta display format. **Scoping question:** `calculateMatchPayout` needs bets, shares, and billing config. The modal currently only fetches `match_settlements` rows — it has no access to those inputs. Design session should start with whether to pass them as props or fetch inside the modal.
+- **C/D vs A/B team label mismatch (S81→S82 scope analysis)** — Matches page uses `teamLabel()` (status-based sort: active=0, scheduled=1, completed=2). Report page + 12 child components hardcode A/B. S82 found: the two pages use incompatible sort orders (status-priority vs start_time), and the blast radius is 13+ locations across 10 files (full inventory in `memory/plan-P7-bug-fixes.md` Fix 4 section). Partial fix is worse than current state (header says "C隊" but settlement columns say "A隊" on the same page). **Scope: ~1–2 sessions.** Requires: (1) design decision on canonical sort rule (recommendation: start_time ascending, created_at tiebreaker — labels stay stable across status transitions), (2) create `getMatchDisplayLabels()` in `match-domain.ts`, (3) thread label pair as props through full component tree (10 files), (4) blastcheck after.
+- **Bet-exists guard on match/pool editing (S73→S83 closed)** — Investigated S83: player changes already go through `replace_match_player` RPC (R25.3, atomic void+create). Handicap changes don't invalidate bets. No guard needed — design was intentional.
+- **S73 sporadic pool grouping redesign** — S73 blastcheck found 8 issues, attempted fixes, reverted all code. Critical problem: matches page grouping logic uses separate source arrays per section — new match categories create invisible matches. Before writing any sporadic pool code, redesign grouping: single source (`currentMatches`) for all groups, overdue = all past-date needing action, today = strict date match, status determines appearance, date determines placement. Then reapply verified fixes (1–6) as a unit. Reference: `archive/s73-reverted/README-s73-revert.md`.
+- **Post-自動派注 workflow (S54)** — Partially resolved by removing delete (bet count stays stable). May still need a verification/count mechanism.
+- **Bets landing page empty state (S83→S86)** — Resolved with present-focused scope: `/bets` still shows only scheduled/betting_closed matches, and empty state links to `/matches`.
+- **Sporadic pool edit mode (S67)** — Pool bets have no edit capability (delete + re-create only). Deferred — discuss when ready.
+- **Code audit — Batch 1 (Settlement)** 🔄 — see `memory/audit-batch1-settlement.md`. 6 findings (5 critical, 1 medium). Finding 6 fix shipped (commit 2024815, supabase migration `20260506161005`, **deployment unverified**). Pending: architecture for Findings 1+2 (Option A atomic RPC vs Option B durable repair state — assistant recommends B), R21.5 verbatim verification (Finding 3), Finding 4 standalone fix, R21.6 deferral-status check (Finding 5). Batches 2 (Betting) + 3 (Lifecycle) not started.
+- **Bets workbench + backend safety (S86)** — Added `會員批次登錄` tab and backend safety migration. Details/deferred pool deletion RPC: `memory/design-bets-workbench-backend-safety.md`.
 
 ### End of Phase 1
-- Generate bookkeeper user guide — blocked by Steps 4–9.
+- Generate bookkeeper user guide — blocked by Steps 4–9
